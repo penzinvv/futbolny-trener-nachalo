@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102f25">
+  <title>Футбольный тренер — Начало</title>
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">ФТ</span><div><strong>Футбольный тренер</strong><small>НАЧАЛО · ТЕСТОВАЯ ВЕРСИЯ</small></div></div>
+      <div class="coach-chip"><span class="avatar">Т</span><div><b id="coachNameLabel">Тренер</b><small>Уровень <span id="coachLevel">1</span></small></div></div>
+    </header>
+
+    <section id="onboarding" class="panel onboarding hidden">
+      <p class="eyebrow">ПЕРВЫЙ ВЫХОД НА ПОЛЕ</p>
+      <h1>Создай свою команду</h1>
+      <p class="muted">Эти данные сохранятся в этом браузере. Пока это локальный тестовый профиль.</p>
+      <form id="setupForm">
+        <label>Имя тренера<input id="coachName" maxlength="24" required placeholder="Например, Алексей"></label>
+        <label>Название команды<input id="teamNameInput" maxlength="28" required placeholder="Например, Дворовые"></label>
+        <label>Эмблема команды
+          <div class="emblem-picker">
+            <label><input type="radio" name="emblem" value="🛡️" checked><span>🛡️</span></label>
+            <label><input type="radio" name="emblem" value="⚽"><span>⚽</span></label>
+            <label><input type="radio" name="emblem" value="🐺"><span>🐺</span></label>
+            <label><input type="radio" name="emblem" value="🦅"><span>🦅</span></label>
+            <label><input type="radio" name="emblem" value="🔥"><span>🔥</span></label>
+            <label><input type="radio" name="emblem" value="🌲"><span>🌲</span></label>
+          </div>
+        </label>
+        <button class="primary" type="submit">Выйти на поле</button>
+      </form>
+    </section>
+
+    <section id="dashboard">
+      <div class="hero pitch">
+        <div class="pitch-lines"></div>
+        <div class="hero-content">
+          <p class="eyebrow">ТВОЙ ДВОР · ТВОЯ КОМАНДА</p>
+          <div class="team-heading"><span id="teamEmblem" class="team-emblem">🛡️</span><div><h1 id="teamName">Дворовые</h1><p>Начинаем путь с нуля</p></div></div>
+          <div class="hero-stats">
+            <div><small>ИГРОВАЯ ДАТА</small><b id="gameDate">День 1</b></div>
+            <div><small>СЛЕДУЮЩИЙ МАТЧ</small><b>Пока не назначен</b></div>
+            <div><small>СОСТАВ</small><b><span id="rosterCount">0</span> / 10</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <article class="stat-card"><span class="stat-icon">✦</span><div><small>ОПЫТ АККАУНТА</small><b id="xpValue">0 XP</b></div></article>
+        <article class="stat-card"><span class="stat-icon">🏅</span><div><small>ПОСТОЯННЫЙ РЕЙТИНГ</small><b id="permanentRating">0</b></div></article>
+        <article class="stat-card"><span class="stat-icon">📅</span><div><small>СЕЗОННЫЙ РЕЙТИНГ</small><b id="seasonRating">0</b></div></article>
+        <article class="stat-card"><span class="stat-icon">🤝</span><div><small>УВАЖЕНИЕ</small><b id="respectValue">0</b></div></article>
+      </div>
+
+      <div class="main-grid">
+        <section class="panel">
+          <div class="section-title"><div><p class="eyebrow">РАЗДЕВАЛКА</p><h2>Управление командой</h2></div><span class="pill">БЕТА</span></div>
+          <nav class="menu-grid" aria-label="Главное меню">
+            <button data-page="players"><span>👟</span><b>Футболисты</b><small>Состав и профили</small></button>
+            <button data-page="mail"><span>✉️</span><b>Почта</b><small>Сообщения и новости</small></button>
+            <button data-page="training"><span>⚽</span><b>Тренировка</b><small>Индивидуально и командой</small></button>
+            <button data-page="upbringing"><span>🌱</span><b>Воспитание</b><small>Отношения и события</small></button>
+            <button data-page="league"><span>🏆</span><b>Лига</b><small>Страница пока пустая</small></button>
+            <button data-page="goals"><span>🎯</span><b>Цели</b><small>Прогресс тренера</small></button>
+          </nav>
+        </section>
+        <section class="panel">
+          <div class="section-title"><div><p class="eyebrow">ХРОНИКА</p><h2>Последние события</h2></div></div>
+          <div id="eventFeed" class="empty-state"><span>📋</span><b>Пока тихо</b><p>Здесь будут появляться важные события команды.</p></div>
+          <div class="mini-metrics"><div><small>ФОРМА</small><b>—</b></div><div><small>МОРАЛЬ</small><b>—</b></div><div><small>МЕСТО В ЛИГЕ</small><b>—</b></div></div>
+        </section>
+      </div>
+      <footer>Тестовый прототип · Прогресс пока хранится локально в браузере</footer>
+    </section>
+
+    <section id="pageView" class="panel page-view hidden">
+      <button id="backHome" class="back-button">← На главную</button>
+      <p id="pageEyebrow" class="eyebrow">РАЗДЕЛ</p><h1 id="pageTitle">Страница</h1>
+      <div id="pageContent"></div>
+    </section>
+  </main>
+  <script src="/src/app.js"></script>
+</body>
+</html>
