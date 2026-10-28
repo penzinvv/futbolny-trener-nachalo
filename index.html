@@ -13,7 +13,7 @@
       <div class="brand"><span class="brand-mark">ФТ</span><div><strong>Футбольный тренер</strong><small>НАЧАЛО · ТЕСТОВАЯ ВЕРСИЯ</small></div></div>
       <div class="topbar-actions">
         <button id="musicToggle" class="music-toggle" type="button" aria-pressed="false">♫ Включить музыку</button>
-        <div class="coach-chip"><span class="avatar">Т</span><div><b id="coachNameLabel">Тренер</b><small>Уровень <span id="coachLevel">1</span></small></div></div>
+        <div class="coach-chip"><img id="coachAvatar" class="avatar avatar-image" src="/images/avatarteam/avatarteam1.jpg" alt="Аватар тренера"><div class="coach-chip-info"><b id="coachNameLabel">Тренер</b><small>Уровень <span id="coachLevel">1</span></small><button id="changeAvatarButton" class="text-button hidden" type="button">Сменить аватар</button></div></div>
       </div>
     </header>
 
@@ -24,6 +24,7 @@
       <form id="setupForm">
         <label>Имя тренера<input id="coachName" maxlength="24" required placeholder="Например, Алексей"></label>
         <label>Название команды<input id="teamNameInput" maxlength="28" required placeholder="Например, Дворовые"></label>
+        <label>Аватар тренера<div id="avatarPicker" class="avatar-picker"></div></label>
         <label>Эмблема команды
           <div class="emblem-picker">
             <label><input type="radio" name="emblem" value="🛡️" checked><span>🛡️</span></label>
@@ -38,6 +39,7 @@
       </form>
     </section>
 
+    <section id="avatarChangePanel" class="panel avatar-change-panel hidden"><div class="section-title"><div><p class="eyebrow">ВНЕШНОСТЬ ТРЕНЕРА</p><h2>Выбери новый аватар</h2></div><button id="cancelAvatarChange" class="back-button" type="button">Отмена</button></div><p id="avatarChangeMessage" class="muted"></p><div id="avatarChangePicker" class="avatar-picker"></div><button id="saveAvatarChange" class="primary" type="button">Подтвердить смену</button></section>
     <section id="dashboard">
       <div class="hero pitch">
         <div class="pitch-lines"></div>
