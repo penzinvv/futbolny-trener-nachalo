@@ -11,7 +11,10 @@
   <main class="app-shell">
     <header class="topbar">
       <div class="brand"><span class="brand-mark">ФТ</span><div><strong>Футбольный тренер</strong><small>НАЧАЛО · ТЕСТОВАЯ ВЕРСИЯ</small></div></div>
-      <div class="coach-chip"><span class="avatar">Т</span><div><b id="coachNameLabel">Тренер</b><small>Уровень <span id="coachLevel">1</span></small></div></div>
+      <div class="topbar-actions">
+        <button id="musicToggle" class="music-toggle" type="button" aria-pressed="false">♫ Включить музыку</button>
+        <div class="coach-chip"><span class="avatar">Т</span><div><b id="coachNameLabel">Тренер</b><small>Уровень <span id="coachLevel">1</span></small></div></div>
+      </div>
     </header>
 
     <section id="onboarding" class="panel onboarding hidden">
@@ -83,6 +86,7 @@
       <div id="pageContent"></div>
     </section>
   </main>
+  <audio id="backgroundMusic" preload="none"></audio>
   <script src="/src/app.js"></script>
 </body>
 </html>
