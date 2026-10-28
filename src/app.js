@@ -40,6 +40,7 @@ const musicToggle = $("musicToggle");
 let shuffledTracks = [];
 let currentTrackIndex = -1;
 let musicEnabled = false;
+let lastTrackPath = "";
 
 function shuffleTracks() {
   shuffledTracks = [...musicTracks];
@@ -48,8 +49,7 @@ function shuffleTracks() {
     [shuffledTracks[i], shuffledTracks[j]] = [shuffledTracks[j], shuffledTracks[i]];
   }
   // Не повторяем последнюю песню прошлого круга сразу же.
-  if (shuffledTracks.length > 1 && currentTrackIndex >= 0 &&
-      shuffledTracks[0] === musicTracks[currentTrackIndex]) {
+  if (shuffledTracks.length > 1 && shuffledTracks[0] === lastTrackPath) {
     [shuffledTracks[0], shuffledTracks[1]] = [shuffledTracks[1], shuffledTracks[0]];
   }
   currentTrackIndex = -1;
@@ -60,6 +60,7 @@ async function playNextTrack() {
   if (currentTrackIndex + 1 >= shuffledTracks.length) shuffleTracks();
   currentTrackIndex += 1;
   musicPlayer.src = shuffledTracks[currentTrackIndex];
+  lastTrackPath = shuffledTracks[currentTrackIndex];
   try {
     await musicPlayer.play();
     musicToggle.textContent = "♫ Выключить музыку";
