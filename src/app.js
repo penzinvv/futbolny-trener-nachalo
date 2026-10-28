@@ -226,11 +226,11 @@ function renderLeague() {
     const teams=leagueData.teams.filter(t=>t.league===leagueName);
     const table=document.createElement("div");table.className="league-table";
     const head=document.createElement("div");head.className="league-table-row league-table-head";
-    ["#","Команда","И","В","Н","П","Мячи","О"].forEach(v=>head.append(safeText("span",v)));table.append(head);
+    ["#","Эмб.","Команда","И","В","Н","П","Мячи","О"].forEach(v=>head.append(safeText("span",v)));table.append(head);
     const sorted=teams.map(t=>({...t,displayName:t.name==="{teamName}"?state.teamName:t.name})).sort((a,b)=>a.name.localeCompare(b.name,"ru"));
     sorted.forEach((t,i)=>{
       const row=document.createElement("button");row.type="button";row.className="league-table-row";row.addEventListener("click",()=>{openPage("players");setTimeout(()=>{const sel=document.querySelector(".league-select");if(sel){sel.value=t.id;sel.dispatchEvent(new Event("change"));}},0);});
-      const logo=document.createElement("img");logo.className="league-mini-logo";logo.src=t.logo?"/images/logoteams/"+t.logo+".jpg":"/images/logoteams/mognem.jpg";logo.alt="";
+      const logo=document.createElement("img");logo.className="league-mini-logo";if(t.logo){logo.src="/images/logoteams/"+t.logo+".jpg";logo.alt="";}else{logo.remove();}
       row.append(safeText("span",String(i+1)),logo,safeText("span",t.displayName),safeText("span","0"),safeText("span","0"),safeText("span","0"),safeText("span","0"),safeText("span","0:0"),safeText("b","0"));table.append(row);
     });
     const note=safeText("p",leagueName==="Верхняя лига"?"Первые 3 команды получат просмотр агентов; последние 2 перейдут в Нижнюю лигу.":"Первые 2 команды перейдут в Верхнюю лигу.","league-note");
