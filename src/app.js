@@ -4,6 +4,8 @@ const defaultState = {
   xp: 0, permanentRating: 0, seasonRating: 0, respect: 0, gameDay: 1, players: []
 };
 let state = loadState();
+let leagueData = null;
+fetch("/data/league.json").then(r => { if (!r.ok) throw new Error("Не удалось загрузить данные лиги"); return r.json(); }).then(data => { leagueData = data; if (state.coachName && state.teamName) render(); }).catch(err => console.error(err));
 
 const $ = (id) => document.getElementById(id);
 function loadState() {
@@ -51,7 +53,7 @@ function render() {
   $("teamName").textContent = state.teamName || "Дворовые";
   $("teamEmblem").textContent = state.emblem || "🛡️";
   $("gameDate").textContent = `День ${state.gameDay}`;
-  $("rosterCount").textContent = state.players.length;
+  $("rosterCount").textContent = getUserTeam()?.players?.length || state.players.length || 10;
   $("xpValue").textContent = `${state.xp} XP`;
   $("permanentRating").textContent = state.permanentRating;
   $("seasonRating").textContent = state.seasonRating;
@@ -148,6 +150,7 @@ $("setupForm").addEventListener("submit", (event) => {
   state.teamName = teamName.slice(0,28);
   state.emblem = document.querySelector('input[name="emblem"]:checked')?.value || "🛡️";
   state.avatarIndex = Number(document.querySelector('input[name="coachAvatarInitial"]:checked')?.value || 1);
+  state.selectedLeague = "Нижняя лига";
   if (!state.seasonNumber) state.seasonNumber = 1;
   saveState(); $("onboarding").classList.add("hidden"); $("dashboard").classList.remove("hidden"); render();
 });
@@ -157,7 +160,7 @@ const pages = {
   mail: {title:"Почта", eyebrow:"СООБЩЕНИЯ", render: () => placeholder("Почтовая система ещё не реализована. Здесь появятся сообщения, приглашения и важные новости.")},
   training: {title:"Тренировка", eyebrow:"РАЗВИТИЕ", render: renderTraining},
   upbringing: {title:"Воспитание", eyebrow:"ОТНОШЕНИЯ", render: () => placeholder("Раздел воспитания пока пустой. Позже добавим отношения, события и решения тренера.")},
-  league: {title:"Лига", eyebrow:"СОРЕВНОВАНИЯ", render: () => placeholder("Лига пока не реализована. Эта страница намеренно оставлена пустой до согласования механик.")},
+  league: {title:"Лиги и команды", eyebrow:"СОРЕВНОВАНИЯ", render: renderLeague},
   goals: {title:"Цели тренера", eyebrow:"ПРОГРЕСС", render: () => placeholder("Система уникальных и периодических целей будет добавлена после согласования чисел и списка целей.")}
 };
 function placeholder(message) {
@@ -173,23 +176,80 @@ function openPage(key) {
 document.querySelectorAll("[data-page]").forEach(button => button.addEventListener("click", () => openPage(button.dataset.page)));
 $("backHome").addEventListener("click", () => { $("pageView").classList.add("hidden"); $("dashboard").classList.remove("hidden"); });
 
-function renderPlayers() {
-  const wrap = document.createElement("div");
-  wrap.append(placeholder("Здесь появятся подготовленные футболисты, их возраст, позиции, характеристики, потенциал и отношения. Начальный состав можно будет загрузить из данных проекта."));
-  const list = document.createElement("div"); list.className = "player-list";
-  if (!state.players.length) {
-    const row = document.createElement("div"); row.className = "player-row";
-    row.innerHTML = "<div><b>Состав пока не загружен</b><small>Добавление стартовых игроков — следующий этап</small></div><span>0 / 10</span>";
-    list.append(row);
-  } else state.players.forEach(player => {
-    const row = document.createElement("div"); row.className = "player-row";
-    row.innerHTML = `<div><b></b><small></small></div><span></span>`;
-    row.querySelector("b").textContent = player.name;
-    row.querySelector("small").textContent = `Возраст: ${player.age} · Позиция: ${player.position}`;
-    row.querySelector("span").textContent = `${player.relationship || 0}%`;
-    list.append(row);
+function getUserTeam() {
+  if (!leagueData) return null;
+  const team = leagueData.teams.find(t => t.isUserTeam || t.name === "{teamName}");
+  if (team) { team.name = state.teamName || "Моя команда"; team.coach = state.coachName || "Тренер"; }
+  return team || null;
+}
+function getPortrait(index) { return "/images/portretplayers/portret" + (((index - 1) % 50) + 1) + ".jpg"; }
+function getFlag(nationality) {
+  const flags = {"Россия":"russia","Беларусь":"belarus","Индия":"india","Казахстан":"kazahstan","Кыргызстан":"kirgizstan","Узбекистан":"uzbekistan","Вьетнам":"vietnam","Южная Корея":"southkorea"};
+  return flags[nationality] ? "/images/flags/" + flags[nationality] + ".jpg" : "";
+}
+function safeText(tag, text, cls) { const el = document.createElement(tag); if (cls) el.className = cls; el.textContent = text ?? ""; return el; }
+function makeTeamRoster(team) {
+  const wrap = document.createElement("div"); wrap.className = "roster-view";
+  const header = document.createElement("div"); header.className = "team-detail-head";
+  if (team.logo) { const img = document.createElement("img"); img.src="/images/logoteams/"+team.logo+".jpg"; img.alt="Эмблема "+team.name; img.className="team-logo-large"; img.onerror=()=>img.remove(); header.append(img); }
+  const title = document.createElement("div"); title.append(safeText("h2",team.name), safeText("p","Тренер: "+team.coach), safeText("p",team.league+" · "+team.players.length+" футболистов"));
+  header.append(title); wrap.append(header);
+  if(team.chant) { const chant=document.createElement("blockquote"); chant.className="team-chant"; chant.textContent="«"+team.chant+"»"; wrap.append(chant); }
+  const grid=document.createElement("div"); grid.className="player-cards-grid";
+  team.players.forEach((p,i)=>{
+    const card=document.createElement("button"); card.type="button"; card.className="player-card"; card.addEventListener("click",()=>openPlayerProfile(team,p,i));
+    const img=document.createElement("img"); img.src=getPortrait(p.portraitIndex || (teamsPlayerIndex(team,p)+1)); img.alt=p.name; img.loading="lazy"; img.onerror=()=>{img.style.display="none"};
+    const info=document.createElement("div"); info.className="player-card-info"; info.append(safeText("b",p.name),safeText("small",p.position+" · "+p.nationality));
+    const stats=document.createElement("div"); stats.className="player-card-stats"; ["ВР","ЗЩ","ПЗ","НП"].forEach(k=>stats.append(safeText("span",k+" "+p.skills[k])));
+    card.append(img,info,stats); grid.append(card);
   });
-  wrap.append(list); return wrap;
+  wrap.append(grid); return wrap;
+}
+function teamsPlayerIndex(team,p) { let n=1; if(leagueData) for(const t of leagueData.teams){for(const x of t.players){if(t.id===team.id && x.name===p.name)return n;n++;}} return n; }
+function renderPlayers() {
+  const wrap=document.createElement("div");
+  if(!leagueData){wrap.append(placeholder("Загружаю составы команд…"));return wrap;}
+  const controls=document.createElement("div"); controls.className="filter-row";
+  const select=document.createElement("select"); select.className="league-select"; select.setAttribute("aria-label","Выбрать команду");
+  leagueData.teams.forEach(t=>{const o=document.createElement("option");o.value=t.id;o.textContent=(t.name==="{teamName}"?state.teamName:t.name)+" — "+t.league;o.selected=t.id===(getUserTeam()?.id);select.append(o);});
+  const detail=document.createElement("div"); detail.className="team-roster-container";
+  const show=()=>{const t=leagueData.teams.find(x=>x.id===select.value); if(t){const display={...t,name:t.name==="{teamName}"?state.teamName:t.name,coach:t.coach==="(имя тренера)"?state.coachName:t.coach};detail.replaceChildren(makeTeamRoster(display));}};
+  select.addEventListener("change",show); controls.append(select); wrap.append(controls,detail); show(); return wrap;
+}
+function renderLeague() {
+  const wrap=document.createElement("div"); if(!leagueData){wrap.append(placeholder("Загружаю данные лиг…"));return wrap;}
+  wrap.append(safeText("p","Сезон 1 · 6 команд в каждой лиге · 20 матчей за сезон","muted"));
+  const tabs=document.createElement("div");tabs.className="league-tabs";
+  const content=document.createElement("div");
+  const renderOne=(leagueName)=>{
+    content.replaceChildren();
+    const teams=leagueData.teams.filter(t=>t.league===leagueName);
+    const table=document.createElement("div");table.className="league-table";
+    const head=document.createElement("div");head.className="league-table-row league-table-head";
+    ["#","Команда","И","В","Н","П","Мячи","О"].forEach(v=>head.append(safeText("span",v)));table.append(head);
+    const sorted=teams.map(t=>({...t,displayName:t.name==="{teamName}"?state.teamName:t.name})).sort((a,b)=>a.name.localeCompare(b.name,"ru"));
+    sorted.forEach((t,i)=>{
+      const row=document.createElement("button");row.type="button";row.className="league-table-row";row.addEventListener("click",()=>{openPage("players");setTimeout(()=>{const sel=document.querySelector(".league-select");if(sel){sel.value=t.id;sel.dispatchEvent(new Event("change"));}},0);});
+      const logo=document.createElement("img");logo.className="league-mini-logo";logo.src=t.logo?"/images/logoteams/"+t.logo+".jpg":"/images/logoteams/mognem.jpg";logo.alt="";
+      row.append(safeText("span",String(i+1)),logo,safeText("span",t.displayName),safeText("span","0"),safeText("span","0"),safeText("span","0"),safeText("span","0"),safeText("span","0:0"),safeText("b","0"));table.append(row);
+    });
+    const note=safeText("p",leagueName==="Верхняя лига"?"Первые 3 команды получат просмотр агентов; последние 2 перейдут в Нижнюю лигу.":"Первые 2 команды перейдут в Верхнюю лигу.","league-note");
+    content.append(table,note);
+  };
+  ["Верхняя лига","Нижняя лига"].forEach(name=>{const b=document.createElement("button");b.type="button";b.className="league-tab"+(name==="Нижняя лига"?" active":"");b.textContent=name;b.addEventListener("click",()=>{tabs.querySelectorAll("button").forEach(x=>x.classList.remove("active"));b.classList.add("active");renderOne(name);});tabs.append(b);});
+  wrap.append(tabs,content);renderOne("Нижняя лига");return wrap;
+}
+function openPlayerProfile(team,p,index) {
+  const wrap=document.createElement("div");wrap.className="player-profile";
+  const portrait=document.createElement("img");portrait.className="player-profile-portrait";portrait.src=getPortrait(teamsPlayerIndex(team,p));portrait.alt=p.name;
+  const head=document.createElement("div");head.className="player-profile-head";head.append(portrait);
+  const bio=document.createElement("div");bio.append(safeText("h2",p.name),safeText("p",team.name===" {teamName}"?state.teamName:(team.name==="{teamName}"?state.teamName:team.name),"player-team-name"));
+  const nation=document.createElement("div");nation.className="player-nationality";const flag=getFlag(p.nationality);if(flag){const f=document.createElement("img");f.src=flag;f.alt="";nation.append(f);}nation.append(safeText("span",p.nationality+" · "+p.position));bio.append(nation,safeText("p","Тренер: "+(team.coach==="(имя тренера)"?state.coachName:team.coach),"muted"));head.append(bio);wrap.append(head);
+  const stats=document.createElement("div");stats.className="skill-bars";
+  ["ВР","ЗЩ","ПЗ","НП"].forEach(k=>{const line=document.createElement("div");line.className="skill-line";line.append(safeText("span",k),safeText("b",String(p.skills[k])));const track=document.createElement("div");track.className="skill-track";const fill=document.createElement("div");fill.className="skill-fill";fill.style.width=Math.max(0,Math.min(100,p.skills[k]))+"%";track.append(fill);line.append(track);stats.append(line);});
+  wrap.append(stats,safeText("p","Портреты распределены по кругу из 50 изображений. Характеристики перенесены из исходного документа.","muted"));
+  const back=document.createElement("button");back.className="back-button";back.textContent="← К составу";back.addEventListener("click",()=>openPage("players"));wrap.append(back);
+  $("pageTitle").textContent=p.name;$("pageEyebrow").textContent="КАРТОЧКА ФУТБОЛИСТА";const content=$("pageContent");content.replaceChildren(wrap);
 }
 function renderTraining() {
   const wrap = document.createElement("div");
