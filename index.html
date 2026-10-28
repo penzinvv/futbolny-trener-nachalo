@@ -25,16 +25,7 @@
         <label>Имя тренера<input id="coachName" maxlength="24" required placeholder="Например, Алексей"></label>
         <label>Название команды<input id="teamNameInput" maxlength="28" required placeholder="Например, Дворовые"></label>
         <label>Аватар тренера<div id="avatarPicker" class="avatar-picker"></div></label>
-        <label>Эмблема команды
-          <div class="emblem-picker">
-            <label><input type="radio" name="emblem" value="🛡️" checked><span>🛡️</span></label>
-            <label><input type="radio" name="emblem" value="⚽"><span>⚽</span></label>
-            <label><input type="radio" name="emblem" value="🐺"><span>🐺</span></label>
-            <label><input type="radio" name="emblem" value="🦅"><span>🦅</span></label>
-            <label><input type="radio" name="emblem" value="🔥"><span>🔥</span></label>
-            <label><input type="radio" name="emblem" value="🌲"><span>🌲</span></label>
-          </div>
-        </label>
+        <label>Логотип команды<div id="teamLogoPicker" class="avatar-picker"></div></label>
         <button class="primary" type="submit">Выйти на поле</button>
       </form>
     </section>
@@ -45,7 +36,7 @@
         <div class="pitch-lines"></div>
         <div class="hero-content">
           <p class="eyebrow">ТВОЙ ДВОР · ТВОЯ КОМАНДА</p>
-          <div class="team-heading"><span id="teamEmblem" class="team-emblem">🛡️</span><div><h1 id="teamName">Дворовые</h1><p>Начинаем путь с нуля</p></div></div>
+          <div class="team-heading"><span id="teamEmblem" class="team-emblem"><img src="/images/avatarteam/avatarteam1.jpg" alt="Логотип команды"></span><div><h1 id="teamName">Дворовые</h1><p>Начинаем путь с нуля</p></div></div>
           <div class="hero-stats">
             <div><small>ИГРОВАЯ ДАТА</small><b id="gameDate">День 1</b></div>
             <div><small>СЛЕДУЮЩИЙ МАТЧ</small><b>Пока не назначен</b></div>
