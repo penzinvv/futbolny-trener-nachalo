@@ -24,6 +24,87 @@ function render() {
   $("seasonRating").textContent = state.seasonRating;
   $("respectValue").textContent = state.respect;
 }
+
+/* Фоновая музыка: случайный порядок без повторов до конца текущего круга.
+   Браузеры требуют первого нажатия пользователя перед воспроизведением со звуком. */
+const musicTracks = [
+  "/music/footmusic1.mp3",
+  "/music/footmusic2.mp3",
+  "/music/footmusic3.mp3",
+  "/music/footmusic4.mp3",
+  "/music/footmusic5.mp3",
+  "/music/footmusic6.mp3"
+];
+const musicPlayer = $("backgroundMusic");
+const musicToggle = $("musicToggle");
+let shuffledTracks = [];
+let currentTrackIndex = -1;
+let musicEnabled = false;
+
+function shuffleTracks() {
+  shuffledTracks = [...musicTracks];
+  for (let i = shuffledTracks.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledTracks[i], shuffledTracks[j]] = [shuffledTracks[j], shuffledTracks[i]];
+  }
+  // Не повторяем последнюю песню прошлого круга сразу же.
+  if (shuffledTracks.length > 1 && currentTrackIndex >= 0 &&
+      shuffledTracks[0] === musicTracks[currentTrackIndex]) {
+    [shuffledTracks[0], shuffledTracks[1]] = [shuffledTracks[1], shuffledTracks[0]];
+  }
+  currentTrackIndex = -1;
+}
+
+async function playNextTrack() {
+  if (!musicEnabled) return;
+  if (currentTrackIndex + 1 >= shuffledTracks.length) shuffleTracks();
+  currentTrackIndex += 1;
+  musicPlayer.src = shuffledTracks[currentTrackIndex];
+  try {
+    await musicPlayer.play();
+    musicToggle.textContent = "♫ Выключить музыку";
+    musicToggle.setAttribute("aria-pressed", "true");
+  } catch (error) {
+    musicEnabled = false;
+    musicToggle.textContent = "♫ Повторить запуск музыки";
+    musicToggle.setAttribute("aria-pressed", "false");
+    console.warn("Не удалось запустить фоновую музыку:", error);
+  }
+}
+
+musicPlayer.addEventListener("ended", () => { if (musicEnabled) playNextTrack(); });
+musicPlayer.addEventListener("error", () => {
+  if (!musicEnabled) return;
+  // Если отдельный файл недоступен, пробуем следующий трек, не останавливая весь плейлист.
+  if (currentTrackIndex + 1 < shuffledTracks.length) playNextTrack();
+  else {
+    musicEnabled = false;
+    musicToggle.textContent = "♫ Музыка недоступна";
+    musicToggle.setAttribute("aria-pressed", "false");
+  }
+});
+musicToggle.addEventListener("click", async () => {
+  if (musicEnabled) {
+    musicEnabled = false;
+    musicPlayer.pause();
+    musicToggle.textContent = "♫ Включить музыку";
+    musicToggle.setAttribute("aria-pressed", "false");
+    return;
+  }
+  musicEnabled = true;
+  if (!shuffledTracks.length) shuffleTracks();
+  // Разрешённый браузером запуск происходит непосредственно после нажатия кнопки.
+  if (musicPlayer.src && musicPlayer.paused && currentTrackIndex >= 0) {
+    try {
+      await musicPlayer.play();
+      musicToggle.textContent = "♫ Выключить музыку";
+      musicToggle.setAttribute("aria-pressed", "true");
+    } catch { await playNextTrack(); }
+  } else {
+    await playNextTrack();
+  }
+});
+
 $("setupForm").addEventListener("submit", (event) => {
   event.preventDefault();
   const coachName = $("coachName").value.trim();
