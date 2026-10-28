@@ -1,7 +1,7 @@
 const STORAGE_KEY = "football-coach-start-v1";
 const defaultState = {
-  coachName: "", teamName: "", emblem: "🛡️", xp: 0, permanentRating: 0,
-  seasonRating: 0, respect: 0, gameDay: 1, players: []
+  coachName: "", teamName: "", emblem: "🛡️", avatarIndex: 1, seasonNumber: 1, avatarChangeUsedSeason: 0,
+  xp: 0, permanentRating: 0, seasonRating: 0, respect: 0, gameDay: 1, players: []
 };
 let state = loadState();
 
@@ -11,9 +11,42 @@ function loadState() {
   catch { return { ...defaultState }; }
 }
 function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+const AVATAR_COUNT = 6;
+function avatarPath(index) { return "/images/avatarteam/avatarteam" + index + ".jpg"; }
+function makeAvatarOptions(containerId, groupName, selectedIndex) {
+  const container = $(containerId);
+  container.replaceChildren();
+  for (let i = 1; i <= AVATAR_COUNT; i++) {
+    const label = document.createElement("label"); label.className = "avatar-option";
+    const radio = document.createElement("input"); radio.type = "radio"; radio.name = groupName; radio.value = String(i); radio.checked = i === Number(selectedIndex); radio.setAttribute("aria-label", "Аватар " + i);
+    const img = document.createElement("img"); img.src = avatarPath(i); img.alt = "Аватар " + i; img.loading = "lazy";
+    label.append(radio, img); container.append(label);
+  }
+}
+makeAvatarOptions("avatarPicker", "coachAvatarInitial", state.avatarIndex || 1);
+makeAvatarOptions("avatarChangePicker", "coachAvatarChange", state.avatarIndex || 1);
+function closeAvatarChange() { $("avatarChangePanel").classList.add("hidden"); $("dashboard").classList.remove("hidden"); }
+$("changeAvatarButton").addEventListener("click", () => {
+  if (Number(state.avatarChangeUsedSeason || 0) >= Number(state.seasonNumber || 1)) return;
+  makeAvatarOptions("avatarChangePicker", "coachAvatarChange", state.avatarIndex || 1);
+  $("avatarChangeMessage").textContent = "Сезон " + (state.seasonNumber || 1) + ": смена доступна один раз за сезон. Имя тренера останется прежним.";
+  $("dashboard").classList.add("hidden"); $("pageView").classList.add("hidden"); $("avatarChangePanel").classList.remove("hidden");
+});
+$("cancelAvatarChange").addEventListener("click", closeAvatarChange);
+$("saveAvatarChange").addEventListener("click", () => {
+  if (Number(state.avatarChangeUsedSeason || 0) >= Number(state.seasonNumber || 1)) return;
+  const selected = document.querySelector('input[name="coachAvatarChange"]:checked'); if (!selected) return;
+  state.avatarIndex = Number(selected.value); state.avatarChangeUsedSeason = Number(state.seasonNumber || 1);
+  saveState(); closeAvatarChange(); render();
+});
 function showSetup() { $("onboarding").classList.remove("hidden"); $("dashboard").classList.add("hidden"); }
 function render() {
   $("coachNameLabel").textContent = state.coachName || "Тренер";
+  $("coachAvatar").src = avatarPath(state.avatarIndex || 1);
+  $("changeAvatarButton").classList.remove("hidden");
+  $("changeAvatarButton").disabled = Number(state.avatarChangeUsedSeason || 0) >= Number(state.seasonNumber || 1);
+  $("changeAvatarButton").textContent = $("changeAvatarButton").disabled ? "Аватар уже менялся в этом сезоне" : "Сменить аватар";
   $("coachLevel").textContent = Math.max(1, Math.floor(Math.sqrt(state.xp / 100)) + 1);
   $("teamName").textContent = state.teamName || "Дворовые";
   $("teamEmblem").textContent = state.emblem || "🛡️";
@@ -114,6 +147,8 @@ $("setupForm").addEventListener("submit", (event) => {
   state.coachName = coachName.slice(0,24);
   state.teamName = teamName.slice(0,28);
   state.emblem = document.querySelector('input[name="emblem"]:checked')?.value || "🛡️";
+  state.avatarIndex = Number(document.querySelector('input[name="coachAvatarInitial"]:checked')?.value || 1);
+  if (!state.seasonNumber) state.seasonNumber = 1;
   saveState(); $("onboarding").classList.add("hidden"); $("dashboard").classList.remove("hidden"); render();
 });
 
