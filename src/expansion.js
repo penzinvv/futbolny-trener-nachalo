@@ -9,10 +9,10 @@ function install(){
  const baseGetTeam=getUserTeam;
  getUserTeam=function(){const t=baseGetTeam();if(t&&Array.isArray(state.userRoster))t.players=state.userRoster;return t};
 
- const nav=document.querySelector(".menu-grid");if(nav&&!document.getElementById("transferHome")){const b=B("🔁 ТРАНСФЕРНЫЙ ОБМЕН ИГРОКАМИ",transfer,"transfer-home-button");b.id="transferHome";nav.append(b)}
+ const nav=document.querySelector(".menu-grid");if(nav&&!document.getElementById("freeYardHome")){const b=B("⚽ СВОБОДНЫЙ ДВОР",()=>openPage("freeyard"),"transfer-home-button");b.id="freeYardHome";b.append(safeText("small","Свободные футболисты"));nav.append(b)}\n if(nav&&!document.getElementById("transferHome")){const b=B("🔁 ТРАНСФЕРНЫЙ ОБМЕН ИГРОКАМИ",transfer,"transfer-home-button");b.id="transferHome";nav.append(b)}
  const old=pages.cabinet.render;if(!old.wrap){const w=function(){const n=old();n.prepend(B("🔁 Трансферный обмен игроками",transfer,"primary"));return n};w.wrap=true;pages.cabinet.render=w}
  profileBase=openPlayerProfile;openPlayerProfile=function(t,p,i){profileBase(t,p,i);if(t.id===getUserTeam()?.id)return;const box=P("Отношения с футболистом","Каждые 100 очков в «Три в ряд» дают +1 процентный пункт отношений.");box.append(B("ПОДНЯТЬ ОТНОШЕНИЯ С ИГРОКОМ",()=>match3(t,p),"primary"),B("Выбрать для наблюдения в следующем матче",()=>{state.matchRelationSelections||={};state.matchRelationSelections[t.id]=p.name;saveState();alert("Выбран игрок для наблюдения: "+p.name+". Начисление отношений после матча появится вместе с матчевым движком.")}),B("Предложить обмен",()=>{state.transferTarget={team:t.id,name:p.name};saveState();transfer()}));document.querySelector("#pageContent .player-profile")?.append(box)};
- pages.training.render=training;pages.transfers={title:"Трансферный обмен игроками",eyebrow:"ТРАНСФЕРЫ",render:transfersPage};
+ pages.training.render=training;pages.transfers={title:"Трансферный обмен игроками",eyebrow:"ТРАНСФЕРЫ",render:transfersPage};pages.freeyard={title:"СВОБОДНЫЙ ДВОР",eyebrow:"ПОИСК ФУТБОЛИСТОВ",render:freeYardPage};
  saveState()
 }
 function match3(t,p){
@@ -72,7 +72,26 @@ function playTraining(t,p,id){
  document.addEventListener("keydown",key);function key(e){const map={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]},v=map[e.key];if(v&&!(v[0]===-dir.x&&v[1]===-dir.y)){dir={x:v[0],y:v[1]};e.preventDefault()}}
  function tick(){const h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};if(h.x<0||h.y<0||h.x>=10||h.y>=10||snake.slice(0,-1).some(s=>s.x===h.x&&s.y===h.y)){document.removeEventListener("keydown",key);finish("Мячей собрано: "+score/10);return}snake.unshift(h);if(h.x===food.x&&h.y===food.y){score+=10;do{food={x:Math.floor(Math.random()*10),y:Math.floor(Math.random()*10)}}while(snake.some(s=>s.x===food.x&&s.y===food.y))}else snake.pop();draw()}draw();timer=setInterval(tick,280)}
 }
-function transfersPage(){
+
+function freeYardPage(){
+ const w=document.createElement("div");
+ const intro=P("⚽ СВОБОДНЫЙ ДВОР","Здесь будут появляться свободные футболисты, которых тренер сможет пригласить в свою команду. Составы команд на СЕЗОН 1, День 1 остаются без изменений.");
+ const rules=document.createElement("div");rules.className="feature-player-list";
+ [
+  ["Появление новичков","Один новый футболист на весь игровой мир за игровой месяц."],
+  ["Неприглашённые игроки","Остаются в списке до приглашения. Появление следующего новичка не удаляет предыдущих."],
+  ["Характеристики","ВР, ЗЩ, ПЗ и НП генерируются случайно и скрыты от тренера до достижения 60% отношений."],
+  ["Потенциал","Скрыт до достижения 60% отношений."],
+  ["Ограничения состава","В команду можно пригласить игрока только при наличии свободного места в составе (лимит — 10 футболистов)."]
+ ].forEach(([title,desc])=>{const row=document.createElement("article");row.className="feature-player-row";row.append(safeText("b",title),safeText("span",desc));rules.append(row)});
+ intro.append(rules);
+ intro.append(T("Раздел и кнопка добавлены в интерфейс. Генерация новичков, раскрытие характеристик и приглашение в состав ещё не подключены; параметры генерации будут добавлены после утверждения баланса."));
+ w.append(intro);
+ const team=getUserTeam();
+ if(team&&team.players.length>=10)w.append(T("Состав заполнен (10/10). Для будущего приглашения потребуется освободить место."));
+ return w
+}
+\nfunction transfersPage(){
  const w=document.createElement("div");if(!leagueData){w.append(placeholder("Загружаю команды…"));return w} Object.entries(state.externalRosters||{}).forEach(([id,players])=>{const t=leagueData.teams.find(x=>x.id===id);if(t&&Array.isArray(players))t.players=players});
  if(state.transferTarget){const t=leagueData.teams.find(x=>x.id===state.transferTarget.team),p=t?.players.find(x=>x.name===state.transferTarget.name);if(t&&p){const panel=P("Обмен игроками","Выбери игрока своей команды в обмен на "+p.name+".");const sel=document.createElement("select");sel.className="league-select";own().forEach((x,i)=>sel.add(new Option(x.name+" · "+x.position,String(i))));panel.append(sel,B("Подтвердить обмен",()=>{const i=+sel.value,mine=own()[i];if(!mine||!confirm("Отдать "+mine.name+" и получить "+p.name+"?"))return;const ut=getUserTeam();ut.players.splice(i,1);t.players.splice(t.players.findIndex(x=>x.name===p.name),1);ut.players.push({...p});t.players.push({...mine});state.userRoster=ut.players;state.externalRosters[t.id]=t.players;state.transferHistory.push({team:t.id,received:p.name,given:mine.name,at:Date.now()});delete state.transferTarget;saveState();openPage("transfers")},"primary"),B("Отмена",()=>{delete state.transferTarget;openPage("transfers")}));w.append(panel);return w}}
  w.append(P("Трансферный обмен игроками","Просматривай отношения с игроками других команд и предлагай обмен. Подтверждение обязательно; переговоры и вероятность отказа пока не моделируются."));
