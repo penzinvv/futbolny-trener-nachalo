@@ -916,7 +916,7 @@ function applyOfficialMatchResult(session,home,away){
  ensureRoundBackgroundResults(session.round,fixture,result);
  state.careerHistory=state.careerHistory||{officialMatches:[],seasons:{}};
  state.careerHistory.officialMatches=Array.isArray(state.careerHistory.officialMatches)?state.careerHistory.officialMatches:[];
- state.careerHistory.officialMatches.push({season:result.season,round:result.round,day:result.day,homeId:home.id,awayId:away.id,homeScore:result.homeScore,awayScore:result.awayScore,goalsFor:home.id===getUserTeam()?.id?result.homeScore:result.awayScore,goalsAgainst:home.id===getUserTeam()?.id?result.awayScore:result.homeScore,result:((home.id===getUserTeam()?.id?result.homeScore-result.awayScore:result.awayScore-result.homeScore)>0)?"W":(result.homeScore===result.awayScore?"D":"L"),events:result.events,substitutions:result.substitutions});
+ state.careerHistory.officialMatches.push({season:result.season,round:result.round,day:result.day,at:Date.now(),homeId:home.id,awayId:away.id,homeScore:result.homeScore,awayScore:result.awayScore,goalsFor:home.id===getUserTeam()?.id?result.homeScore:result.awayScore,goalsAgainst:home.id===getUserTeam()?.id?result.awayScore:result.homeScore,result:((home.id===getUserTeam()?.id?result.homeScore-result.awayScore:result.awayScore-result.homeScore)>0)?"W":(result.homeScore===result.awayScore?"D":"L"),events:result.events,substitutions:result.substitutions});
  state.officialMatchSession=null;saveState();render();openPage("matchSummary");
 }
 function buildPostMatchSpectatorNotes(session,home,away){
