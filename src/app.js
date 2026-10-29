@@ -58,7 +58,7 @@ async function syncCareerToCloud(bootstrap = false) {
       const team = getUserTeam();
       const roster = team?.players || [];
       if (!roster.length) throw new Error("Состав ещё не загружен. Перезагрузи страницу и попробуй ещё раз.");
-      return cloudRequest("POST", {
+      await cloudRequest("POST", {
         action: "bootstrap",
         coachName: state.coachName,
         teamName: state.teamName,
@@ -70,6 +70,19 @@ async function syncCareerToCloud(bootstrap = false) {
           skills: p.skills || {}
         }))
       });
+      // Read back server-generated IDs so local state uses the canonical cloud identities.
+      const snapshot = await cloudRequest("GET");
+      if (snapshot.initialized) {
+        state.careerCoachId = snapshot.coach?.id || state.careerCoachId;
+        state.careerTeamId = snapshot.team?.id || state.careerTeamId;
+        state.careerPlayerIds = state.careerPlayerIds || {};
+        (snapshot.roster || []).forEach(player => {
+          if (player.source_player_key) state.careerPlayerIds[player.source_player_key] = player.id;
+        });
+        state.cloudCareerConnected = true;
+        saveState();
+      }
+      return snapshot;
     }
     const result = await cloudRequest("GET");
     if (result.initialized) {
@@ -256,6 +269,8 @@ $("setupForm").addEventListener("submit", async (event) => {
   state.selectedLeague = "Нижняя лига";
   if (!state.seasonNumber) state.seasonNumber = 1;
   saveState(); $("onboarding").classList.add("hidden"); $("dashboard").classList.remove("hidden"); render();
+  // The first cloud initialization must run after the player creates a coach and team.
+  void initializeCloudCareer();
 });
 
 const pages = {
