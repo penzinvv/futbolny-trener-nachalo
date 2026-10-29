@@ -600,7 +600,7 @@ function getUserTeam() {
   if (team) { team.name = state.teamName || "Моя команда"; team.coach = state.coachName || "Тренер"; }
   return team || null;
 }
-function getPortrait(index) { return "/images/portretplayers/portret" + (((index - 1) % 50) + 1) + ".jpg"; }
+function getPortrait(index) { const n=Math.max(1,Number(index)||1); return "/images/portretplayers/portret" + (((n - 1) % 77) + 1) + ".jpg"; }
 function getFlag(nationality) {
   const flags = {"Россия":"russia","Беларусь":"belarus","Индия":"india","Казахстан":"kazahstan","Кыргызстан":"kirgizstan","Узбекистан":"uzbekistan","Вьетнам":"vietnam","Южная Корея":"southkorea"};
   return flags[nationality] ? "/images/flags/" + flags[nationality] + ".jpg" : "";
