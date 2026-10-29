@@ -1,7 +1,7 @@
 const STORAGE_KEY = "football-coach-start-v1";
 const defaultState = {
   coachName: "", teamName: "", emblem: "🛡️", teamLogoIndex: 1, avatarIndex: 1, seasonNumber: 1, avatarChangeUsedSeason: 0,
-  xp: 0, permanentRating: 0, seasonRating: 0, respect: 0, gameDay: 1, players: []
+  xp: 0, permanentRating: 0, seasonRating: 0, respect: 0, gameDay: 1, players: [], relationships: {}
 };
 let state = loadState();
 let leagueData = null;
@@ -200,6 +200,40 @@ function getFlag(nationality) {
   return flags[nationality] ? "/images/flags/" + flags[nationality] + ".jpg" : "";
 }
 function safeText(tag, text, cls) { const el = document.createElement(tag); if (cls) el.className = cls; el.textContent = text ?? ""; return el; }
+
+function playerRelationKey(team,p) { return String(team.id || team.name) + "::" + String(p.name); }
+function getPlayerRelation(team,p) {
+  const value = Number(state.relationships?.[playerRelationKey(team,p)] || 0);
+  return Math.max(0,Math.min(100,value));
+}
+function getUnlockedSkills(p,relation) {
+  const order = [p.position,"ВР","ЗЩ","ПЗ","НП"].filter((key,index,arr) => ["ВР","ЗЩ","ПЗ","НП"].includes(key) && arr.indexOf(key)===index);
+  const unlocked=[];
+  if(relation>=50) unlocked.push(order[0]);
+  if(relation>=60) unlocked.push(order[1]);
+  if(relation>=70) unlocked.push(order[2]);
+  if(relation>=80) ["ВР","ЗЩ","ПЗ","НП"].forEach(key=>{if(!unlocked.includes(key))unlocked.push(key);});
+  return unlocked;
+}
+function makeRelationBadge(team,p) {
+  const relation=getPlayerRelation(team,p);
+  const box=document.createElement("div");box.className="player-relationship";
+  const top=document.createElement("div");top.className="relationship-labels";
+  top.append(safeText("span","Отношения с тренером"),safeText("b",relation+"%"));
+  const track=document.createElement("div");track.className="relationship-track";
+  const fill=document.createElement("div");fill.className="relationship-fill";fill.style.width=relation+"%";
+  track.append(fill);box.append(top,track);return box;
+}
+function makePlayerSkillSummary(team,p) {
+  const unlocked=getUnlockedSkills(p,getPlayerRelation(team,p));
+  const stats=document.createElement("div");stats.className="player-card-stats";
+  ["ВР","ЗЩ","ПЗ","НП"].forEach(key=>{
+    const known=unlocked.includes(key);
+    stats.append(safeText("span",known?key+" "+p.skills[key]:key+" ···",known?"skill-known":"skill-hidden"));
+  });
+  return stats;
+}
+
 function makeTeamRoster(team) {
   const wrap = document.createElement("div"); wrap.className = "roster-view";
   const header = document.createElement("div"); header.className = "team-detail-head";
@@ -212,8 +246,8 @@ function makeTeamRoster(team) {
     const card=document.createElement("button"); card.type="button"; card.className="player-card"; card.addEventListener("click",()=>openPlayerProfile(team,p,i));
     const img=document.createElement("img"); img.src=getPortrait(p.portraitIndex || (teamsPlayerIndex(team,p)+1)); img.alt=p.name; img.loading="lazy"; img.onerror=()=>{img.style.display="none"};
     const info=document.createElement("div"); info.className="player-card-info"; info.append(safeText("b",p.name),safeText("small",p.position+" · "+p.nationality));
-    const stats=document.createElement("div"); stats.className="player-card-stats"; ["ВР","ЗЩ","ПЗ","НП"].forEach(k=>stats.append(safeText("span",k+" "+p.skills[k])));
-    card.append(img,info,stats); grid.append(card);
+    const stats=makePlayerSkillSummary(team,p);
+    card.append(img,info,makeRelationBadge(team,p),stats); grid.append(card);
   });
   wrap.append(grid); return wrap;
 }
@@ -257,9 +291,21 @@ function openPlayerProfile(team,p,index) {
   const head=document.createElement("div");head.className="player-profile-head";head.append(portrait);
   const bio=document.createElement("div");bio.append(safeText("h2",p.name),safeText("p",team.name===" {teamName}"?state.teamName:(team.name==="{teamName}"?state.teamName:team.name),"player-team-name"));
   const nation=document.createElement("div");nation.className="player-nationality";const flag=getFlag(p.nationality);if(flag){const f=document.createElement("img");f.src=flag;f.alt="";nation.append(f);}nation.append(safeText("span",p.nationality+" · "+p.position));bio.append(nation,safeText("p","Тренер: "+(team.coach==="(имя тренера)"?state.coachName:team.coach),"muted"));head.append(bio);wrap.append(head);
+  wrap.append(makeRelationBadge(team,p));
   const stats=document.createElement("div");stats.className="skill-bars";
-  ["ВР","ЗЩ","ПЗ","НП"].forEach(k=>{const line=document.createElement("div");line.className="skill-line";line.append(safeText("span",k),safeText("b",String(p.skills[k])));const track=document.createElement("div");track.className="skill-track";const fill=document.createElement("div");fill.className="skill-fill";fill.style.width=Math.max(0,Math.min(100,p.skills[k]))+"%";track.append(fill);line.append(track);stats.append(line);});
-  wrap.append(stats,safeText("p","Портреты распределены по кругу из 50 изображений. Характеристики перенесены из исходного документа.","muted"));
+  const relation=getPlayerRelation(team,p);const unlocked=getUnlockedSkills(p,relation);
+  ["ВР","ЗЩ","ПЗ","НП"].forEach(k=>{
+    const known=unlocked.includes(k);const line=document.createElement("div");line.className="skill-line"+(known?"":" skill-line-locked");
+    line.append(safeText("span",k),safeText("b",known?String(p.skills[k]):"Скрыто"));
+    if(known){const track=document.createElement("div");track.className="skill-track";const fill=document.createElement("div");fill.className="skill-fill";fill.style.width=Math.max(0,Math.min(100,p.skills[k]))+"%";track.append(fill);line.append(track);}
+    else line.append(safeText("small", "Откроется при росте отношений"));
+    stats.append(line);
+  });
+  wrap.append(stats);
+  if(relation<50)wrap.append(safeText("p","При 50% отношений откроется показатель по позиции футболиста.","muted"));
+  else if(relation<80)wrap.append(safeText("p","Новые характеристики открываются при 60%, 70% и 80% отношений.","muted"));
+  if(relation>=90)wrap.append(safeText("p","Потенциал: значения ещё не добавлены в данные футболистов.","muted"));
+  else wrap.append(safeText("p","Потенциал откроется при 90% отношений.","muted"));
   const back=document.createElement("button");back.className="back-button";back.textContent="← К составу";back.addEventListener("click",()=>openPage("players"));wrap.append(back);
   $("pageTitle").textContent=p.name;$("pageEyebrow").textContent="КАРТОЧКА ФУТБОЛИСТА";const content=$("pageContent");content.replaceChildren(wrap);
 }
