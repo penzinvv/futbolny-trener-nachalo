@@ -200,10 +200,64 @@ function playTraining(t,p,id){
  if(p.position!=="ЗЩ"&&p.position!=="ВР") actions.append(B("Выйти без награды",close));
 }
 function transfersPage(){
- const w=document.createElement("div");if(!leagueData){w.append(placeholder("Загружаю команды…"));return w} Object.entries(state.externalRosters||{}).forEach(([id,players])=>{const t=leagueData.teams.find(x=>x.id===id);if(t&&Array.isArray(players))t.players=players});
- if(state.transferTarget){const t=leagueData.teams.find(x=>x.id===state.transferTarget.team),p=t?.players.find(x=>x.name===state.transferTarget.name);if(t&&p){const relation=Number(getPlayerRelation(t,p));if(relation<50){delete state.transferTarget;saveState();alert("Для обмена нужны отношения с футболистом не ниже 50%.");}else{const panel=P("Обмен игроками","Отношения с "+p.name+": "+F(relation)+". Выбери футболиста своей команды для обмена.");const sel=document.createElement("select");sel.className="league-select";own().forEach((x,i)=>sel.add(new Option(x.name+" · "+x.position,String(i))));panel.append(sel,B("Попробовать обмен",()=>{const i=+sel.value,mine=own()[i];if(!mine||!confirm("Предложить обмен: "+mine.name+" на "+p.name+"?"))return;if(relation<70){alert("Наш футболист не хочет, и мы сами не можем согласиться на этот обмен. Налаживайте с ним отношения сами.");delete state.transferTarget;saveState();openPage("transfers");return}if(relation<90&&Math.random()>=0.5){alert(Math.random()<0.5?"Футболист отказался от обмена. Попробуйте наладить отношения ещё лучше.":"Тренер команды отказал в обмене. Налаживайте отношения с футболистом дальше.");delete state.transferTarget;saveState();openPage("transfers");return}const ut=getUserTeam(),idx=t.players.findIndex(x=>x.name===p.name);if(idx<0||!ut.players[i]){alert("Не удалось завершить обмен: состав изменился.");return}ut.players.splice(i,1);t.players.splice(idx,1);ut.players.push({...p});t.players.push({...mine});state.userRoster=ut.players;state.externalRosters[t.id]=t.players;state.transferHistory.push({team:t.id,received:p.name,given:mine.name,at:Date.now(),relation,success:true});delete state.transferTarget;saveState();alert("Обмен успешно состоялся!");openPage("transfers")},"primary"),B("Отмена",()=>{delete state.transferTarget;openPage("transfers")}));w.append(panel);return w}}
-  w.append(P("Трансферный обмен игроками","Обмен открывается при отношениях от 50%. От 50% до менее 70% — гарантированный отказ; от 70% до менее 90% — шанс согласия 50%; от 90% — обмен гарантирован."));
-  leagueData.teams.filter(t=>t.id!==getUserTeam()?.id).forEach(t=>{const p=P(t.name,t.league);t.players.forEach(x=>{const relation=Number(getPlayerRelation(t,x));const r=document.createElement("div");r.className="feature-player-row";const label=safeText("span",x.name+" · "+x.position+" · "+F(relation));const profile=B("Профиль",()=>openPlayerProfile(t,x,teamsPlayerIndex(t,x)));const exchange=B(relation<50?"Обмен закрыт — нужно 50%":relation<70?"Обмен недоступен — нужно 70%":relation<90?"Попробовать обмен (50/50)":"Обмен гарантирован",()=>{if(relation<50)return;state.transferTarget={team:t.id,name:x.name};saveState();openPage("transfers")},relation>=50?"primary":"secondary");exchange.disabled=relation<50;r.append(label,profile,exchange);p.append(r)});w.append(p)});return w
+ const w=document.createElement("div");
+ if(!leagueData){w.append(placeholder("Загружаю команды…"));return w}
+ Object.entries(state.externalRosters||{}).forEach(([id,players])=>{
+  const team=leagueData.teams.find(x=>x.id===id);
+  if(team&&Array.isArray(players))team.players=players;
+ });
+ if(state.transferTarget){
+  const team=leagueData.teams.find(x=>x.id===state.transferTarget.team);
+  const player=team?.players.find(x=>x.name===state.transferTarget.name);
+  if(team&&player){
+   const relation=Number(getPlayerRelation(team,player));
+   if(relation<50){
+    delete state.transferTarget;saveState();
+    alert("Для обмена нужны отношения с футболистом не ниже 50%.");
+   }else{
+    const panel=P("Обмен игроками","Отношения с "+player.name+": "+F(relation)+". Выбери футболиста своей команды для обмена.");
+    const select=document.createElement("select");select.className="league-select";
+    own().forEach((x,i)=>select.add(new Option(x.name+" · "+x.position,String(i))));
+    const confirmExchange=()=>{
+     const i=Number(select.value),mine=own()[i];
+     if(!mine||!confirm("Предложить обмен: "+mine.name+" на "+player.name+"?"))return;
+     if(relation<70){
+      alert("Наш футболист не хочет, и мы сами не можем согласиться на этот обмен. Налаживайте с ним отношения сами.");
+      delete state.transferTarget;saveState();openPage("transfers");return;
+     }
+     if(relation<90&&Math.random()>=0.5){
+      const reason=Math.random()<0.5?"Футболист отказался от обмена. Попробуйте наладить отношения ещё лучше.":"Тренер команды отказал в обмене. Налаживайте отношения с футболистом дальше.";
+      alert(reason);delete state.transferTarget;saveState();openPage("transfers");return;
+     }
+     const userTeam=getUserTeam(),targetIndex=team.players.findIndex(x=>x.name===player.name);
+     if(targetIndex<0||!userTeam.players[i]){alert("Не удалось завершить обмен: состав изменился.");return}
+     userTeam.players.splice(i,1);team.players.splice(targetIndex,1);
+     userTeam.players.push({...player});team.players.push({...mine});
+     state.userRoster=userTeam.players;state.externalRosters[team.id]=team.players;
+     state.transferHistory.push({team:team.id,received:player.name,given:mine.name,at:Date.now(),relation,success:true});
+     delete state.transferTarget;saveState();alert("Обмен успешно состоялся!");openPage("transfers");
+    };
+    panel.append(select,B("Попробовать обмен",confirmExchange,"primary"),B("Отмена",()=>{delete state.transferTarget;openPage("transfers")}));
+    w.append(panel);return w;
+   }
+  }
+ }
+ w.append(P("Трансферный обмен игроками","Обмен открывается при отношениях от 50%. От 50% до менее 70% — гарантированный отказ; от 70% до менее 90% — шанс согласия 50%; от 90% — обмен гарантирован."));
+ leagueData.teams.filter(t=>t.id!==getUserTeam()?.id).forEach(team=>{
+  const panel=P(team.name,team.league);
+  team.players.forEach(player=>{
+   const relation=Number(getPlayerRelation(team,player));
+   const row=document.createElement("div");row.className="feature-player-row";
+   const label=safeText("span",player.name+" · "+player.position+" · "+F(relation));
+   const profile=B("Профиль",()=>openPlayerProfile(team,player,teamsPlayerIndex(team,player)));
+   const exchangeLabel=relation<50?"Обмен закрыт — нужно 50%":relation<70?"Обмен недоступен — нужно 70%":relation<90?"Попробовать обмен (50/50)":"Обмен гарантирован";
+   const exchange=B(exchangeLabel,()=>{if(relation<50)return;state.transferTarget={team:team.id,name:player.name};saveState();openPage("transfers")},relation>=50?"primary":"secondary");
+   exchange.disabled=relation<50;
+   row.append(label,profile,exchange);panel.append(row);
+  });
+  w.append(panel);
+ });
+ return w;
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
 })();
