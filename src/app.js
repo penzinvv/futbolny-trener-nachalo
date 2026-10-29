@@ -795,6 +795,10 @@ function chooseAttackingSide(session){
  const homeP=power(home),awayP=power(away);
  return Math.random()<(homeP/(homeP+awayP||1))?"home":"away";
 }
+function isImportantMatchEvent(event){return Boolean(event&&(event.type==="goal"||event.card==="yellow"||event.card==="red"||event.type==="injury"||event.injury));}
+function getEventTeamSide(event){return event?.type==="goal"?(event.scoringSide||event.side):event?.side||null;}
+function deriveMatchStats(session){const events=session.events||[],stats={home:{shots:0,onTarget:0,possessionMinutes:0},away:{shots:0,onTarget:0,possessionMinutes:0}};const minutes=Math.max(1,Math.min(20,Number(session.minute)||20)),hp=Number(session.matchStats?.home?.possessionMinutes)||0,ap=Number(session.matchStats?.away?.possessionMinutes)||0,total=hp+ap||1;stats.home.possessionMinutes=Math.round(minutes*hp/total);stats.away.possessionMinutes=minutes-stats.home.possessionMinutes;events.forEach(e=>{const side=getEventTeamSide(e);if(!stats[side])return;if(e.shot===true||["goal","save","chance","penalty"].includes(e.type))stats[side].shots++;if(e.onTarget===true||["goal","save"].includes(e.type))stats[side].onTarget++;});["home","away"].forEach(side=>{const goals=events.filter(e=>e.type==="goal"&&getEventTeamSide(e)===side).length;stats[side].shots=Math.max(stats[side].shots,goals);stats[side].onTarget=Math.max(stats[side].onTarget,goals);});return stats;}
+function applyPostMatchSkillGrowth(session,ownSide,result){if(result.skillGrowth)return result.skillGrowth;const team=getUserTeam();if(!team)return {changes:[]};const active=(session.lineups?.[ownSide]||[]).filter(e=>!e.sentOff).map(e=>e.player||e).filter(p=>p&&team.players.some(x=>(x.careerId||x.name)===(p.careerId||p.name)));const changes=[],grow=(p,reason)=>{const keys=["ВР","ЗЩ","ПЗ","НП"],skill=keys[Math.floor(Math.random()*keys.length)];p.skills=p.skills||{};const before=Number(p.skills[skill]||0),after=Math.min(100,before+1);p.skills[skill]=after;changes.push({playerName:p.name,skill,before,after,reason});};const own=ownSide==="home"?result.homeScore:result.awayScore,opp=ownSide==="home"?result.awayScore:result.homeScore;if(own>opp){const pool=[...active];for(let i=0;i<3&&pool.length;i++)grow(pool.splice(Math.floor(Math.random()*pool.length),1)[0],"Победа команды");}else if(active.length){const ratings=new Map((result.playerRatings||[]).filter(x=>x.played).map(x=>[x.playerName,Number(x.rating)||6]));const best=Math.max(...active.map(p=>ratings.get(p.name)||6)),pool=active.filter(p=>(ratings.get(p.name)||6)===best);grow(pool[Math.floor(Math.random()*pool.length)],own===opp?"Ничья":"Поражение");}result.skillGrowth=changes;return changes;}
 function createMatchEvent(session,home,away,minute){
  const side=chooseAttackingSide(session),attack=session.lineups[side].filter(x=>!x.sentOff),defSide=side==="home"?"away":"home",defence=session.lineups[defSide].filter(x=>!x.sentOff);
  const attackTeam=side==="home"?home:away,defTeam=side==="home"?away:home;
@@ -808,8 +812,8 @@ function createMatchEvent(session,home,away,minute){
  if(r<.09){
   const offender=pick(defence)||pick(attack);
   if(Math.random()<.08){
-   event={minute,text:"ПЕНАЛЬТИ! Судья указывает на точку после нарушения в штрафной.",type:"penalty",side};
-   if(Math.random()<.72&&scorer){event.text+=" "+scorer.player.name+" реализует пенальти — ГОЛ!"+(helper?" Ассист перед фолом: "+helper.player.name+".":"");event.type="goal";event.scorer=scorer.player.name;event.assist=helper?.player.name||null;session.score[side]++}
+   event={minute,text:"ПЕНАЛЬТИ! Судья указывает на точку после нарушения в штрафной.",type:"penalty",side,shot:true,onTarget:false};
+   if(Math.random()<.72&&scorer){event.text+=" "+scorer.player.name+" реализует пенальти — ГОЛ!"+(helper?" Ассист перед фолом: "+helper.player.name+".":"");event.type="goal";event.side=side;event.scoringSide=side;event.shot=true;event.onTarget=true;event.scorer=scorer.player.name;event.assist=helper?.player.name||null;session.score[side]++}
    else event.text+=" Вратарь угадывает направление удара и спасает команду!";
   }else{
    event={minute,text:"Фол: "+(offender?.player.name||"Игрок")+" нарушает правила. Судья назначает штрафной.",type:"foul",side:defSide};
@@ -825,9 +829,9 @@ function createMatchEvent(session,home,away,minute){
  }else if(r<.24){
   event={minute,text:"Опасный угловой у ворот "+matchTeamLabel(defTeam)+". Защита выносит мяч после борьбы в штрафной.",type:"corner",side};
  }else if(r<.31){
-  event={minute,text:"Опасный момент! "+(scorer?.player.name||"Игрок атаки")+" бьёт по воротам, но "+(keeper?.player.name||"вратарь")+" спасает команду.",type:"save",side};
+  event={minute,text:"Опасный момент! "+(scorer?.player.name||"Игрок атаки")+" бьёт по воротам, но "+(keeper?.player.name||"вратарь")+" спасает команду.",type:"save",side,shot:true,onTarget:true};
  }else if(r<.38){
-  event={minute,text:"Комбинация заканчивается ударом в створ — мяч проходит рядом со штангой. Опасный момент без гола.",type:"chance",side};
+  event={minute,text:"Комбинация заканчивается ударом — мяч проходит рядом со штангой. Опасный момент без гола.",type:"chance",side,shot:true,onTarget:false};
  }else if(r<.48&&scorer){
   event={minute,text:"ГОООЛ! "+scorer.player.name+" забивает за "+matchTeamLabel(attackTeam)+"!"+(helper?" Ассист: "+helper.player.name+".":""),type:"goal",scorer:scorer.player.name,assist:helper?.player.name||null,side};session.score[side]++;
  }else{
@@ -847,7 +851,7 @@ function calculateOfficialMatchRelations(session,home,away,result){
  const ownLineup=session.lineups?.[ownSide]||[];
  const allPlayers=userTeam.players||[];
  const goalsByName=new Map(),assistsByName=new Map();
- (session.events||[]).filter(e=>e.type==="goal").forEach(e=>{
+ (session.events||[]).filter(e=>e.type==="goal"&&getEventTeamSide(e)===ownSide).forEach(e=>{
   if(e.scorer)goalsByName.set(e.scorer,(goalsByName.get(e.scorer)||0)+1);
   if(e.assist)assistsByName.set(e.assist,(assistsByName.get(e.assist)||0)+1);
  });
@@ -883,12 +887,11 @@ function applyOfficialMatchResult(session,home,away){
  if(session.finished)return;
  session.finished=true;session.finishedAtDay=Number(state.gameDay)||1;
  const fixture={home,away};const result={season:Number(state.seasonNumber)||1,round:session.round,day:session.day,homeId:home.id,awayId:away.id,homeScore:session.score.home,awayScore:session.score.away,events:session.events,homeLineup:session.lineups.home,awayLineup:session.lineups.away,substitutions:session.substitutions,finished:true};
- result.stats=session.matchStats||{home:{shots:0,onTarget:0,possessionMinutes:0},away:{shots:0,onTarget:0,possessionMinutes:0}};
+ result.stats=deriveMatchStats(session);
  result.spectatorNotes=buildPostMatchSpectatorNotes(session,home,away);
  const relationshipReport=calculateOfficialMatchRelations(session,home,away,result);
  result.relationshipChanges=relationshipReport.changes;
- result.playerRatings=relationshipReport.ratings;
- state.leagueResults=state.leagueResults||{};state.leagueResults[roundFixtureKey(session.round,fixture)]=result;
+ result.playerRatings=relationshipReport.ratings;const ownSide=home.id===getUserTeam()?.id?"home":"away";result.skillGrowth=applyPostMatchSkillGrowth(session,ownSide,result);state.leagueResults=state.leagueResults||{};state.leagueResults[roundFixtureKey(session.round,fixture)]=result;
  state.lastMatchReport=result;
  ensureRoundBackgroundResults(session.round,fixture,result);
  state.careerHistory=state.careerHistory||{officialMatches:[],seasons:{}};
@@ -948,7 +951,7 @@ function renderMatchSummaryPage(){
  });lineups.append(list);
  const spectators=document.createElement("section");spectators.className="panel match-summary-panel";spectators.append(safeText("h2","Что обсуждали на трибунах"));
  (result.spectatorNotes||[]).forEach(note=>spectators.append(safeText("p","💬 "+note,"spectator-note")));
- const eventsPanel=document.createElement("section");eventsPanel.className="panel match-summary-panel";eventsPanel.append(safeText("h2","Хроника матча"));
+ const eventsPanel=document.createElement("section");eventsPanel.className="panel match-summary-panel";eventsPanel.append(safeText("h2","Важные события матча"));
  (result.events||[]).slice().reverse().forEach(e=>{const row=document.createElement("div");row.className="match-summary-event";row.append(safeText("b",e.minute+"'"),safeText("span",e.text));eventsPanel.append(row)});
  const relationPanel=document.createElement("section");relationPanel.className="panel match-summary-panel";relationPanel.append(safeText("h2","Изменения отношений"));
  if(result.relationshipChanges?.length){result.relationshipChanges.forEach(change=>{const row=document.createElement("div");row.className="match-summary-event";row.append(safeText("b",change.delta>0?"+"+change.delta.toFixed(2).replace(".",",")+" п.п.":"0 п.п."),safeText("span",change.playerName+" · "+change.before.toFixed(2).replace(".",",")+"% → "+change.after.toFixed(2).replace(".",",")+"%"+(change.played?" · играл":" · командный бонус")));relationPanel.append(row)})}
@@ -957,7 +960,7 @@ function renderMatchSummaryPage(){
  const roundPanel=document.createElement("section");roundPanel.className="panel match-summary-panel";roundPanel.append(safeText("h2","Другие результаты тура"));
  getOfficialRoundFixtures(result.round).forEach(f=>{const key=roundFixtureKey(result.round,f),r=state.leagueResults?.[key];roundPanel.append(tournamentMatchRow(result.round,f,r,f.home.id===ownId||f.away.id===ownId))});
  const actions=document.createElement("div");actions.className="match-summary-actions";actions.append(matchButton("К ТУРНИРНОЙ ТАБЛИЦЕ",()=>openPage("league"),"primary"),matchButton("ВЕРНУТЬСЯ НА ГЛАВНУЮ",()=>{$("pageView").classList.add("hidden");$("dashboard").classList.remove("hidden")},"secondary"));
- wrap.append(header,goalsPanel,statsPanel,lineups,spectators,eventsPanel,relationPanel,roundPanel,actions);return wrap;
+ wrap.append(actions,header,goalsPanel,statsPanel,lineups,spectators,eventsPanel,relationPanel,roundPanel);return wrap;
 }
 function renderMatchPage(){
  const wrap=document.createElement("div");wrap.className="official-match-view";
@@ -985,14 +988,14 @@ function renderMatchPage(){
  const eventPanel=document.createElement("section");eventPanel.className="match-events-panel panel";
  eventPanel.append(safeText("h3","ХОД МАТЧА"));
  const eventList=document.createElement("div");eventList.className="match-event-list";
- session.events.slice().reverse().forEach(ev=>{const row=document.createElement("article");row.className="match-event "+(ev.type||"play");row.append(safeText("b",ev.minute+"'"),safeText("span",ev.text));eventList.append(row)});
+ session.events.filter(isImportantMatchEvent).slice().reverse().forEach(ev=>{const row=document.createElement("article");row.className="match-event "+(ev.type||"play");row.append(safeText("b",ev.minute+"'"),safeText("span",ev.text));eventList.append(row)});
  if(!session.events.length)eventList.append(safeText("p","Свисток ещё не прозвучал. Нажми «Следующая минута», чтобы начать.","muted"));
  eventPanel.append(eventList);
  const spectators=createSpectatorPanel(session,home,away);
  body.append(eventPanel,spectators);wrap.append(body);
  if(session.halfTime&&!session.finished){
   const ht=document.createElement("section");ht.className="halftime-panel panel";ht.append(safeText("h2","ПЕРЕРЫВ — ВАЖНЫЕ МОМЕНТЫ ТАЙМА"));
-  const firstHalf=session.events.filter(e=>e.minute<=10);
+  const firstHalf=session.events.filter(e=>e.minute<=10&&isImportantMatchEvent(e));
   if(firstHalf.length){firstHalf.slice(-6).reverse().forEach(ev=>ht.append(safeText("p",ev.minute+"' · "+ev.text,"halftime-event")))}else ht.append(safeText("p","В первом тайме опасных моментов не было."));
   ht.append(safeText("p","Замены: "+session.substitutions+" из 3. Можно заменить игроков любой позиции; вышедший игрок больше не возвращается.","muted"));
   const choices=document.createElement("div");choices.className="match-substitution-list";
