@@ -447,7 +447,7 @@ function renderCabinet() {
               const reverse=leg%2===1;
               const home=reverse?pair.away:pair.home,away=reverse?pair.home:pair.away;
               const meeting=leg+1;
-              const fixtureId="S"+(state.seasonNumber||1)+"-"+activeLeague.replace(/\\s+/g,"-")+"-"+[home.id,away.id].sort().join("-")+"-"+meeting;
+              const fixtureId="S"+(state.seasonNumber||1)+"-"+activeLeague.replace(/\s+/g,"-")+"-"+[home.id,away.id].sort().join("-")+"-"+meeting;
               return {fixtureId,round:rounds.length+1,leg:leg+1,homeTeamId:home.id,homeTeamName:home.name,awayTeamId:away.id,awayTeamName:away.name,homeIsUser:Boolean(home.isUserTeam),awayIsUser:Boolean(away.isUserTeam)};
             });
             rounds.push(fixtures);
@@ -463,6 +463,7 @@ function renderCabinet() {
       const officialMatches=Array.isArray(state.careerHistory?.officialMatches)?state.careerHistory.officialMatches:[];
       const list=document.createElement("div");list.className="season-fixture-list";
       const completed=ownFixtures.filter(item=>officialMatches.some(match=>match.fixtureId===item.fixture.fixtureId)).length;
+      const firstUnplayedRound=ownFixtures.find(item=>!officialMatches.some(match=>match.fixtureId===item.fixture.fixtureId))?.round;
       const summary=document.createElement("div");summary.className="cabinet-metrics season-fixture-summary";
       [["Матчей в сезоне",String(ownFixtures.length)],["Завершено официально",String(completed)],["Осталось",String(Math.max(0,ownFixtures.length-completed))]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));summary.append(card);});
       p.append(summary);
@@ -473,7 +474,7 @@ function renderCabinet() {
         const matchup=document.createElement("div");matchup.className="season-fixture-matchup";
         matchup.append(safeText("b",fixture.homeTeamName),safeText("span","—"),safeText("b",fixture.awayTeamName));
         const result=officialMatches.find(match=>match.fixtureId===fixture.fixtureId);
-        const status=safeText("span",result?(Number(result.goalsFor||0)+":"+Number(result.goalsAgainst||0)):(round===completed+1?"Следующий":"Предстоит"));
+        const status=safeText("span",result?(Number(result.goalsFor||0)+":"+Number(result.goalsAgainst||0)):(round===firstUnplayedRound?"Следующий":"Предстоит"));
         status.className="season-fixture-status"+(result?" is-played":"");
         row.append(roundLabel,matchup,status);list.append(row);
       });
