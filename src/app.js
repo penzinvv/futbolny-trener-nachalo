@@ -1003,17 +1003,19 @@ function renderMatchPage(){
  const score=safeText("strong",session.score.home+" : "+session.score.away);score.className="match-score-number";
  const awayName=document.createElement("div");awayName.className="match-score-team";const awayLogo=teamLogoSource(away);if(awayLogo){const img=document.createElement("img");img.src=awayLogo;img.alt="";img.className="match-score-logo";awayName.append(img)}awayName.append(safeText("b",matchTeamLabel(away)));
  scoreline.append(homeName,score,awayName);header.append(scoreline,safeText("p",session.finished?"МАТЧ ЗАВЕРШЁН":session.halfTime?"ПЕРЕРЫВ · ВАЖНЫЕ МОМЕНТЫ ТАЙМА":"МИНУТА "+session.minute+" / 40","match-clock"));
- wrap.append(header);
- const pitch=renderTacticalPitch(session,home,away);wrap.append(pitch);
  const body=document.createElement("div");body.className="match-main-columns";
  const eventPanel=document.createElement("section");eventPanel.className="match-events-panel panel";
  eventPanel.append(safeText("h3","ВАЖНЫЕ МОМЕНТЫ"));
  const eventList=document.createElement("div");eventList.className="match-event-list";
  session.events.filter(isImportantMatchEvent).slice().reverse().forEach(ev=>{const row=document.createElement("article");row.className="match-event "+(ev.type||"play");row.append(safeText("b",ev.minute+"'"),safeText("span",ev.text));eventList.append(row)});
- if(!session.events.length)eventList.append(safeText("p","Свисток ещё не прозвучал. Нажми «Следующая минута», чтобы начать.","muted"));
+ if(!session.events.length)eventList.append(safeText("p","Матч ещё не начался. Нажми «НАЧАТЬ МАТЧ».","muted"));
  eventPanel.append(eventList);
  const spectators=createSpectatorPanel(session,home,away);
- body.append(eventPanel,spectators);wrap.append(body);
+ body.append(spectators);
+ const pitch=renderTacticalPitch(session,home,away);
+ const actions=document.createElement("div");actions.className="match-control-row match-control-row-top";
+ if(!session.finished&&!session.halfTime)actions.append(matchButton("▶ НАЧАТЬ МАТЧ",()=>autoAdvanceOfficialMatch(session,home,away),"primary"));
+ wrap.append(actions,header,eventPanel,pitch,body);
  if(session.halfTime&&!session.finished){
   const ht=document.createElement("section");ht.className="halftime-panel panel";ht.append(safeText("h2","ПЕРЕРЫВ — ВАЖНЫЕ МОМЕНТЫ ТАЙМА"));
   const firstHalf=session.events.filter(e=>e.minute<=20&&isImportantMatchEvent(e));
@@ -1039,7 +1041,7 @@ function renderMatchPage(){
    });
   });
   ht.append(choices,matchButton("НАЧАТЬ ВТОРОЙ ТАЙМ",()=>{session.halfTime=false;session.half=2;state.officialMatchSession=session;saveState();openPage("match")},"primary"),matchButton("АВТОМАТИЧЕСКИ СЫГРАТЬ ВТОРОЙ ТАЙМ",()=>{session.halfTime=false;session.half=2;session.autoPlaying=false;state.officialMatchSession=session;saveState();autoAdvanceOfficialMatch(session,home,away)},"secondary"));wrap.append(ht)
- }else if(!session.finished){const actions=document.createElement("div");actions.className="match-control-row";actions.append(matchButton("▶ АВТОМАТИЧЕСКИЙ ХОД",()=>autoAdvanceOfficialMatch(session,home,away),"primary"));actions.append(matchButton(session.minute===0?"СЫГРАТЬ 1 МИНУТУ":"СЛЕДУЮЩАЯ МИНУТА",()=>{if(session.autoPlaying)return;if(session.minute===0)session.events.push({minute:0,type:"play",text:"Судья даёт стартовый свисток. Начинается матч."});session.minute++;session.events.push(createMatchEvent(session,home,away,session.minute));if(session.minute===20){session.halfTime=true;session.events.push({minute:20,type:"halftime",text:"Свисток на перерыв. Тренер может разобрать ключевые эпизоды и сделать до трёх замен."})}if(session.minute>=40){session.events.push({minute:40,type:"fulltime",text:"Финальный свисток! Итоговый счёт "+session.score.home+":"+session.score.away+"."});applyOfficialMatchResult(session,home,away);return}state.officialMatchSession=session;saveState();openPage("match")},"secondary"));actions.append(matchButton("СОХРАНИТЬ И ВЕРНУТЬСЯ ПОЗЖЕ",()=>{session.autoPlaying=false;state.officialMatchSession=session;saveState();openPage("league")},"secondary"));wrap.append(actions)
+ }else if(!session.finished){/* Кнопка запуска находится над табло. */
  }else{
   wrap.append(safeText("h2","Матч завершён"),matchButton("К календарю",()=>openPage("league"),"primary"))
  }
