@@ -274,3 +274,10 @@
  .hero-manager-actions .cabinet-button b{font-size:10px}
  .hero-content{padding-right:180px}
 }
+
+/* Version 1.2.5 — portraits for free-yard recruits */
+.free-yard-player .feature-player-row{align-items:flex-start;gap:14px}
+.free-yard-portrait{width:96px;height:112px;object-fit:cover;object-position:center 22%;border-radius:10px;border:1px solid var(--line);flex:0 0 auto}
+.free-yard-player-info{display:flex;flex-direction:column;gap:4px;min-width:0}
+.free-yard-player-info h3{margin:0;font-size:16px}
+@media(max-width:520px){.free-yard-portrait{width:72px;height:86px}.free-yard-player .feature-player-row{gap:10px}}
