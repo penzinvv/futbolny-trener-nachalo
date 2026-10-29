@@ -353,3 +353,62 @@
 
 /* Версия 1.3.1 */
 .match-scoreboard{padding:10px 16px;margin-bottom:10px}.match-scoreboard .match-score-number{font-size:clamp(24px,3vw,38px)}.match-scoreboard .match-clock{margin:4px 0 0}.official-match-pitch{height:clamp(260px,34vh,390px);margin-bottom:12px}.match-main-columns{grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr);gap:14px}.compact-spectators{padding:16px;min-height:180px}.compact-spectators>p{font-size:12px;line-height:1.45}.match-lineup-slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.match-lineup-slot{display:grid;gap:5px;font-size:12px;color:var(--muted)}.match-lineup-slot select{min-width:0;width:100%}.match-lineup-status{font-size:12px;color:var(--accent)}.match-lineup-status.error-text{color:#ff9d8d}.tournament-stat-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.tournament-stat-tabs button.active{border-color:var(--accent);background:rgba(83,205,148,.13)}.league-upcoming-panel{margin-bottom:14px}@media(max-width:760px){.match-main-columns{grid-template-columns:minmax(0,1fr)}.official-match-pitch{height:300px}.match-lineup-slots{grid-template-columns:1fr}}
+
+
+/* Версия 1.3.3 — компактный экран турнира и активные профили */
+.tournament-inline-link{align-self:center;color:var(--green,#4bd58b);font-size:12px;font-weight:900;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.tournament-results-panel,.tournament-other-matches,.tournament-statistics-panel,.standings-panel,.calendar-panel{margin-bottom:14px}
+.tournament-match-row{display:grid;grid-template-columns:112px minmax(0,1fr) 76px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.tournament-match-row:last-child{border-bottom:0}
+.tournament-match-row.is-user-fixture{border-left:3px solid var(--green,#4bd58b);padding-left:9px}
+.tournament-match-meta,.tournament-match-status{font-size:11px;color:var(--muted);white-space:nowrap}
+.tournament-match-status{text-align:right}
+.tournament-match-status.is-played{color:var(--green,#4bd58b);font-weight:800}
+.tournament-matchup{display:flex;align-items:center;justify-content:center;gap:9px;min-width:0}
+.tournament-matchup>b{font-size:15px;white-space:nowrap}
+.tournament-team-link{display:inline-flex;align-items:center;gap:6px;min-width:0;padding:2px 3px;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.tournament-team-link:hover .tournament-team-link span,.tournament-player-link:hover{text-decoration:underline;text-underline-offset:3px;color:var(--green,#4bd58b)}
+.tournament-team-link span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:800}
+.tournament-team-logo{width:30px;height:30px;flex:0 0 30px;object-fit:contain;border-radius:6px;background:rgba(255,255,255,.04)}
+.tournament-play-button{margin-top:12px}
+.tournament-round-details{border-bottom:1px solid var(--line)}
+.tournament-round-details>summary{padding:12px 2px;color:var(--text);font-weight:800;cursor:pointer}
+.tournament-round-list{padding:0 8px 8px}
+.tournament-stat-body{display:grid;gap:0}
+.tournament-stat-row{display:grid;grid-template-columns:42px minmax(100px,1fr) 30px minmax(70px,auto);gap:9px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.tournament-stat-portrait{width:40px;height:44px;object-fit:cover;object-position:center 20%;border-radius:8px;background:#102b20}
+.tournament-player-link{justify-self:start;padding:3px 0;border:0;background:transparent;color:var(--text);font:inherit;font-size:13px;font-weight:800;text-align:left;cursor:pointer}
+.tournament-stat-team{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tournament-stat-row>b{font-size:12px;text-align:right;white-space:nowrap}
+.tournament-stat-row .tournament-team-logo{width:28px;height:28px;flex-basis:28px}
+.league-standing-team{min-width:0;display:flex;align-items:center;overflow:hidden}
+.league-standing-team .tournament-team-link{width:100%;min-width:0}
+.league-standing-team .tournament-team-link span{white-space:nowrap}
+.league-table-row{grid-template-columns:24px minmax(140px,1fr) repeat(4,25px) 48px 28px}
+.league-table-row .league-standing-team{grid-column:auto}
+.league-table-row:not(.league-table-head) .league-standing-team{grid-column:auto}
+.league-table-head span:nth-child(2){text-align:left}
+.season-calendar-day{cursor:pointer;font:inherit;color:inherit}
+.season-calendar-day.selected-round-day{outline:2px solid var(--green,#4bd58b);outline-offset:-2px;background:rgba(75,213,139,.16)}
+.tournament-selected-round{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02)}
+.tournament-selected-round>h3{margin:0 0 8px}
+.coach-profile-logo{width:58px;height:58px;margin-right:14px}
+@media(max-width:700px){
+ .tournament-match-row{grid-template-columns:1fr auto;gap:5px 8px}
+ .tournament-match-meta{grid-column:1/-1}
+ .tournament-matchup{justify-content:space-between;gap:4px}
+ .tournament-matchup .tournament-team-link{flex:1;min-width:0}
+ .tournament-matchup .tournament-team-link:last-child{justify-content:flex-end;text-align:right}
+ .tournament-match-status{grid-column:2;grid-row:2}
+ .tournament-team-link span{font-size:10px}
+ .tournament-team-logo{width:24px;height:24px;flex-basis:24px}
+ .tournament-stat-row{grid-template-columns:36px minmax(80px,1fr) 25px minmax(55px,auto);gap:6px}
+ .tournament-stat-portrait{width:34px;height:38px}
+ .tournament-stat-row .tournament-team-logo{width:23px;height:23px;flex-basis:23px}
+ .tournament-player-link{font-size:12px}
+ .tournament-stat-team{font-size:10px}
+ .league-table-row{grid-template-columns:22px minmax(115px,1fr) repeat(4,21px) 42px 24px;gap:3px;padding:9px 5px;font-size:10px}
+ .league-standing-team .tournament-team-link{gap:4px}
+ .league-standing-team .tournament-team-link span{font-size:10px}
+ .league-standing-team .tournament-team-logo{width:22px;height:22px;flex-basis:22px}
+}
