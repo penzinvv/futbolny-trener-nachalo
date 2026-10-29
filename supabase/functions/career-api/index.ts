@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
       if (team) {
         const { data: history, error: historyError } = await admin.from("player_team_history").select("player_id").eq("team_id", team.id).is("left_at", null);
         if (historyError) throw historyError;
-        const ids = (history || []).map((x: {player_id:string}) => x.player_id);
+        const ids = (history || []).map((x: { player_id: string }) => x.player_id);
         if (ids.length) {
           const { data: players, error: playersError } = await admin.from("players").select("*").in("id", ids);
           if (playersError) throw playersError;
@@ -58,9 +58,15 @@ Deno.serve(async (req: Request) => {
     if (payload?.action !== "bootstrap") return respond({ ok: false, error: "Unsupported action" }, 400);
     const coachName = String(payload.coachName || "").trim().slice(0, 40);
     const teamName = String(payload.teamName || "").trim().slice(0, 60);
-    const inputRoster = Array.isArray(payload.roster) ? payload.roster.slice(0, 10) : [];
     if (!coachName || !teamName) return respond({ ok: false, error: "Coach and team names are required" }, 400);
-    if (!inputRoster.length) return respond({ ok: false, error: "At least one roster player is required" }, 400);
+    if (!Array.isArray(payload.roster) || payload.roster.length !== 10) {
+      return respond({ ok: false, error: "The initial roster must contain exactly 10 players" }, 400);
+    }
+    const inputRoster = payload.roster;
+    const names = inputRoster.map((p: any) => String(p?.name || "").trim());
+    if (names.some((name: string) => !name) || new Set(names.map((name: string) => name.toLocaleLowerCase())).size !== names.length) {
+      return respond({ ok: false, error: "All 10 roster players must have unique, non-empty names" }, 400);
+    }
 
     const { data: season, error: seasonError } = await admin.from("seasons").upsert({
       season_number: 1, name: "Сезон 1", status: "active"
@@ -96,20 +102,28 @@ Deno.serve(async (req: Request) => {
     const rosterIds: string[] = [];
     for (let i = 0; i < inputRoster.length; i++) {
       const p = inputRoster[i] || {};
-      const sourceKey = String(p.careerId || "").trim();
+      const suppliedKey = String(p.careerId || "").trim();
+      // Scope the static league identity to this authenticated coach. One user's bootstrap
+      // must never mutate another user's player record.
+      const sourceKey = suppliedKey ? userId + ":" + suppliedKey : userId + ":starter:" + i;
       const name = String(p.name || "").trim().slice(0, 60);
       const position = ["ВР", "ЗЩ", "ПЗ", "НП"].includes(p.position) ? p.position : null;
-      if (!name) continue;
-      const skills = p.skills && typeof p.skills === "object" ? p.skills : {};
-      let player: any = null;
-      if (sourceKey) {
-        const { data, error } = await admin.from("players").select("*").eq("source_player_key", sourceKey).maybeSingle();
-        if (error) throw error;
-        player = data;
+      const incoming = p.skills && typeof p.skills === "object" && !Array.isArray(p.skills) ? p.skills : {};
+      const skills: Record<string, number> = {};
+      for (const key of ["ВР", "ЗЩ", "ПЗ", "НП"]) {
+        const value = Number(incoming[key] ?? 0);
+        if (!Number.isFinite(value) || value < 0 || value > 100) {
+          return respond({ ok: false, error: "Player skills must be numbers from 0 to 100" }, 400);
+        }
+        skills[key] = Math.round(value);
       }
+      let player: any = null;
+      const { data: found, error: findError } = await admin.from("players").select("*").eq("source_player_key", sourceKey).maybeSingle();
+      if (findError) throw findError;
+      player = found;
       if (!player) {
         const { data, error } = await admin.from("players").insert({
-          source_player_key: sourceKey || null, display_name: name, position,
+          source_player_key: sourceKey, display_name: name, position,
           nationality: String(p.nationality || "").slice(0, 40) || null,
           skills, debut_season_id: season.id
         }).select("*").single();
@@ -130,7 +144,7 @@ Deno.serve(async (req: Request) => {
         const { error } = await admin.from("player_team_history").insert({ player_id: player.id, team_id: team.id });
         if (error) throw error;
       } else if (activeLink.team_id !== team.id) {
-        // A player with an active club remains assigned to that club; bootstrap must not silently transfer them.
+        return respond({ ok: false, error: "A roster player is already assigned to another active team; no transfer was performed." }, 409);
       }
     }
 
@@ -139,14 +153,17 @@ Deno.serve(async (req: Request) => {
     if (!activeCoachLink) {
       const { error } = await admin.from("coach_team_history").insert({ coach_id: coach.id, team_id: team.id });
       if (error) throw error;
+    } else if (activeCoachLink.team_id !== team.id) {
+      return respond({ ok: false, error: "Coach already has an active team; no transfer was performed." }, 409);
     }
-    const { data: coachStats, error: coachStatsError } = await admin.from("coach_season_stats").upsert({
+
+    const { error: coachStatsError } = await admin.from("coach_season_stats").upsert({
       coach_id: coach.id, season_id: season.id, team_id: team.id
-    }, { onConflict: "coach_id,season_id,team_id", ignoreDuplicates: true }).select("*");
+    }, { onConflict: "coach_id,season_id,team_id", ignoreDuplicates: true });
     if (coachStatsError) throw coachStatsError;
-    const { data: teamStats, error: teamStatsError } = await admin.from("team_season_stats").upsert({
+    const { error: teamStatsError } = await admin.from("team_season_stats").upsert({
       team_id: team.id, season_id: season.id
-    }, { onConflict: "team_id,season_id", ignoreDuplicates: true }).select("*");
+    }, { onConflict: "team_id,season_id", ignoreDuplicates: true });
     if (teamStatsError) throw teamStatsError;
 
     return respond({ ok: true, initialized: true, coach, team, season, rosterPlayerIds: rosterIds, rosterCount: rosterIds.length });
