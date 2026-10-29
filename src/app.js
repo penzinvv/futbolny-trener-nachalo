@@ -6,7 +6,7 @@ const defaultState = {
 };
 let state = loadState();
 let leagueData = null;
-fetch("/data/league.json").then(r => { if (!r.ok) throw new Error("Не удалось загрузить данные лиги"); return r.json(); }).then(data => { leagueData = data; if (state.coachName && state.teamName) render(); }).catch(err => console.error(err));
+fetch("/data/league.json").then(r => { if (!r.ok) throw new Error("Не удалось загрузить данные лиги"); return r.json(); }).then(data => { leagueData = data; if (state.coachName && state.teamName) render(); if (!$("pageView")?.classList.contains("hidden") && $("pageTitle")?.textContent === "Тренировка") openPage("training"); }).catch(err => console.error(err));
 
 const $ = (id) => document.getElementById(id);
 function loadState() {
@@ -177,14 +177,22 @@ function render() {
 
 /* Фоновая музыка: случайный порядок без повторов до конца текущего круга.
    Браузеры требуют первого нажатия пользователя перед воспроизведением со звуком. */
-const musicTracks = [
-  "/music/footmusic1.mp3",
-  "/music/footmusic2.mp3",
-  "/music/footmusic3.mp3",
-  "/music/footmusic4.mp3",
-  "/music/footmusic5.mp3",
-  "/music/footmusic6.mp3"
-];
+let musicTracks = ["/music/footmusic1.mp3","/music/footmusic2.mp3","/music/footmusic3.mp3","/music/footmusic4.mp3","/music/footmusic5.mp3","/music/footmusic6.mp3","/music/footmusic7.mp3","/music/footmusic8.mp3"];
+let musicTracksLoaded = false;
+async function loadMusicTracksFromGitHub() {
+  if (musicTracksLoaded) return;
+  musicTracksLoaded = true;
+  try {
+    const response = await fetch("https://api.github.com/repos/penzinvv/futbolny-trener-nachalo/contents/music?ref=main");
+    if (!response.ok) throw new Error("GitHub music listing unavailable");
+    const files = await response.json();
+    const tracks = files.filter(file => file.type === "file" && /\.mp3$/i.test(file.name))
+      .map(file => "/music/" + encodeURIComponent(file.name));
+    if (tracks.length) musicTracks = tracks;
+  } catch (error) {
+    console.warn("Не удалось обновить список музыки из GitHub; используется встроенный список.", error);
+  }
+}
 const musicPlayer = $("backgroundMusic");
 const musicToggle = $("musicToggle");
 let shuffledTracks = [];
@@ -207,6 +215,7 @@ function shuffleTracks() {
 
 async function playNextTrack() {
   if (!musicEnabled) return;
+  await loadMusicTracksFromGitHub();
   if (currentTrackIndex + 1 >= shuffledTracks.length) shuffleTracks();
   currentTrackIndex += 1;
   musicPlayer.src = shuffledTracks[currentTrackIndex];
@@ -280,7 +289,8 @@ const pages = {
   training: {title:"Тренировка", eyebrow:"РАЗВИТИЕ", render: renderTraining},
   upbringing: {title:"Воспитание", eyebrow:"ОТНОШЕНИЯ", render: renderUpbringing},
   league: {title:"Лиги и команды", eyebrow:"СОРЕВНОВАНИЯ", render: renderLeague},
-  goals: {title:"Цели тренера", eyebrow:"ПРОГРЕСС", render: () => placeholder("Система уникальных и периодических целей будет добавлена после согласования чисел и списка целей.")}
+  goals: {title:"Цели тренера", eyebrow:"ПРОГРЕСС", render: () => placeholder("Система уникальных и периодических целей будет добавлена после согласования чисел и списка целей.")},
+  ratings: {title:"Онлайн рейтинги", eyebrow:"РЕЙТИНГИ ТРЕНЕРОВ", render: () => placeholder("Раздел онлайн-рейтингов подготовлен. Правила постоянного и сезонного рейтинга будут проработаны отдельно.")}
 };
 
 function renderCabinet() {
