@@ -327,7 +327,7 @@ function renderCabinet() {
         p.append(safeText("p","Отношения сейчас не повышаются автоматически. Когда будут согласованы игровые действия воспитания, здесь появятся реальные способы их улучшать.","muted"));
       }
     } else if(key==="stats"){
-      p=panel("Статистика команды","Сводка по текущему составу, развитию игроков и отношениям. Официальные игровые показатели появятся после подключения сохранения матчей.");
+      p=panel("Статистика команды","Состав, развитие, отношения и результаты официальных матчей текущего сезона. Матчи и статистика пока сохраняются локально в этом браузере; облачный архив ещё не подключён.");
       const positions=["ВР","ЗЩ","ПЗ","НП"];
       const grid=document.createElement("div");grid.className="cabinet-metrics team-stat-metrics";
       const avgRelation=roster.length?Math.round(roster.reduce((sum,player)=>sum+getPlayerRelation(team,player),0)/roster.length):0;
@@ -367,9 +367,9 @@ function renderCabinet() {
         });
       } else visibleSection.append(placeholder("Профильные характеристики пока скрыты. Повышай отношения с футболистами, чтобы открыть их."));
       p.append(visibleSection);
-      const matches=Array.isArray(state.careerHistory?.officialMatches)?state.careerHistory.officialMatches:[];
+      const matches=Object.values(state.leagueResults||{}).filter(match=>Number(match.season||state.seasonNumber)===Number(state.seasonNumber||1)&&(match.homeId===team.id||match.awayId===team.id));
       const matchGrid=document.createElement("div");matchGrid.className="cabinet-metrics team-stat-metrics";
-      const officialTotals=matches.reduce((acc,match)=>{acc.played++;acc.wins+=match.result==="W"?1:0;acc.draws+=match.result==="D"?1:0;acc.losses+=match.result==="L"?1:0;acc.gf+=Number(match.goalsFor||0);acc.ga+=Number(match.goalsAgainst||0);return acc;},{played:0,wins:0,draws:0,losses:0,gf:0,ga:0});
+      const officialTotals=matches.reduce((acc,match)=>{const home=match.homeId===team.id,forUs=home?Number(match.homeScore||0):Number(match.awayScore||0),againstUs=home?Number(match.awayScore||0):Number(match.homeScore||0);acc.played++;acc.wins+=forUs>againstUs?1:0;acc.draws+=forUs===againstUs?1:0;acc.losses+=forUs<againstUs?1:0;acc.gf+=forUs;acc.ga+=againstUs;return acc;},{played:0,wins:0,draws:0,losses:0,gf:0,ga:0});
       [["Официальные матчи",String(officialTotals.played)],["Победы / ничьи / поражения",officialTotals.wins+" / "+officialTotals.draws+" / "+officialTotals.losses],["Забито / пропущено",officialTotals.gf+" / "+officialTotals.ga]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));matchGrid.append(card);});
       const matchSection=document.createElement("section");matchSection.className="team-stat-section";matchSection.append(safeText("h3","Результаты матчей"),matchGrid,safeText("p","В официальную статистику входят только завершённые официальные матчи. Тестовые матчи не учитываются.","muted"));
       p.append(matchSection);
@@ -502,7 +502,7 @@ function renderCabinet() {
       const totals=officialMatches.reduce((a,m)=>{a.played++;a.wins+=m.result==="W"?1:0;a.draws+=m.result==="D"?1:0;a.losses+=m.result==="L"?1:0;a.gf+=Number(m.goalsFor||0);a.ga+=Number(m.goalsAgainst||0);return a;},{played:0,wins:0,draws:0,losses:0,gf:0,ga:0});
       [["Текущий сезон","Сезон "+(state.seasonNumber||1)],["Официальные матчи",String(totals.played)],["Победы / ничьи / поражения",totals.wins+" / "+totals.draws+" / "+totals.losses],["Забито / пропущено",totals.gf+" / "+totals.ga],["Опыт аккаунта",(state.xp||0)+" XP"],["Постоянный рейтинг",String(state.permanentRating||0)],["ID тренера",(state.careerCoachId||"не создан").slice(0,8)],["ID команды",(state.careerTeamId||"не создан").slice(0,8)]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));grid.append(card);});
       p.append(grid);
-      const note=safeText("p","Важно: тестовые матчи на странице «Тестовая игра» не попадают в официальную статистику. Сейчас результаты официальных матчей ещё не подключены к серверному архиву, поэтому показатели останутся нулевыми, пока не будет подключён защищённый серверный протокол.","muted");
+      const note=safeText("p","Тестовые матчи не попадают в официальную статистику. Результаты официальных матчей и текущая статистика сохраняются локально в этом браузере; защищённый серверный архив карьеры ещё не подключён.","muted");
       p.append(note);
       const seasons=Object.values(history.seasons||{}).sort((a,b)=>(a.seasonNumber||0)-(b.seasonNumber||0));
       if(seasons.length){const list=document.createElement("div");list.className="cabinet-roster";seasons.forEach(season=>{const row=document.createElement("div");row.className="cabinet-roster-row";row.append(safeText("b","Сезон "+season.seasonNumber),safeText("span",(season.teamName||state.teamName)+" · место: "+(season.finalPlace??"—")+" · матчи: "+(season.played||0)));list.append(row);});p.append(list);}
@@ -888,7 +888,7 @@ function applyOfficialMatchResult(session,home,away){
  ensureRoundBackgroundResults(session.round,fixture,result);
  state.careerHistory=state.careerHistory||{officialMatches:[],seasons:{}};
  state.careerHistory.officialMatches=Array.isArray(state.careerHistory.officialMatches)?state.careerHistory.officialMatches:[];
- state.careerHistory.officialMatches.push({season:result.season,round:result.round,day:result.day,homeId:home.id,awayId:away.id,homeScore:result.homeScore,awayScore:result.awayScore,events:result.events,substitutions:result.substitutions});
+ state.careerHistory.officialMatches.push({season:result.season,round:result.round,day:result.day,homeId:home.id,awayId:away.id,homeScore:result.homeScore,awayScore:result.awayScore,goalsFor:home.id===getUserTeam()?.id?result.homeScore:result.awayScore,goalsAgainst:home.id===getUserTeam()?.id?result.awayScore:result.homeScore,result:((home.id===getUserTeam()?.id?result.homeScore-result.awayScore:result.awayScore-result.homeScore)>0)?"W":(result.homeScore===result.awayScore?"D":"L"),events:result.events,substitutions:result.substitutions});
  state.officialMatchSession=null;saveState();render();openPage("league");
 }
 function renderMatchPage(){
