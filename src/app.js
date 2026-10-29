@@ -739,21 +739,33 @@ function renderCabinet() {
           teams.push(userRow);
         }
         const playedByTeam=new Map();
-        const officialMatches=Array.isArray(state.careerHistory?.officialMatches)?state.careerHistory.officialMatches:[];
-        officialMatches.forEach(match=>{
-          const opponentId=match.opponentTeamId||match.opponentId;
-          if(!opponentId)return;
-          const ownId=team?.id||state.careerTeamId;
-          const goalsFor=Number(match.goalsFor||0),goalsAgainst=Number(match.goalsAgainst||0);
-          const own=playedByTeam.get(ownId)||{played:0,wins:0,draws:0,losses:0,gf:0,ga:0,points:0};
-          const opponent=playedByTeam.get(opponentId)||{played:0,wins:0,draws:0,losses:0,gf:0,ga:0,points:0};
-          own.played++;own.gf+=goalsFor;own.ga+=goalsAgainst;
-          opponent.played++;opponent.gf+=goalsAgainst;opponent.ga+=goalsFor;
-          if(goalsFor>goalsAgainst){own.wins++;own.points+=3;opponent.losses++;}
-          else if(goalsFor<goalsAgainst){own.losses++;opponent.wins++;opponent.points+=3;}
-          else{own.draws++;opponent.draws++;own.points++;opponent.points++;}
-          playedByTeam.set(ownId,own);playedByTeam.set(opponentId,opponent);
+        const leagueResults=(Array.isArray(state.leagueMatchResults)?state.leagueMatchResults:[])
+          .filter(match=>match.league===leagueName&&Number(match.seasonNumber)===Number(state.seasonNumber||1));
+        const addTeamResult=(teamId,gf,ga)=>{
+          const id=String(teamId);
+          const stats=playedByTeam.get(id)||{played:0,wins:0,draws:0,losses:0,gf:0,ga:0,points:0};
+          stats.played++;stats.gf+=gf;stats.ga+=ga;
+          if(gf>ga){stats.wins++;stats.points+=3;}
+          else if(gf<ga){stats.losses++;}
+          else{stats.draws++;stats.points++;}
+          playedByTeam.set(id,stats);
+        };
+        leagueResults.forEach(match=>{
+          addTeamResult(match.homeTeamId,Number(match.homeGoals||0),Number(match.awayGoals||0));
+          addTeamResult(match.awayTeamId,Number(match.awayGoals||0),Number(match.homeGoals||0));
         });
+        // Поддержка старых локальных сохранений, созданных до общего протокола лиги.
+        if(!leagueResults.length){
+          const officialMatches=Array.isArray(state.careerHistory?.officialMatches)?state.careerHistory.officialMatches:[];
+          officialMatches.filter(match=>!match.league||match.league===leagueName).forEach(match=>{
+            const opponentId=match.opponentTeamId||match.opponentId;
+            if(!opponentId)return;
+            const ownId=String(team?.id||state.careerTeamId);
+            const goalsFor=Number(match.goalsFor||0),goalsAgainst=Number(match.goalsAgainst||0);
+            addTeamResult(ownId,goalsFor,goalsAgainst);
+            addTeamResult(opponentId,goalsAgainst,goalsFor);
+          });
+        }
         const rows=teams.map(item=>{const stats=playedByTeam.get(item.id)||{played:0,wins:0,draws:0,losses:0,gf:0,ga:0,points:0};return {...item,...stats,diff:stats.gf-stats.ga};});
         rows.sort((x,y)=>y.points-x.points||y.diff-x.diff||y.gf-x.gf||x.name.localeCompare(y.name,"ru"));
         tbody.replaceChildren();
@@ -1105,16 +1117,15 @@ function openPlayerProfile(team,p,index) {
         .filter(record=>(record.players||[]).some(item=>item.playerKey===playerKey))
         .sort((a,b)=>Number(b.seasonNumber||0)-Number(a.seasonNumber||0)||Number(b.gameDay||0)-Number(a.gameDay||0));
       if(!history.length){
-        body.append(placeholder("После первых тестовых матчей здесь появятся оценки футболиста. Официальная история матчей и наград ещё не подключена."));
+        body.append(placeholder("После первых официальных матчей здесь появятся оценки футболиста."));
       }else{
-        const testNote=safeText("p","Тестовые оценки прототипа. Они сохраняются локально для проверки баланса, не являются официальной статистикой и пока не дают наград.","muted");
-        body.append(testNote);
+        body.append(safeText("p","Оценки из локальной карьеры. Официальные результаты матчей сохраняются в этом браузере; серверная синхронизация ещё не подключена.","muted"));
         history.slice(0,10).forEach(record=>{
           const item=(record.players||[]).find(entry=>entry.playerKey===playerKey);
           if(!item)return;
           const row=document.createElement("article");row.className="career-rating-row";
           const meta=document.createElement("div");meta.className="career-rating-meta";
-          meta.append(safeText("b","Сезон "+record.seasonNumber+" · Тур "+record.round),safeText("span","День "+record.gameDay+" · "+record.homeName+" "+record.homeGoals+":"+record.awayGoals+" "+record.awayName));
+          meta.append(safeText("b","Сезон "+record.seasonNumber+" · Тур "+record.round),safeText("span","День "+record.gameDay+" · "+record.homeName+" "+record.homeGoals+":"+record.awayGoals+" "+record.awayName+" · "+(record.recordType==="official"?"официальный протокол":"тестовая запись")));
           const score=safeText("strong",Number(item.rating).toFixed(1));score.className="match-rating-score";
           const actions=[];if(item.goals)actions.push("Голы "+item.goals);if(item.assists)actions.push("Ассисты "+item.assists);if(item.saves)actions.push("Сейвы "+item.saves);if(item.tackles)actions.push("Отборы "+item.tackles);if(item.keyPasses)actions.push("Ключевые передачи "+item.keyPasses);
           row.append(meta,score);
@@ -1123,7 +1134,19 @@ function openPlayerProfile(team,p,index) {
         });
       }
       body.append(safeText("h3","Награды"));
-      body.append(placeholder("Награды будут выдаваться после подключения официальных протоколов всех матчей лиги. Тестовые оценки не участвуют в выборе победителей."));
+      const awards=(Array.isArray(state.playerAwards)?state.playerAwards:[]).filter(award=>award.playerKey===playerKey).sort((a,b)=>Number(b.seasonNumber||0)-Number(a.seasonNumber||0)||Number(b.periodNumber||0)-Number(a.periodNumber||0));
+      if(!awards.length)body.append(placeholder("Пока нет индивидуальных наград. «Игрок месяца» определяется после 5-го, 10-го, 15-го и 20-го тура по средней оценке за соответствующий блок."));
+      else{
+        const awardGrid=document.createElement("div");awardGrid.className="player-awards-grid";
+        awards.forEach(award=>{
+          const card=document.createElement("article");card.className="player-award-card";
+          const img=document.createElement("img");img.src=award.icon||"/images/awards/awardbestplayermonth.jpg";img.alt=award.title||"Награда";img.loading="lazy";img.onerror=()=>img.remove();
+          const details=document.createElement("div");details.className="player-award-details";
+          details.append(safeText("b",award.title||"Игрок месяца"),safeText("span","Сезон "+award.seasonNumber+" · период "+award.periodNumber),safeText("span","Средняя оценка "+Number(award.averageRating||0).toFixed(2)+" · матчей "+award.appearances));
+          card.append(img,details);awardGrid.append(card);
+        });
+        body.append(awardGrid);
+      }
     }
   };
   tabItems.forEach(([key,label])=>{const b=document.createElement("button");b.type="button";b.className="player-profile-tab";b.dataset.tab=key;b.setAttribute("role","tab");b.textContent=label;b.addEventListener("click",()=>renderTab(key));tabs.append(b);});
