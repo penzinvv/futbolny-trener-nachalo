@@ -967,7 +967,7 @@ function renderMatchSummaryPage(){
  const roundPanel=document.createElement("section");roundPanel.className="panel match-summary-panel";roundPanel.append(safeText("h2","Другие результаты тура"));
  getOfficialRoundFixtures(result.round).forEach(f=>{const key=roundFixtureKey(result.round,f),r=state.leagueResults?.[key];roundPanel.append(tournamentMatchRow(result.round,f,r,f.home.id===ownId||f.away.id===ownId))});
  const actions=document.createElement("div");actions.className="match-summary-actions";actions.append(matchButton("К ТУРНИРНОЙ ТАБЛИЦЕ",()=>openPage("league"),"primary"),matchButton("ВЕРНУТЬСЯ НА ГЛАВНУЮ",()=>{$("pageView").classList.add("hidden");$("dashboard").classList.remove("hidden")},"secondary"));
- wrap.append(actions,header,goalsPanel,statsPanel,lineups,spectators,eventsPanel,relationPanel,growthPanel,roundPanel);return wrap;
+ wrap.append(actions,roundPanel,header,goalsPanel,statsPanel,lineups,spectators,eventsPanel,relationPanel,growthPanel);return wrap;
 }
 function renderMatchPage(){
  const wrap=document.createElement("div");wrap.className="official-match-view";
@@ -993,7 +993,7 @@ function renderMatchPage(){
  const pitch=renderTacticalPitch(session,home,away);wrap.append(pitch);
  const body=document.createElement("div");body.className="match-main-columns";
  const eventPanel=document.createElement("section");eventPanel.className="match-events-panel panel";
- eventPanel.append(safeText("h3","ХОД МАТЧА"));
+ eventPanel.append(safeText("h3","ВАЖНЫЕ МОМЕНТЫ"));
  const eventList=document.createElement("div");eventList.className="match-event-list";
  session.events.filter(isImportantMatchEvent).slice().reverse().forEach(ev=>{const row=document.createElement("article");row.className="match-event "+(ev.type||"play");row.append(safeText("b",ev.minute+"'"),safeText("span",ev.text));eventList.append(row)});
  if(!session.events.length)eventList.append(safeText("p","Свисток ещё не прозвучал. Нажми «Следующая минута», чтобы начать.","muted"));
