@@ -399,8 +399,9 @@ function calculatePlayerMatchRating(item,teamGoalsAgainst,teamResult){
   if(teamResult==="W")score+=0.45;
   else if(teamResult==="L")score-=0.35;
   if(position==="ВР"){
-    score+=Math.min(2.0,item.saves*0.45);
-    score-=teamGoalsAgainst*0.4;
+    // Сейвы должны заметно вознаграждать вратаря даже при поражении команды.
+    score+=Math.min(3.0,item.saves*0.45);
+    score-=teamGoalsAgainst*0.25;
   }else if(position==="ЗЩ"){
     score+=Math.min(1.6,item.tackles*0.25);
     score-=item.errors*0.8;
@@ -418,8 +419,7 @@ function calculatePlayerMatchRating(item,teamGoalsAgainst,teamResult){
   }else{
     score+=item.goals*0.8+item.assists*0.6;
   }
-  // Незначительный разброс отражает действия, не вынесенные в отдельную статистику прототипа.
-  score+=(Math.random()-0.5)*0.5;
+  // Оценка по зафиксированным действиям детерминирована: случайный шум не влияет на награды.
   return Math.round(clampMatchValue(score,1,10)*10)/10;
 }
 function simulateFixturePreview(fixture){
