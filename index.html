@@ -39,11 +39,12 @@
           <div class="team-heading"><span id="teamEmblem" class="team-emblem"><img src="/images/avatarteam/avatarteam1.jpg" alt="Логотип команды"></span><div><h1 id="teamName">Дворовые</h1><p>Начинаем путь с нуля</p></div></div>
           <div class="hero-stats">
             <div><small>ИГРОВАЯ ДАТА</small><b id="gameDate">День 1</b></div>
-            <div><small>СЛЕДУЮЩИЙ МАТЧ</small><b>Пока не назначен</b></div>
+            <div><small>СЛЕДУЮЩИЙ МАТЧ</small><b id="nextMatchDate">День 7</b></div>
             <div><small>СОСТАВ</small><b><span id="rosterCount">0</span> / 10</b></div>
           </div>
         </div>
-        <div class="hero-manager-actions"><button id="openCabinet" class="cabinet-button" type="button" aria-label="Кабинет тренера"><img class="cabinet-button-image" src="/images/key/kabinettrenera.jpg" alt="Кабинет тренера"><b>КАБИНЕТ</b></button></div>
+        <div id="dayEventNotice" class="day-event-notice hidden" role="status" aria-live="polite"></div>
+        <div class="hero-manager-actions"><button id="skipDayButton" class="skip-day-button" type="button" disabled>ПРОПУСТИТЬ ДЕНЬ</button><button id="openCabinet" class="cabinet-button" type="button" aria-label="Кабинет тренера"><img class="cabinet-button-image" src="/images/key/kabinettrenera.jpg" alt="Кабинет тренера"><b>КАБИНЕТ</b></button></div>
       </div>
 
       <div class="stat-grid">
