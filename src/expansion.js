@@ -4,8 +4,19 @@ const cd=14400000,icons=["🍋","🍓","🍇","🍒","🍊","🍐"];let timer=nu
 const B=(s,fn,c="secondary")=>{const b=document.createElement("button");b.type="button";b.className=c;b.textContent=s;b.onclick=fn;return b},T=(s)=>safeText("p",s,"muted"),P=(a,b)=>{const e=document.createElement("section");e.className="feature-panel";e.append(safeText("h2",a),T(b));return e},F=n=>(Math.round(n*100)/100).toLocaleString("ru-RU",{maximumFractionDigits:2})+"%",own=()=>getUserTeam()?.players||[];
 function rel(t,p,n){state.relationships||={};let k=playerRelationKey(t,p),v=Math.max(0,Math.min(100,Number(state.relationships[k]||0)+n/100));state.relationships[k]=v;return v}
 function transfer(){openPage("transfers")}
+
+// Add one persistent newcomer per provisional 28-day game month.
+// This wraps the existing calendar action; official-match blocking remains in app.js.
+const originalAdvanceGameDay=advanceGameDay;
+advanceGameDay=function(){
+ const before=getAbsoluteGameDay();
+ originalAdvanceGameDay();
+ const after=getAbsoluteGameDay();
+ if(after!==before){ensureFreeYardMonth();if(!document.getElementById("pageView")?.classList.contains("hidden")&&document.getElementById("pageTitle")?.textContent==="СВОБОДНЫЙ ДВОР")openPage("freeyard")}
+};
 function install(){
  state.relationships||={};state.trainingCooldowns||={};state.trainingHistory||=[];state.transferHistory||=[];state.externalRosters||={};
+ state.freeYardPlayers=Array.isArray(state.freeYardPlayers)?state.freeYardPlayers:[];state.freeYardMonthsSeen=Array.isArray(state.freeYardMonthsSeen)?state.freeYardMonthsSeen:[];ensureFreeYardMonth();
  const baseGetTeam=getUserTeam;
  getUserTeam=function(){const t=baseGetTeam();if(t&&Array.isArray(state.userRoster))t.players=state.userRoster;return t};
 
@@ -73,25 +84,85 @@ function playTraining(t,p,id){
  function tick(){const h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};if(h.x<0||h.y<0||h.x>=10||h.y>=10||snake.slice(0,-1).some(s=>s.x===h.x&&s.y===h.y)){document.removeEventListener("keydown",key);finish("Мячей собрано: "+score/10);return}snake.unshift(h);if(h.x===food.x&&h.y===food.y){score+=10;do{food={x:Math.floor(Math.random()*10),y:Math.floor(Math.random()*10)}}while(snake.some(s=>s.x===food.x&&s.y===food.y))}else snake.pop();draw()}draw();timer=setInterval(tick,280)}
 }
 
+
+// Free Yard prototype. Month length and generator ranges are provisional until balance is approved.
+const FREE_YARD_MONTH_DAYS = 28;
+const FREE_YARD_NAMES = ["Артём","Максим","Илья","Даниил","Кирилл","Матвей","Егор","Тимур","Никита","Роман","Марк","Лев","Саша","Миша","Денис","Антон","Глеб","Вадим","Ярослав","Степан","Павел","Влад","Руслан","Фёдор"];
+const FREE_YARD_POSITIONS = ["ВР","ЗЩ","ПЗ","НП"];
+function freeYardMonth(absDay=getAbsoluteGameDay()){
+ return Math.floor((Math.max(1,Number(absDay)||1)-1)/FREE_YARD_MONTH_DAYS)+1;
+}
+function makeFreeYardPlayer(month){
+ const used=new Set((state.freeYardPlayers||[]).map(p=>p.name));
+ let name;
+ for(let tries=0;tries<40;tries++){const candidate=FREE_YARD_NAMES[Math.floor(Math.random()*FREE_YARD_NAMES.length)]+" "+["Смирнов","Иванов","Кузнецов","Попов","Соколов","Лебедев","Козлов","Новиков","Морозов","Петров","Волков","Зайцев"][Math.floor(Math.random()*12)];if(!used.has(candidate)){name=candidate;break}}
+ if(!name)name="Игрок "+String(Date.now()).slice(-6);
+ const position=FREE_YARD_POSITIONS[Math.floor(Math.random()*FREE_YARD_POSITIONS.length)];
+ const stats={ВР:randomFreeStat(),ЗЩ:randomFreeStat(),ПЗ:randomFreeStat(),НП:randomFreeStat()};
+ stats[position]=Math.max(stats[position],randomFreeStat()+8);
+ return {id:"free-"+month+"-"+makeFreeId(),name,age:14+Math.floor(Math.random()*7),position,stats,potential:35+Math.floor(Math.random()*56),relation:0,joined:false,appearedMonth:month,appearedDay:getAbsoluteGameDay()};
+}
+function randomFreeStat(){return 15+Math.floor(Math.random()*56)}
+function makeFreeId(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4)}
+function ensureFreeYardMonth(){
+ state.freeYardPlayers=Array.isArray(state.freeYardPlayers)?state.freeYardPlayers:[];
+ state.freeYardMonthsSeen=Array.isArray(state.freeYardMonthsSeen)?state.freeYardMonthsSeen:[];
+ const month=freeYardMonth();
+ if(!state.freeYardMonthsSeen.includes(month)){
+   state.freeYardPlayers.push(makeFreeYardPlayer(month));
+   state.freeYardMonthsSeen.push(month);
+   saveState();
+ }
+}
 function freeYardPage(){
+ ensureFreeYardMonth();
  const w=document.createElement("div");
- const intro=P("⚽ СВОБОДНЫЙ ДВОР","Здесь будут появляться свободные футболисты, которых тренер сможет пригласить в свою команду. Составы команд на СЕЗОН 1, День 1 остаются без изменений.");
- const rules=document.createElement("div");rules.className="feature-player-list";
- [
-  ["Появление новичков","Один новый футболист на весь игровой мир за игровой месяц."],
-  ["Неприглашённые игроки","Остаются в списке до приглашения. Появление следующего новичка не удаляет предыдущих."],
-  ["Характеристики","ВР, ЗЩ, ПЗ и НП генерируются случайно и скрыты от тренера до достижения 60% отношений."],
-  ["Потенциал","Скрыт до достижения 60% отношений."],
-  ["Ограничения состава","В команду можно пригласить игрока только при наличии свободного места в составе (лимит — 10 футболистов)."]
- ].forEach(([title,desc])=>{const row=document.createElement("article");row.className="feature-player-row";row.append(safeText("b",title),safeText("span",desc));rules.append(row)});
- intro.append(rules);
- intro.append(T("Раздел и кнопка добавлены в интерфейс. Генерация новичков, раскрытие характеристик и приглашение в состав ещё не подключены; параметры генерации будут добавлены после утверждения баланса."));
- w.append(intro);
  const team=getUserTeam();
- if(team&&team.players.length>=10)w.append(T("Состав заполнен (10/10). Для будущего приглашения потребуется освободить место."));
+ const month=freeYardMonth();
+ const intro=P("⚽ СВОБОДНЫЙ ДВОР","Игровой месяц "+month+" · Новички появляются по одному на весь игровой мир. Не приглашённые игроки остаются доступными.");
+ intro.append(T("Характеристики и потенциал скрыты до 60% отношений. Диапазоны генерации и длительность игрового месяца пока предварительные и будут балансироваться."));
+ const list=document.createElement("div");list.className="feature-player-list";
+ const free=(state.freeYardPlayers||[]).filter(p=>!p.joined);
+ if(!free.length)list.append(T("Пока нет свободных футболистов."));
+ free.forEach(p=>{
+   const card=document.createElement("article");card.className="feature-player-row free-yard-card";
+   const info=document.createElement("div");info.className="free-yard-info";
+   info.append(safeText("h3",p.name),safeText("p","Возраст: "+p.age+" · Специализация: "+p.position),safeText("p","Отношения: "+Math.round(Number(p.relation)||0)+"%"));
+   const hidden=Number(p.relation||0)<60;
+   if(hidden) info.append(safeText("p","Характеристики: скрыты до 60% отношений"),safeText("p","Потенциал: скрыт до 60% отношений"));
+   else {
+     const st=p.stats||{};
+     info.append(safeText("p","ВР "+st.ВР+" · ЗЩ "+st.ЗЩ+" · ПЗ "+st.ПЗ+" · НП "+st.НП),safeText("p","Потенциал: "+p.potential));
+   }
+   const actions=document.createElement("div");actions.className="feature-actions";
+   const relationButton=B(hidden?"Узнать игрока (+10% тест)":"Отношения повышены",()=>{
+     p.relation=Math.min(100,Number(p.relation||0)+10);
+     state.relationships=state.relationships||{};
+     state.relationships["free-yard::"+p.id]=p.relation;
+     saveState();openPage("freeyard");
+   },"secondary");
+   relationButton.disabled=!hidden;
+   actions.append(relationButton);
+   const canInvite=Boolean(team&&team.players.length<10);
+   actions.append(B(canInvite?"Пригласить в команду":"Состав заполнен (10/10)",()=>{
+     const current=getUserTeam();
+     if(!current||current.players.length>=10){alert("В команде уже 10 футболистов. Освободи место перед приглашением.");return}
+     if(!confirm("Пригласить "+p.name+" в команду?"))return;
+     const player={name:p.name,age:p.age,position:p.position,stats:{...p.stats},potential:p.potential,careerId:makeFreeId(),ageAtStart:p.age};
+     current.players.push(player);
+     state.userRoster=current.players;
+     p.joined=true;p.joinedTeamId=current.id;p.joinedDay=getAbsoluteGameDay();
+     saveState();openPage("freeyard");
+     alert(p.name+" приглашён в команду.");
+   },"primary"));
+   card.append(info,actions);list.append(card);
+ });
+ intro.append(list);
+ intro.append(T("Состав команды: "+(team?.players?.length||0)+"/10. Не приглашённые футболисты сохраняются между игровыми сессиями."));
+ w.append(intro);
  return w
 }
-\nfunction transfersPage(){
+function transfersPage(){
  const w=document.createElement("div");if(!leagueData){w.append(placeholder("Загружаю команды…"));return w} Object.entries(state.externalRosters||{}).forEach(([id,players])=>{const t=leagueData.teams.find(x=>x.id===id);if(t&&Array.isArray(players))t.players=players});
  if(state.transferTarget){const t=leagueData.teams.find(x=>x.id===state.transferTarget.team),p=t?.players.find(x=>x.name===state.transferTarget.name);if(t&&p){const panel=P("Обмен игроками","Выбери игрока своей команды в обмен на "+p.name+".");const sel=document.createElement("select");sel.className="league-select";own().forEach((x,i)=>sel.add(new Option(x.name+" · "+x.position,String(i))));panel.append(sel,B("Подтвердить обмен",()=>{const i=+sel.value,mine=own()[i];if(!mine||!confirm("Отдать "+mine.name+" и получить "+p.name+"?"))return;const ut=getUserTeam();ut.players.splice(i,1);t.players.splice(t.players.findIndex(x=>x.name===p.name),1);ut.players.push({...p});t.players.push({...mine});state.userRoster=ut.players;state.externalRosters[t.id]=t.players;state.transferHistory.push({team:t.id,received:p.name,given:mine.name,at:Date.now()});delete state.transferTarget;saveState();openPage("transfers")},"primary"),B("Отмена",()=>{delete state.transferTarget;openPage("transfers")}));w.append(panel);return w}}
  w.append(P("Трансферный обмен игроками","Просматривай отношения с игроками других команд и предлагай обмен. Подтверждение обязательно; переговоры и вероятность отказа пока не моделируются."));
