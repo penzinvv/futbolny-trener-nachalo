@@ -278,7 +278,7 @@ const pages = {
   players: {title:"Футболисты", eyebrow:"СОСТАВ", render: renderPlayers},
   mail: {title:"Почта", eyebrow:"СООБЩЕНИЯ", render: () => placeholder("Новых сообщений пока нет.")},
   training: {title:"Тренировка", eyebrow:"РАЗВИТИЕ", render: renderTraining},
-  upbringing: {title:"Воспитание", eyebrow:"ОТНОШЕНИЯ", render: () => placeholder("Раздел воспитания пока пустой. Позже добавим отношения, события и решения тренера.")},
+  upbringing: {title:"Воспитание", eyebrow:"ОТНОШЕНИЯ", render: renderUpbringing},
   league: {title:"Лиги и команды", eyebrow:"СОРЕВНОВАНИЯ", render: renderLeague},
   goals: {title:"Цели тренера", eyebrow:"ПРОГРЕСС", render: () => placeholder("Система уникальных и периодических целей будет добавлена после согласования чисел и списка целей.")}
 };
@@ -309,9 +309,8 @@ function renderCabinet() {
         });
         p.append(grid);
       } else {
-        const list=document.createElement("div");list.className="cabinet-roster";
-        roster.forEach((player,i)=>{const row=document.createElement("button");row.type="button";row.className="cabinet-roster-row";const img=document.createElement("img");img.src=getPortrait(player.portraitIndex||teamsPlayerIndex(team,player));img.alt="";img.loading="lazy";img.onerror=()=>img.remove();const info=document.createElement("span");info.className="cabinet-roster-info";info.append(safeText("b",player.name),safeText("small",player.position+" · "+player.nationality));row.append(img,info,makeRelationBadge(team,player));row.addEventListener("click",()=>openPlayerProfile(team,player,i));list.append(row);});
-        p.append(list);
+        p.append(makeRelationsList(team,roster,(player,i)=>openPlayerProfile(team,player,i)));
+        p.append(safeText("p","Отношения сейчас не повышаются автоматически. Когда будут согласованы игровые действия воспитания, здесь появятся реальные способы их улучшать.","muted"));
       }
     } else if(key==="stats"){
       p=panel("Статистика команды","Сводка по составу на текущий момент.");const positions=["ВР","ЗЩ","ПЗ","НП"];const grid=document.createElement("div");grid.className="cabinet-metrics";
@@ -344,6 +343,48 @@ function renderCabinet() {
 
 function placeholder(message) {
   const box = document.createElement("div"); box.className = "placeholder"; box.textContent = message; return box;
+}
+
+function getNextRelationshipThreshold(relation) {
+  return [50,60,70,80,90].find(value => relation < value) ?? null;
+}
+
+function makeRelationsList(team, roster, onPlayerClick) {
+  const list=document.createElement("div");list.className="cabinet-roster relationship-roster";
+  roster.forEach((player,i)=>{
+    const relation=getPlayerRelation(team,player);
+    const next=getNextRelationshipThreshold(relation);
+    const row=document.createElement("button");row.type="button";row.className="cabinet-roster-row relationship-roster-row";
+    const img=document.createElement("img");img.src=getPortrait(player.portraitIndex||teamsPlayerIndex(team,player));img.alt="";img.loading="lazy";img.onerror=()=>img.remove();
+    const info=document.createElement("span");info.className="cabinet-roster-info";
+    info.append(safeText("b",player.name),safeText("small",player.position+" · "+player.nationality));
+    const progress=document.createElement("span");progress.className="relationship-next-step";
+    progress.textContent=next===null?"Все пороги достигнуты":("Следующий порог: "+next+"% · осталось "+(next-relation)+" п. п.");
+    info.append(progress);
+    row.append(img,info,makeRelationBadge(team,player));
+    row.addEventListener("click",()=>onPlayerClick(player,i));
+    list.append(row);
+  });
+  return list;
+}
+
+function renderUpbringing() {
+  const wrap=document.createElement("div");
+  const team=getUserTeam();
+  const roster=team?.players||[];
+  const panel=document.createElement("section");panel.className="cabinet-panel";
+  panel.append(safeText("h2","Отношения с футболистами"),safeText("p","Следи за доверием каждого игрока и смотри, какие пороги характеристик ещё впереди.","muted"));
+  const avg=roster.length?Math.round(roster.reduce((sum,player)=>sum+getPlayerRelation(team,player),0)/roster.length):0;
+  const reached=roster.reduce((sum,player)=>sum+[50,60,70,80,90].filter(value=>getPlayerRelation(team,player)>=value).length,0);
+  const metrics=document.createElement("div");metrics.className="cabinet-metrics relationship-summary";
+  [["Игроков в составе",String(roster.length)],["Средний уровень отношений",avg+"%"],["Достигнутые пороги",String(reached)+" / "+(roster.length*5)]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));metrics.append(card);});
+  panel.append(metrics);
+  if(roster.length) {
+    panel.append(makeRelationsList(team,roster,(player,i)=>openPlayerProfile(team,player,i)));
+    panel.append(safeText("p","Пороги: 50%, 60%, 70% и 80% открывают характеристики; 90% — потенциал. Просмотр профиля не меняет отношения. Начисление отношений будет подключено после согласования игровых действий.","muted"));
+  } else panel.append(placeholder("Сначала сформируй состав команды — тогда здесь появятся отношения с футболистами."));
+  wrap.append(panel);
+  return wrap;
 }
 function openPage(key) {
   const page = pages[key]; if (!page) return;
