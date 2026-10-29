@@ -888,6 +888,13 @@ function renderMatchSummaryPage(){
  const addStat=(label,left,right)=>{const row=document.createElement("div");row.className="match-summary-stat-row";row.append(safeText("b",String(left)),safeText("span",label),safeText("b",String(right)));table.append(row)};
  addStat("Удары",h.shots||0,a.shots||0);addStat("Удары в створ",h.onTarget||0,a.onTarget||0);
  addStat("Владение мячом",Math.round((h.possessionMinutes||0)/total*100)+"%",Math.round((a.possessionMinutes||0)/total*100)+"%");
+ const countSide=(side,predicate)=>(result.events||[]).filter(e=>e.side===side&&predicate(e)).length;
+ addStat("Угловые",countSide("home",e=>e.type==="corner"),countSide("away",e=>e.type==="corner"));
+ addStat("Фолы",countSide("home",e=>e.type==="foul"),countSide("away",e=>e.type==="foul"));
+ addStat("Офсайды",countSide("home",e=>e.type==="offside"),countSide("away",e=>e.type==="offside"));
+ addStat("Сейвы вратарей",countSide("home",e=>e.type==="save"),countSide("away",e=>e.type==="save"));
+ addStat("Жёлтые карточки",countSide("home",e=>e.card==="yellow"),countSide("away",e=>e.card==="yellow"));
+ addStat("Красные карточки",countSide("home",e=>e.card==="red"),countSide("away",e=>e.card==="red"));
  statsPanel.append(table);
  const lineups=document.createElement("section");lineups.className="panel match-summary-panel";lineups.append(safeText("h2","Составы и голы игроков"));
  const list=document.createElement("div");list.className="match-summary-lineups";
