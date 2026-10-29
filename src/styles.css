@@ -174,10 +174,10 @@
 }
 
 /* Игровой календарь и дни рождения */
-.hero-manager-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:10px}
+.game-day-actions{display:flex;justify-content:flex-start;margin-top:14px}
 .skip-day-button{border:1px solid var(--green);border-radius:10px;background:rgba(111,224,161,.12);color:var(--text);font:inherit;font-size:12px;font-weight:800;letter-spacing:.03em;padding:11px 14px;cursor:pointer}
 .skip-day-button:hover:not(:disabled){background:rgba(111,224,161,.22)}
 .skip-day-button:disabled{opacity:.6;cursor:not-allowed}
 .day-event-notice{position:relative;z-index:2;margin:14px 0 0;padding:11px 14px;border:1px solid rgba(111,224,161,.4);border-radius:10px;background:rgba(7,26,16,.75);color:var(--green);font-size:13px;font-weight:700}
 .day-event-notice.hidden{display:none}
-@media(max-width:600px){.hero-manager-actions{justify-content:stretch}.skip-day-button{flex:1}.hero-manager-actions .cabinet-button{flex:1}}
+@media(max-width:600px){.game-day-actions{width:100%}.skip-day-button{width:100%}}
