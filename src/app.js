@@ -397,20 +397,15 @@ function renderCabinet() {
           teams.push(userRow);
         }
         const playedByTeam=new Map();
-        const officialMatches=Array.isArray(state.careerHistory?.officialMatches)?state.careerHistory.officialMatches:[];
-        officialMatches.forEach(match=>{
-          const opponentId=match.opponentTeamId||match.opponentId;
-          if(!opponentId)return;
-          const ownId=team?.id||state.careerTeamId;
-          const goalsFor=Number(match.goalsFor||0),goalsAgainst=Number(match.goalsAgainst||0);
-          const own=playedByTeam.get(ownId)||{played:0,wins:0,draws:0,losses:0,gf:0,ga:0,points:0};
-          const opponent=playedByTeam.get(opponentId)||{played:0,wins:0,draws:0,losses:0,gf:0,ga:0,points:0};
-          own.played++;own.gf+=goalsFor;own.ga+=goalsAgainst;
-          opponent.played++;opponent.gf+=goalsAgainst;opponent.ga+=goalsFor;
-          if(goalsFor>goalsAgainst){own.wins++;own.points+=3;opponent.losses++;}
-          else if(goalsFor<goalsAgainst){own.losses++;opponent.wins++;opponent.points+=3;}
-          else{own.draws++;opponent.draws++;own.points++;opponent.points++;}
-          playedByTeam.set(ownId,own);playedByTeam.set(opponentId,opponent);
+        Object.values(state.leagueResults||{}).filter(match=>Number(match.season||state.seasonNumber)===Number(state.seasonNumber||1)).forEach(match=>{
+          const home=playedByTeam.get(match.homeId)||{played:0,wins:0,draws:0,losses:0,gf:0,ga:0,points:0};
+          const away=playedByTeam.get(match.awayId)||{played:0,wins:0,draws:0,losses:0,gf:0,ga:0,points:0};
+          const hs=Number(match.homeScore||0),as=Number(match.awayScore||0);
+          home.played++;away.played++;home.gf+=hs;home.ga+=as;away.gf+=as;away.ga+=hs;
+          if(hs>as){home.wins++;home.points+=3;away.losses++;}
+          else if(hs<as){away.wins++;away.points+=3;home.losses++;}
+          else{home.draws++;away.draws++;home.points++;away.points++;}
+          playedByTeam.set(match.homeId,home);playedByTeam.set(match.awayId,away);
         });
         const rows=teams.map(item=>{const stats=playedByTeam.get(item.id)||{played:0,wins:0,draws:0,losses:0,gf:0,ga:0,points:0};return {...item,...stats,diff:stats.gf-stats.ga};});
         rows.sort((x,y)=>y.points-x.points||y.diff-x.diff||y.gf-x.gf||x.name.localeCompare(y.name,"ru"));
