@@ -73,6 +73,8 @@ async function syncCareerToCloud(bootstrap = false) {
     }
     const result = await cloudRequest("GET");
     if (result.initialized) {
+      state.coachName = result.coach?.display_name || state.coachName;
+      state.teamName = result.team?.name || state.teamName;
       state.careerCoachId = result.coach.id;
       state.careerTeamId = result.team?.id || null;
       state.careerPlayerIds = state.careerPlayerIds || {};
@@ -93,6 +95,9 @@ async function initializeCloudCareer() {
     const result = await syncCareerToCloud(false);
     if (!result.initialized && state.coachName && state.teamName && leagueData) {
       await syncCareerToCloud(true);
+    } else if (result.initialized) {
+      saveState();
+      if (state.coachName && state.teamName) render();
     }
   } catch (error) {
     console.warn("Облачная карьера пока не подключена:", error);
@@ -481,3 +486,10 @@ function renderTraining() {
 
 if (!state.coachName || !state.teamName) showSetup();
 else { $("onboarding").classList.add("hidden"); render(); }
+if (leagueData) initializeCloudCareer();
+else {
+  const cloudInit = setInterval(() => {
+    if (leagueData) { clearInterval(cloudInit); initializeCloudCareer(); }
+  }, 250);
+  setTimeout(() => clearInterval(cloudInit), 10000);
+}
