@@ -2,7 +2,7 @@ const STORAGE_KEY = "football-coach-start-v1";
 const defaultState = {
   coachName: "", teamName: "", emblem: "🛡️", teamLogoIndex: 1, avatarIndex: 1, seasonNumber: 1, avatarChangeUsedSeason: 0,
   xp: 0, permanentRating: 0, seasonRating: 0, respect: 0, gameDay: 1, players: [], relationships: {},
-  careerCoachId: null, careerTeamId: null, careerPlayerIds: {}, careerHistory: { officialMatches: [], seasons: {} }
+  careerCoachId: null, careerTeamId: null, careerPlayerIds: {}, careerHistory: { officialMatches: [], seasons: {} }, completedFixtures: []
 };
 let state = loadState();
 let leagueData = null;
@@ -58,7 +58,9 @@ function getCurrentOfficialFixture() {
 function isCurrentOfficialMatchCompleted() {
   if (!isOfficialMatchDay()) return false;
   const fixture=getCurrentOfficialFixture();
-  return Boolean(fixture&&(state.careerHistory?.officialMatches||[]).some(match=>match.fixtureId===fixture.fixtureId));
+  if (!fixture) return false;
+  return Boolean((state.careerHistory?.officialMatches||[]).some(match=>match.fixtureId===fixture.fixtureId)
+    || (state.completedFixtures||[]).includes(fixture.fixtureId));
 }
 function updateCalendarControls() {
   const date=$("gameDate");
@@ -82,7 +84,7 @@ function updateCalendarControls() {
 function advanceGameDay() {
   if(!state.coachName||!state.teamName)return;
   if(isOfficialMatchDay()&&!isCurrentOfficialMatchCompleted()){
-    state.lastDayEvent={message:"Сегодня официальный матч. Пропуск дня закрыт до подключения и проведения матча."};
+    state.lastDayEvent={message:"Сегодня официальный матч. Сначала проведи матч, затем можно будет перейти к следующему дню."};
     saveState();render();return;
   }
   if(Number(state.gameDay||1)>=DAYS_PER_SEASON){
@@ -358,6 +360,92 @@ $("setupForm").addEventListener("submit", async (event) => {
   void initializeCloudCareer();
 });
 
+
+/* Предварительный прототип матча по календарю.
+   Счёт и статистика не сохраняются; хранится только отметка прохождения календарного дня. */
+let lastMatchPreview = null;
+function clampMatchValue(value,min,max){return Math.max(min,Math.min(max,value));}
+function getMatchFive(team){
+  const roster=Array.isArray(team?.players)?team.players:[];
+  if(!roster.length)return [];
+  const chosen=[];
+  const take=(position,count)=>roster.filter(player=>player.position===position&&!chosen.includes(player)).slice(0,count).forEach(player=>chosen.push(player));
+  take("ВР",1);take("ЗЩ",1);take("ПЗ",2);take("НП",1);
+  for(const player of roster){if(chosen.length>=5)break;if(!chosen.includes(player))chosen.push(player);}
+  return chosen.slice(0,5);
+}
+function averageMatchSkill(players,keys){
+  if(!players.length)return 40;
+  const values=players.map(player=>{
+    const available=keys.filter(key=>Number.isFinite(Number(player.skills?.[key])));
+    return available.length?available.reduce((sum,key)=>sum+Number(player.skills[key]),0)/available.length:40;
+  });
+  return values.reduce((sum,value)=>sum+value,0)/values.length;
+}
+function simulateFixturePreview(fixture){
+  const userTeam=getUserTeam();
+  const userIsHome=Boolean(fixture.homeIsUser);
+  const opponentId=userIsHome?fixture.awayTeamId:fixture.homeTeamId;
+  const opponent=(leagueData?.teams||[]).find(item=>String(item.id)===String(opponentId));
+  const opponentTeam=opponent||{id:opponentId,name:userIsHome?fixture.awayTeamName:fixture.homeTeamName,players:[]};
+  const userFive=getMatchFive(userTeam),opponentFive=getMatchFive(opponentTeam);
+  const userAttack=averageMatchSkill(userFive,["НП","ПЗ"]);
+  const userDefence=(averageMatchSkill(userFive,["ЗЩ"])+averageMatchSkill(userFive,["ВР"]))/2;
+  const opponentAttack=averageMatchSkill(opponentFive,["НП","ПЗ"]);
+  const opponentDefence=(averageMatchSkill(opponentFive,["ЗЩ"])+averageMatchSkill(opponentFive,["ВР"]))/2;
+  let userGoals=0,opponentGoals=0;
+  const events=[];
+  // 20 игровых минут, по одной атакующей цепочке за минуту; владение чередуется.
+  for(let minute=1;minute<=20;minute++){
+    const userHasBall=minute%2===1;
+    const attack=userHasBall?userAttack:opponentAttack;
+    const defence=userHasBall?opponentDefence:userDefence;
+    const chanceProbability=clampMatchValue(0.40+(attack-defence)*0.002,0.25,0.58);
+    const conversionProbability=clampMatchValue(0.30+attack*0.002,0.28,0.52);
+    if(Math.random()<chanceProbability){
+      if(Math.random()<conversionProbability){
+        if(userHasBall)userGoals++;else opponentGoals++;
+        events.push({minute,text:minute+"′ — "+(userHasBall?state.teamName:opponentTeam.name)+" забивает!"});
+      }else events.push({minute,text:minute+"′ — опасный момент: "+(userHasBall?state.teamName:opponentTeam.name)+", но удар не стал голом."});
+    }
+  }
+  if(!events.length)events.push({minute:20,text:"Матч прошёл без опасных моментов."});
+  return {
+    fixtureId:fixture.fixtureId,homeName:fixture.homeTeamName,awayName:fixture.awayTeamName,
+    homeGoals:userIsHome?userGoals:opponentGoals,awayGoals:userIsHome?opponentGoals:userGoals,
+    events,userPlayers:userFive.map(player=>player.name),opponentPlayers:opponentFive.map(player=>player.name)
+  };
+}
+function runCalendarMatch(fixture){
+  if(!fixture||!isOfficialMatchDay())return;
+  if((state.completedFixtures||[]).includes(fixture.fixtureId)
+    ||(state.careerHistory?.officialMatches||[]).some(match=>match.fixtureId===fixture.fixtureId))return;
+  lastMatchPreview=simulateFixturePreview(fixture);
+  state.completedFixtures=Array.isArray(state.completedFixtures)?state.completedFixtures:[];
+  state.completedFixtures.push(fixture.fixtureId);
+  // Не сохраняем счёт, события, статистику, XP или рейтинг и не отправляем их в Supabase.
+  saveState();
+  openPage("cabinet");
+  const matchesTab=document.querySelector('[data-cabinet-tab="matches"]');
+  if(matchesTab)matchesTab.click();
+}
+function makeMatchPreviewPanel(fixture){
+  const panel=document.createElement("section");panel.className="cabinet-panel match-preview-panel";
+  panel.append(safeText("h2","Матч по календарю · тестовый протокол"),
+    safeText("p","Предварительная симуляция на 20 игровых минут. Счёт и статистика не сохраняются и не отправляются в Supabase.","muted"));
+  const button=document.createElement("button");button.type="button";button.className="primary-button";button.textContent="Провести матч";
+  button.addEventListener("click",()=>runCalendarMatch(fixture));panel.append(button);return panel;
+}
+function makeMatchPreviewResult(preview){
+  const panel=document.createElement("section");panel.className="cabinet-panel match-preview-result";
+  panel.append(safeText("h2","Матч завершён · тестовый результат"),
+    safeText("p",preview.homeName+"  "+preview.homeGoals+" : "+preview.awayGoals+"  "+preview.awayName,"match-preview-score"),
+    safeText("p","Это временный результат текущей сессии. Он не записан в официальную статистику, турнирную таблицу или Supabase.","muted"));
+  const events=document.createElement("div");events.className="match-preview-events";
+  preview.events.forEach(event=>events.append(safeText("p",event.text)));
+  panel.append(events);return panel;
+}
+
 const pages = {
   cabinet: {title:"Кабинет тренера", eyebrow:"УПРАВЛЕНИЕ КОМАНДОЙ", render: renderCabinet},
   players: {title:"Футболисты", eyebrow:"СОСТАВ", render: renderPlayers},
@@ -556,6 +644,10 @@ function renderCabinet() {
       const summary=document.createElement("div");summary.className="cabinet-metrics season-fixture-summary";
       [["Матчей в сезоне",String(ownFixtures.length)],["Завершено официально",String(completed)],["Осталось",String(Math.max(0,ownFixtures.length-completed))]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));summary.append(card);});
       p.append(summary);
+      const todaysFixture=getCurrentOfficialFixture();
+      const currentFixtureIsCompleted=Boolean(todaysFixture&&((state.completedFixtures||[]).includes(todaysFixture.fixtureId)||officialMatches.some(match=>match.fixtureId===todaysFixture.fixtureId)));
+      if(todaysFixture&&!currentFixtureIsCompleted)p.append(makeMatchPreviewPanel(todaysFixture));
+      if(lastMatchPreview&&todaysFixture&&lastMatchPreview.fixtureId===todaysFixture.fixtureId)p.append(makeMatchPreviewResult(lastMatchPreview));
       const title=safeText("h3","Календарь сезона");title.className="season-fixture-heading";p.append(title);
       ownFixtures.forEach(({round,gameDay,fixture})=>{
         const row=document.createElement("article");row.className="season-fixture-row"+(fixture.homeIsUser||fixture.awayIsUser?" is-user-fixture":"");
@@ -563,7 +655,7 @@ function renderCabinet() {
         const matchup=document.createElement("div");matchup.className="season-fixture-matchup";
         matchup.append(safeText("b",fixture.homeTeamName),safeText("span","—"),safeText("b",fixture.awayTeamName));
         const result=officialMatches.find(match=>match.fixtureId===fixture.fixtureId);
-        const status=safeText("span",result?(Number(result.goalsFor||0)+":"+Number(result.goalsAgainst||0)):(round===firstUnplayedRound?"Следующий":"Предстоит"));
+        const locallyCompleted=(state.completedFixtures||[]).includes(fixture.fixtureId);const status=safeText("span",result?(Number(result.goalsFor||0)+":"+Number(result.goalsAgainst||0)):(locallyCompleted?"Сыгран · без протокола":(round===firstUnplayedRound?"Следующий":"Предстоит")));
         status.className="season-fixture-status"+(result?" is-played":"");
         row.append(roundLabel,matchup,status);list.append(row);
       });
