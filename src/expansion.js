@@ -36,7 +36,7 @@ function match3(t,p){
 }
 function training(){
  const w=document.createElement("div"),t=getUserTeam();
- if(!t){w.append(placeholder("Сначала создай команду."));return w}
+ if(!t){w.append(placeholder(leagueData?"Сначала создай команду.":"Загружаем состав команды…"));return w}
  const teamPanel=P("Командная тренировка","Каждый футболист получает ровно +1 к одной характеристике. Случайно выбранный игрок получает балл к основной характеристике; остальные — к случайной характеристике не своей основной позиции. Повтор — раз в 8 часов.");
  const cdKey="team-training",left=28800000-(Date.now()-Number(state.trainingCooldowns[cdKey]||0));
  const tb=B(left>0?"Доступно через "+Math.ceil(left/60000)+" мин.":"Провести командную тренировку",()=>runTeamTraining(t),left>0?"secondary":"primary");tb.disabled=left>0;
