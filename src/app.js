@@ -2,7 +2,7 @@ const STORAGE_KEY = "football-coach-start-v1";
 const defaultState = {
   coachName: "", teamName: "", emblem: "🛡️", teamLogoIndex: 1, avatarIndex: 1, seasonNumber: 1, avatarChangeUsedSeason: 0,
   xp: 0, permanentRating: 0, seasonRating: 0, respect: 0, gameDay: 1, players: [], relationships: {},
-  careerCoachId: null, careerTeamId: null, careerPlayerIds: {}, careerHistory: { officialMatches: [], seasons: {} }, completedFixtures: [], playerMatchRatings: []
+  careerCoachId: null, careerTeamId: null, careerPlayerIds: {}, careerHistory: { officialMatches: [], seasons: {} }, completedFixtures: [], playerMatchRatings: [], leagueMatchResults: [], playerAwards: []
 };
 let state = loadState();
 let leagueData = null;
@@ -59,8 +59,7 @@ function isCurrentOfficialMatchCompleted() {
   if (!isOfficialMatchDay()) return false;
   const fixture=getCurrentOfficialFixture();
   if (!fixture) return false;
-  return Boolean((state.careerHistory?.officialMatches||[]).some(match=>match.fixtureId===fixture.fixtureId)
-    || (state.completedFixtures||[]).includes(fixture.fixtureId));
+  return Boolean((state.careerHistory?.officialMatches||[]).some(match=>match.fixtureId===fixture.fixtureId));
 }
 function updateCalendarControls() {
   const date=$("gameDate");
@@ -422,27 +421,30 @@ function calculatePlayerMatchRating(item,teamGoalsAgainst,teamResult){
   // Оценка по зафиксированным действиям детерминирована: случайный шум не влияет на награды.
   return Math.round(clampMatchValue(score,1,10)*10)/10;
 }
+function getFixtureTeam(fixture,side){
+  const isUser=side==="home"?Boolean(fixture.homeIsUser):Boolean(fixture.awayIsUser);
+  const id=String(side==="home"?fixture.homeTeamId:fixture.awayTeamId);
+  if(isUser)return getUserTeam()||{id,name:side==="home"?fixture.homeTeamName:fixture.awayTeamName,players:[]};
+  const team=(leagueData?.teams||[]).find(item=>String(item.id)===id);
+  return team||{id,name:side==="home"?fixture.homeTeamName:fixture.awayTeamName,players:[]};
+}
 function simulateFixturePreview(fixture){
-  const userTeam=getUserTeam();
-  const userIsHome=Boolean(fixture.homeIsUser);
-  const opponentId=userIsHome?fixture.awayTeamId:fixture.homeTeamId;
-  const opponent=(leagueData?.teams||[]).find(item=>String(item.id)===String(opponentId));
-  const opponentTeam=opponent||{id:opponentId,name:userIsHome?fixture.awayTeamName:fixture.homeTeamName,players:[]};
-  const userFive=getMatchFive(userTeam),opponentFive=getMatchFive(opponentTeam);
-  const userStats=makePlayerMatchStats(userFive),opponentStats=makePlayerMatchStats(opponentFive);
-  const userAttack=averageMatchSkill(userFive,["НП","ПЗ"]);
-  const userDefence=(averageMatchSkill(userFive,["ЗЩ"])+averageMatchSkill(userFive,["ВР"]))/2;
-  const opponentAttack=averageMatchSkill(opponentFive,["НП","ПЗ"]);
-  const opponentDefence=(averageMatchSkill(opponentFive,["ЗЩ"])+averageMatchSkill(opponentFive,["ВР"]))/2;
-  let userGoals=0,opponentGoals=0;
+  const homeTeam=getFixtureTeam(fixture,"home"),awayTeam=getFixtureTeam(fixture,"away");
+  const homeFive=getMatchFive(homeTeam),awayFive=getMatchFive(awayTeam);
+  const homeStats=makePlayerMatchStats(homeFive),awayStats=makePlayerMatchStats(awayFive);
+  const homeAttack=averageMatchSkill(homeFive,["НП","ПЗ"]);
+  const homeDefence=(averageMatchSkill(homeFive,["ЗЩ"])+averageMatchSkill(homeFive,["ВР"]))/2;
+  const awayAttack=averageMatchSkill(awayFive,["НП","ПЗ"]);
+  const awayDefence=(averageMatchSkill(awayFive,["ЗЩ"])+averageMatchSkill(awayFive,["ВР"]))/2;
+  let homeGoals=0,awayGoals=0;
   const events=[];
-  // 20 игровых минут, по одной атакующей цепочке за минуту; владение чередуется.
   for(let minute=1;minute<=20;minute++){
-    const userHasBall=minute%2===1;
-    const attack= userHasBall?userAttack:opponentAttack;
-    const defence=userHasBall?opponentDefence:userDefence;
-    const attackingStats=userHasBall?userStats:opponentStats;
-    const defendingStats=userHasBall?opponentStats:userStats;
+    const homeHasBall=minute%2===1;
+    const attack=homeHasBall?homeAttack:awayAttack;
+    const defence=homeHasBall?awayDefence:homeDefence;
+    const attackingStats=homeHasBall?homeStats:awayStats;
+    const defendingStats=homeHasBall?awayStats:homeStats;
+    const attackingName=homeHasBall?fixture.homeTeamName:fixture.awayTeamName;
     const chanceProbability=clampMatchValue(0.40+(attack-defence)*0.002,0.25,0.58);
     const conversionProbability=clampMatchValue(0.30+attack*0.002,0.28,0.52);
     const midfielder=pickMatchPlayer(attackingStats,["ПЗ"]);
@@ -453,21 +455,21 @@ function simulateFixturePreview(fixture){
       const shooter=pickMatchPlayer(attackingStats,["НП","ПЗ"]);
       if(shooter)shooter.shots++;
       if(Math.random()<conversionProbability){
-        if(userHasBall)userGoals++;else opponentGoals++;
+        if(homeHasBall)homeGoals++;else awayGoals++;
         if(shooter)shooter.goals++;
         const assistCandidate=shooter?.player.position==="НП"?pickMatchPlayer(attackingStats,["ПЗ"]):null;
         if(assistCandidate&&assistCandidate!==shooter&&Math.random()<0.7)assistCandidate.assists++;
-        events.push({minute,text:minute+"′ — "+(shooter?.player.name|| (userHasBall?state.teamName:opponentTeam.name))+" забивает за "+(userHasBall?state.teamName:opponentTeam.name)+"!"});
+        events.push({minute,text:minute+"′ — "+(shooter?.player.name||attackingName)+" забивает за "+attackingName+"!"});
       }else{
         const keeper=pickMatchPlayer(defendingStats,["ВР"]);
         if(keeper)keeper.saves++;
-        events.push({minute,text:minute+"′ — опасный момент у "+(userHasBall?state.teamName:opponentTeam.name)+", вратарь или защита отражают удар."});
+        events.push({minute,text:minute+"′ — опасный момент у "+attackingName+", вратарь или защита отражают удар."});
       }
     }
   }
   if(!events.length)events.push({minute:20,text:"Матч прошёл без опасных моментов."});
-  const userResult=userGoals>opponentGoals?"W":userGoals<opponentGoals?"L":"D";
-  const opponentResult=userResult==="W"?"L":userResult==="L"?"W":"D";
+  const homeResult=homeGoals>awayGoals?"W":homeGoals<awayGoals?"L":"D";
+  const awayResult=homeResult==="W"?"L":homeResult==="L"?"W":"D";
   const rate=(stats,against,result,team)=>stats.map(item=>({
     name:item.player.name,position:item.player.position,
     playerKey:String(item.player.careerId||((team.id||team.name)+"::"+item.player.name)),
@@ -475,33 +477,113 @@ function simulateFixturePreview(fixture){
     rating:calculatePlayerMatchRating(item,against,result),
     goals:item.goals,assists:item.assists,saves:item.saves,tackles:item.tackles,keyPasses:item.keyPasses,shots:item.shots
   })).sort((a,b)=>b.rating-a.rating);
-  const userRatings=rate(userStats,opponentGoals,userResult,userTeam);
-  const opponentRatings=rate(opponentStats,userGoals,opponentResult,opponentTeam);
+  const homeRatings=rate(homeStats,awayGoals,homeResult,homeTeam);
+  const awayRatings=rate(awayStats,homeGoals,awayResult,awayTeam);
+  const userIsHome=Boolean(fixture.homeIsUser);
   return {
-    fixtureId:fixture.fixtureId,homeName:fixture.homeTeamName,awayName:fixture.awayTeamName,
-    homeGoals:userIsHome?userGoals:opponentGoals,awayGoals:userIsHome?opponentGoals:userGoals,
-    events,userRatings,opponentRatings
+    fixtureId:fixture.fixtureId,league:fixture.league||homeTeam.league||awayTeam.league||"",
+    homeTeamId:String(fixture.homeTeamId),awayTeamId:String(fixture.awayTeamId),
+    homeName:fixture.homeTeamName,awayName:fixture.awayTeamName,
+    homeGoals,awayGoals,homeResult,awayResult,events,homeRatings,awayRatings,
+    userRatings:userIsHome?homeRatings:awayRatings,
+    opponentRatings:userIsHome?awayRatings:homeRatings
   };
 }
 function runCalendarMatch(fixture){
   if(!fixture||!isOfficialMatchDay())return;
-  if((state.completedFixtures||[]).includes(fixture.fixtureId)
-    ||(state.careerHistory?.officialMatches||[]).some(match=>match.fixtureId===fixture.fixtureId))return;
-  lastMatchPreview=simulateFixturePreview(fixture);
-  state.completedFixtures=Array.isArray(state.completedFixtures)?state.completedFixtures:[];
-  state.completedFixtures.push(fixture.fixtureId);
-  // Сохраняем только тестовые персональные оценки. Они помечены как preview и не являются официальной статистикой.
+  state.careerHistory=state.careerHistory||{officialMatches:[],seasons:{}};
+  state.careerHistory.officialMatches=Array.isArray(state.careerHistory.officialMatches)?state.careerHistory.officialMatches:[];
+  if(state.careerHistory.officialMatches.some(match=>match.fixtureId===fixture.fixtureId))return;
+  const calendarEntry=Object.entries(state.seasonCalendars||{}).find(([,calendar])=>(calendar.rounds||[]).some(round=>(round||[]).some(item=>item.fixtureId===fixture.fixtureId)));
+  if(!calendarEntry)return;
+  const [calendarKey,calendar]=calendarEntry;
+  const roundNumber=Number(fixture.round||1);
+  const roundFixtures=(calendar.rounds||[]).find(round=>(round||[]).some(item=>item.fixtureId===fixture.fixtureId))||[fixture];
+  const seasonNumber=Number(calendar.seasonNumber||state.seasonNumber||1);
+  const league=calendar.league||getUserTeam()?.league||state.selectedLeague||"Нижняя лига";
+  state.leagueMatchResults=Array.isArray(state.leagueMatchResults)?state.leagueMatchResults:[];
   state.playerMatchRatings=Array.isArray(state.playerMatchRatings)?state.playerMatchRatings:[];
-  const ratingRecord={
-    fixtureId:fixture.fixtureId,seasonNumber:Number(state.seasonNumber||1),
-    round:Number(fixture.round||Math.ceil(Number(state.gameDay||1)/7)),
-    gameDay:Number(state.gameDay||1),recordType:"preview",
-    homeName:fixture.homeTeamName,awayName:fixture.awayTeamName,
-    homeGoals:lastMatchPreview.homeGoals,awayGoals:lastMatchPreview.awayGoals,
-    players:[...lastMatchPreview.userRatings,...lastMatchPreview.opponentRatings].map(item=>({...item}))
+  state.playerAwards=Array.isArray(state.playerAwards)?state.playerAwards:[];
+  let userResult=null;
+  roundFixtures.forEach(roundFixture=>{
+    const exists=state.leagueMatchResults.some(record=>record.fixtureId===roundFixture.fixtureId&&Number(record.seasonNumber)===seasonNumber);
+    if(exists)return;
+    const match=simulateFixturePreview({...roundFixture,league});
+    const record={
+      fixtureId:roundFixture.fixtureId,seasonNumber,round:roundNumber,
+      gameDay:Number(roundFixture.gameDay||state.gameDay||1),league,
+      homeTeamId:String(roundFixture.homeTeamId),awayTeamId:String(roundFixture.awayTeamId),
+      homeName:roundFixture.homeTeamName,awayName:roundFixture.awayTeamName,
+      homeGoals:match.homeGoals,awayGoals:match.awayGoals,
+      homeResult:match.homeResult,awayResult:match.awayResult,
+      events:match.events.map(event=>({...event})),
+      homeRatings:match.homeRatings.map(item=>({...item})),
+      awayRatings:match.awayRatings.map(item=>({...item}))
+    };
+    state.leagueMatchResults.push(record);
+    const allPlayers=[...record.homeRatings,...record.awayRatings];
+    state.playerMatchRatings=state.playerMatchRatings.filter(item=>!(item.fixtureId===record.fixtureId&&Number(item.seasonNumber)===seasonNumber&&item.recordType==="official"));
+    state.playerMatchRatings.push({
+      fixtureId:record.fixtureId,seasonNumber,round:roundNumber,gameDay:record.gameDay,
+      league,recordType:"official",homeName:record.homeName,awayName:record.awayName,
+      homeGoals:record.homeGoals,awayGoals:record.awayGoals,players:allPlayers
+    });
+    if(roundFixture.fixtureId===fixture.fixtureId)userResult=record;
+  });
+  if(!userResult)userResult=state.leagueMatchResults.find(item=>item.fixtureId===fixture.fixtureId&&Number(item.seasonNumber)===seasonNumber);
+  if(!userResult)return;
+  const userIsHome=Boolean(fixture.homeIsUser);
+  const goalsFor=userIsHome?userResult.homeGoals:userResult.awayGoals;
+  const goalsAgainst=userIsHome?userResult.awayGoals:userResult.homeGoals;
+  const opponentTeamId=userIsHome?userResult.awayTeamId:userResult.homeTeamId;
+  const opponentName=userIsHome?userResult.awayName:userResult.homeName;
+  const result=goalsFor>goalsAgainst?"W":goalsFor<goalsAgainst?"L":"D";
+  state.careerHistory.officialMatches.push({
+    fixtureId:fixture.fixtureId,seasonNumber,round:roundNumber,gameDay:userResult.gameDay,league,
+    teamId:String(fixture.homeIsUser?fixture.homeTeamId:fixture.awayTeamId),
+    teamName:state.teamName,opponentTeamId,opponentName,
+    homeTeamId:userResult.homeTeamId,awayTeamId:userResult.awayTeamId,
+    goalsFor,goalsAgainst,result,homeGoals:userResult.homeGoals,awayGoals:userResult.awayGoals,
+    playedAt:new Date().toISOString(),recordType:"official-local"
+  });
+  state.completedFixtures=Array.isArray(state.completedFixtures)?state.completedFixtures:[];
+  state.completedFixtures=state.completedFixtures.filter(id=>id!==fixture.fixtureId);
+  lastMatchPreview={
+    fixtureId:fixture.fixtureId,league,
+    homeName:userResult.homeName,awayName:userResult.awayName,
+    homeGoals:userResult.homeGoals,awayGoals:userResult.awayGoals,
+    events:userResult.events||[],
+    userRatings:userIsHome?userResult.homeRatings:userResult.awayRatings,
+    opponentRatings:userIsHome?userResult.awayRatings:userResult.homeRatings
   };
-  state.playerMatchRatings=state.playerMatchRatings.filter(record=>!(record.fixtureId===fixture.fixtureId&&record.seasonNumber===ratingRecord.seasonNumber));
-  state.playerMatchRatings.push(ratingRecord);
+  // После каждого пятого тура выбираем лучшего игрока среди всех команд лиги по средней оценке.
+  if(roundNumber%5===0){
+    const periodNumber=roundNumber/5;
+    const awardId="player-month-S"+seasonNumber+"-"+league.replace(/\s+/g,"-")+"-"+periodNumber;
+    if(!state.playerAwards.some(award=>award.awardId===awardId)){
+      const fromRound=roundNumber-4;
+      const candidates=new Map();
+      state.playerMatchRatings.filter(item=>item.recordType==="official"&&item.league===league&&Number(item.seasonNumber)===seasonNumber&&Number(item.round)>=fromRound&&Number(item.round)<=roundNumber)
+        .forEach(record=>(record.players||[]).forEach(player=>{
+          const key=String(player.playerKey||"");
+          if(!key)return;
+          const aggregate=candidates.get(key)||{playerKey:key,playerName:player.name,teamId:player.teamId,teamName:player.teamName,ratings:[],goals:0,assists:0};
+          aggregate.ratings.push(Number(player.rating)||0);aggregate.goals+=Number(player.goals)||0;aggregate.assists+=Number(player.assists)||0;
+          candidates.set(key,aggregate);
+        }));
+      const ranked=[...candidates.values()].map(item=>({...item,appearances:item.ratings.length,averageRating:item.ratings.reduce((sum,value)=>sum+value,0)/(item.ratings.length||1),highRatings:item.ratings.filter(value=>value>=8).length}))
+        .filter(item=>item.appearances>=3)
+        .sort((a,b)=>b.averageRating-a.averageRating||b.highRatings-a.highRatings||(b.goals+b.assists)-(a.goals+a.assists)||a.playerName.localeCompare(b.playerName,"ru"));
+      const winner=ranked[0];
+      if(winner)state.playerAwards.push({
+        awardId,type:"playerOfMonth",title:"Игрок месяца",icon:"/images/awards/awardbestplayermonth.jpg",
+        playerKey:winner.playerKey,playerName:winner.playerName,teamId:winner.teamId,teamName:winner.teamName,
+        seasonNumber,periodNumber,roundStart:fromRound,roundEnd:roundNumber,
+        appearances:winner.appearances,averageRating:Math.round(winner.averageRating*100)/100,
+        goals:winner.goals,assists:winner.assists,league,recordType:"official-local"
+      });
+    }
+  }
   saveState();
   openPage("cabinet");
   const matchesTab=document.querySelector('[data-cabinet-tab="matches"]');
@@ -509,8 +591,8 @@ function runCalendarMatch(fixture){
 }
 function makeMatchPreviewPanel(fixture){
   const panel=document.createElement("section");panel.className="cabinet-panel match-preview-panel";
-  panel.append(safeText("h2","Матч по календарю · тестовый протокол"),
-    safeText("p","Предварительная симуляция на 20 игровых минут. Счёт и статистика не сохраняются и не отправляются в Supabase.","muted"));
+  panel.append(safeText("h2","Официальный матч календаря"),
+    safeText("p","Симуляция на 20 игровых минут. Результат и оценки сохраняются в локальной карьере; все матчи этого тура лиги рассчитываются вместе. Серверная синхронизация пока не подключена.","muted"));
   const button=document.createElement("button");button.type="button";button.className="primary-button";button.textContent="Провести матч";
   button.addEventListener("click",()=>runCalendarMatch(fixture));panel.append(button);return panel;
 }
@@ -747,7 +829,7 @@ function renderCabinet() {
       [["Матчей в сезоне",String(ownFixtures.length)],["Официально завершено",String(completed)],["Тестово пройдено",String(testCompleted)],["Не сыграно",String(Math.max(0,ownFixtures.length-completed-testCompleted))]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));summary.append(card);});
       p.append(summary);
       const todaysFixture=getCurrentOfficialFixture();
-      const currentFixtureIsCompleted=Boolean(todaysFixture&&((state.completedFixtures||[]).includes(todaysFixture.fixtureId)||officialMatches.some(match=>match.fixtureId===todaysFixture.fixtureId)));
+      const currentFixtureIsCompleted=Boolean(todaysFixture&&officialMatches.some(match=>match.fixtureId===todaysFixture.fixtureId));
       if(todaysFixture&&!currentFixtureIsCompleted)p.append(makeMatchPreviewPanel(todaysFixture));
       if(lastMatchPreview&&todaysFixture&&lastMatchPreview.fixtureId===todaysFixture.fixtureId)p.append(makeMatchPreviewResult(lastMatchPreview));
       const title=safeText("h3","Календарь сезона");title.className="season-fixture-heading";p.append(title);
