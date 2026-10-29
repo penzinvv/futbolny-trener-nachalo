@@ -1,7 +1,8 @@
 const STORAGE_KEY = "football-coach-start-v1";
 const defaultState = {
   coachName: "", teamName: "", emblem: "🛡️", teamLogoIndex: 1, avatarIndex: 1, seasonNumber: 1, avatarChangeUsedSeason: 0,
-  xp: 0, permanentRating: 0, seasonRating: 0, respect: 0, gameDay: 1, players: [], relationships: {}
+  xp: 0, permanentRating: 0, seasonRating: 0, respect: 0, gameDay: 1, players: [], relationships: {},
+  careerCoachId: null, careerTeamId: null, careerPlayerIds: {}, careerHistory: { officialMatches: [], seasons: {} }
 };
 let state = loadState();
 let leagueData = null;
@@ -55,6 +56,7 @@ $("saveAvatarChange").addEventListener("click", () => {
 });
 function showSetup() { $("onboarding").classList.remove("hidden"); $("dashboard").classList.add("hidden"); }
 function render() {
+  ensureCareerIdentity();
   $("coachNameLabel").textContent = state.coachName || "Тренер";
   $("coachAvatar").src = avatarPath(state.avatarIndex || 1);
   $("changeAvatarButton").classList.remove("hidden");
@@ -205,9 +207,18 @@ function renderCabinet() {
     } else if(key==="matches"){
       p=panel("Матчи команды","Ближайшие встречи и история результатов.");p.append(safeText("p","Когда начнётся сезон, здесь появятся ближайшие игры и результаты сыгранных матчей.","muted"));
     } else {
-      p=panel("Карьера тренера","История выступлений от сезона к сезону.");const grid=document.createElement("div");grid.className="cabinet-metrics";
-      [["Текущий сезон","Сезон "+(state.seasonNumber||1)],["Опыт аккаунта",(state.xp||0)+" XP"],["Постоянный рейтинг",String(state.permanentRating||0)],["Сезонный рейтинг",String(state.seasonRating||0)]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));grid.append(card);});
-      p.append(grid,safeText("p","После завершения сезона здесь сохранится история мест в лиге, результатов команды и заработанных очков.","muted"));
+      p=panel("Карьера тренера","Постоянная история тренера и команды. Официальная статистика будет расти только от завершённых официальных матчей.");
+      const grid=document.createElement("div");grid.className="cabinet-metrics";
+      const history=state.careerHistory||{officialMatches:[],seasons:{}};
+      const officialMatches=Array.isArray(history.officialMatches)?history.officialMatches:[];
+      const totals=officialMatches.reduce((a,m)=>{a.played++;a.wins+=m.result==="W"?1:0;a.draws+=m.result==="D"?1:0;a.losses+=m.result==="L"?1:0;a.gf+=Number(m.goalsFor||0);a.ga+=Number(m.goalsAgainst||0);return a;},{played:0,wins:0,draws:0,losses:0,gf:0,ga:0});
+      [["Текущий сезон","Сезон "+(state.seasonNumber||1)],["Официальные матчи",String(totals.played)],["Победы / ничьи / поражения",totals.wins+" / "+totals.draws+" / "+totals.losses],["Забито / пропущено",totals.gf+" / "+totals.ga],["Опыт аккаунта",(state.xp||0)+" XP"],["Постоянный рейтинг",String(state.permanentRating||0)],["ID тренера",(state.careerCoachId||"не создан").slice(0,8)],["ID команды",(state.careerTeamId||"не создан").slice(0,8)]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));grid.append(card);});
+      p.append(grid);
+      const note=safeText("p","Важно: тестовые матчи на странице «Тестовая игра» не попадают в официальную статистику. Сейчас результаты официальных матчей ещё не подключены к серверному архиву, поэтому показатели останутся нулевыми, пока не будет подключён защищённый серверный протокол.","muted");
+      p.append(note);
+      const seasons=Object.values(history.seasons||{}).sort((a,b)=>(a.seasonNumber||0)-(b.seasonNumber||0));
+      if(seasons.length){const list=document.createElement("div");list.className="cabinet-roster";seasons.forEach(season=>{const row=document.createElement("div");row.className="cabinet-roster-row";row.append(safeText("b","Сезон "+season.seasonNumber),safeText("span",(season.teamName||state.teamName)+" · место: "+(season.finalPlace??"—")+" · матчи: "+(season.played||0)));list.append(row);});p.append(list);}
+      else p.append(safeText("p","Архив сезонов пока пуст. История будет сохраняться отдельно и не будет обнуляться при начале нового сезона или смене клуба.","muted"));
     }
     body.append(p);tabs.querySelectorAll("button").forEach(button=>{const active=button.dataset.cabinetTab===key;button.classList.toggle("active",active);button.setAttribute("aria-selected",String(active));});
   };
@@ -229,6 +240,30 @@ document.querySelectorAll("[data-page]").forEach(button => button.addEventListen
 $("openCabinet").addEventListener("click", () => openPage("cabinet"));
 $("backHome").addEventListener("click", () => { $("pageView").classList.add("hidden"); $("dashboard").classList.remove("hidden"); });
 
+function makeCareerId() {
+  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") return globalThis.crypto.randomUUID();
+  return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 14);
+}
+function ensureCareerIdentity() {
+  if (!state.coachName || !state.teamName) return;
+  let changed=false;
+  if (!state.careerCoachId) { state.careerCoachId=makeCareerId(); changed=true; }
+  if (!state.careerTeamId) { state.careerTeamId=makeCareerId(); changed=true; }
+  if (!state.careerPlayerIds || typeof state.careerPlayerIds!=="object") { state.careerPlayerIds={}; changed=true; }
+  if (!state.careerHistory || typeof state.careerHistory!=="object") { state.careerHistory={officialMatches:[],seasons:{}}; changed=true; }
+  if (!Array.isArray(state.careerHistory.officialMatches)) { state.careerHistory.officialMatches=[]; changed=true; }
+  if (!state.careerHistory.seasons || typeof state.careerHistory.seasons!=="object") { state.careerHistory.seasons={}; changed=true; }
+  if (leagueData) {
+    leagueData.teams.forEach(team=>{
+      (team.players||[]).forEach((player,index)=>{
+        const key=team.id+"::"+index;
+        if (!state.careerPlayerIds[key]) { state.careerPlayerIds[key]=makeCareerId(); changed=true; }
+        player.careerId=state.careerPlayerIds[key];
+      });
+    });
+  }
+  if (changed) saveState();
+}
 function getUserTeam() {
   if (!leagueData) return null;
   const team = leagueData.teams.find(t => t.isUserTeam || t.name === "{teamName}");
