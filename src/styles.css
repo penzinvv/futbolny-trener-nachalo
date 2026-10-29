@@ -190,3 +190,20 @@
 .match-preview-events{display:grid;gap:6px;margin-top:12px}
 .match-preview-events p{margin:0;padding:8px 10px;border-left:3px solid var(--green,#4bd58b);border-radius:0 8px 8px 0;background:rgba(255,255,255,.035);font-size:13px}
 @media(max-width:600px){.match-preview-score{font-size:22px}.match-preview-events p{font-size:12px}}
+
+
+/* Оценки футболистов в предварительном протоколе матча */
+.match-rating-section{margin-top:18px}
+.match-rating-section h3{margin:0 0 10px;font-size:15px}
+.match-rating-list{display:grid;gap:7px}
+.match-rating-row{display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,1.5fr) 42px;gap:10px;align-items:center;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,.025)}
+.match-rating-identity{display:flex;flex-direction:column;gap:3px;min-width:0}
+.match-rating-identity b{font-size:12px;overflow-wrap:anywhere}
+.match-rating-identity span,.match-rating-details{font-size:11px;color:var(--muted,#9fb8aa)}
+.match-rating-details{overflow-wrap:anywhere}
+.match-rating-score{justify-self:end;font-size:17px;font-variant-numeric:tabular-nums;color:var(--green,#6fe0a1)}
+@media(max-width:600px){
+ .match-rating-row{grid-template-columns:minmax(0,1fr) 42px;gap:5px 8px}
+ .match-rating-details{grid-column:1;grid-row:2}
+ .match-rating-score{grid-column:2;grid-row:1}
+}
