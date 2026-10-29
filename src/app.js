@@ -360,8 +360,56 @@ function renderCabinet() {
       const matchSection=document.createElement("section");matchSection.className="team-stat-section";matchSection.append(safeText("h3","Результаты матчей"),matchGrid,safeText("p","В официальную статистику входят только завершённые официальные матчи. Тестовые матчи не учитываются.","muted"));
       p.append(matchSection);
     } else if(key==="table"){
-      p=panel("Турнирная таблица",team?.league||state.selectedLeague||"Нижняя лига");
-      p.append(safeText("p","Турнирная таблица появится после проведения матчей чемпионата. Сейчас результаты сезона ещё не сформированы.","muted"));
+      const activeLeague=team?.league||state.selectedLeague||"Нижняя лига";
+      p=panel("Турнирная таблица",activeLeague+" · сезон "+(state.seasonNumber||1));
+      const leagueNames=["Нижняя лига","Верхняя лига"];
+      const switcher=document.createElement("div");switcher.className="league-table-switcher";
+      leagueNames.forEach(name=>{const button=document.createElement("button");button.type="button";button.className="league-table-switch"+(name===activeLeague?" active":"");button.textContent=name;button.setAttribute("aria-pressed",String(name===activeLeague));button.addEventListener("click",()=>renderTabWithLeague(name));switcher.append(button);});
+      p.append(switcher);
+      const tableWrap=document.createElement("div");tableWrap.className="league-table-scroll";
+      const standingsTable=document.createElement("table");standingsTable.className="league-standings";
+      const head=document.createElement("thead");const header=document.createElement("tr");
+      ["Место","Команда","И","В","Н","П","Мячи","РМ","О"].forEach(label=>header.append(safeText("th",label)));
+      head.append(header);const tbody=document.createElement("tbody");standingsTable.append(head,tbody);tableWrap.append(standingsTable);p.append(tableWrap);
+      const hint=safeText("p","До завершения официальных матчей у команд нет начисленных очков. Тестовые матчи на положение в таблице не влияют.","muted");p.append(hint);
+      function renderTabWithLeague(leagueName){
+        const source=Array.isArray(leagueData?.teams)?leagueData.teams:[];
+        const teams=source.filter(item=>item.league===leagueName).map(item=>({...item}));
+        const placeholderTeam=teams.find(item=>item.name==="{teamName}");
+        if(placeholderTeam){placeholderTeam.name=state.teamName||"Моя команда";placeholderTeam.isUser=true;}
+        let userRow=teams.find(item=>item.name===(state.teamName||""));
+        if(!userRow&&activeLeague===leagueName){
+          userRow={id:team?.id||state.careerTeamId||"user-team",name:state.teamName||"Моя команда",league:leagueName,isUser:true};
+          teams.push(userRow);
+        }
+        const playedByTeam=new Map();
+        const officialMatches=Array.isArray(state.careerHistory?.officialMatches)?state.careerHistory.officialMatches:[];
+        officialMatches.forEach(match=>{
+          const opponentId=match.opponentTeamId||match.opponentId;
+          if(!opponentId)return;
+          const ownId=team?.id||state.careerTeamId;
+          const goalsFor=Number(match.goalsFor||0),goalsAgainst=Number(match.goalsAgainst||0);
+          const own=playedByTeam.get(ownId)||{played:0,wins:0,draws:0,losses:0,gf:0,ga:0,points:0};
+          const opponent=playedByTeam.get(opponentId)||{played:0,wins:0,draws:0,losses:0,gf:0,ga:0,points:0};
+          own.played++;own.gf+=goalsFor;own.ga+=goalsAgainst;
+          opponent.played++;opponent.gf+=goalsAgainst;opponent.ga+=goalsFor;
+          if(goalsFor>goalsAgainst){own.wins++;own.points+=3;opponent.losses++;}
+          else if(goalsFor<goalsAgainst){own.losses++;opponent.wins++;opponent.points+=3;}
+          else{own.draws++;opponent.draws++;own.points++;opponent.points++;}
+          playedByTeam.set(ownId,own);playedByTeam.set(opponentId,opponent);
+        });
+        const rows=teams.map(item=>{const stats=playedByTeam.get(item.id)||{played:0,wins:0,draws:0,losses:0,gf:0,ga:0,points:0};return {...item,...stats,diff:stats.gf-stats.ga};});
+        rows.sort((x,y)=>y.points-x.points||y.diff-x.diff||y.gf-x.gf||x.name.localeCompare(y.name,"ru"));
+        tbody.replaceChildren();
+        rows.forEach((item,index)=>{
+          const row=document.createElement("tr");if(item.isUser)row.className="is-user-team";
+          const values=[String(index+1),item.name,String(item.played),String(item.wins),String(item.draws),String(item.losses),item.gf+":"+item.ga,(item.diff>0?"+":"")+item.diff,String(item.points)];
+          values.forEach((value,i)=>row.append(safeText(i===1?"th":"td",value)));
+          tbody.append(row);
+        });
+        switcher.querySelectorAll("button").forEach(button=>{const active=button.textContent===leagueName;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});
+      }
+      renderTabWithLeague(activeLeague);
     } else if(key==="matches"){
       p=panel("Матчи команды","Ближайшие встречи и история результатов.");p.append(safeText("p","Когда начнётся сезон, здесь появятся ближайшие игры и результаты сыгранных матчей.","muted"));
     } else {
