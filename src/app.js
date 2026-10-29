@@ -982,7 +982,7 @@ function renderLeague() {
  const current=document.createElement("div");current.className="calendar-current-match";
  if(round&&fixture&&!already){
   current.append(safeText("b","Сегодня официальный матч · тур "+round),safeText("p",matchTeamLabel(fixture.home)+" — "+matchTeamLabel(fixture.away)));
-  current.append(B("ПОДГОТОВИТЬСЯ И ИГРАТЬ",()=>openPage("match"),"primary"));
+  current.append(matchButton("ПОДГОТОВИТЬСЯ И ИГРАТЬ",()=>openPage("match"),"primary"));
  }else if(round&&fixture&&already){
   current.append(safeText("b","Матч тура "+round+" завершён"),safeText("p",matchTeamLabel(fixture.home)+" "+already.homeScore+":"+already.awayScore+" "+matchTeamLabel(fixture.away)));
  }else{
