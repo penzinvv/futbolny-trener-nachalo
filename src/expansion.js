@@ -2,7 +2,7 @@
 "use strict";
 const cd=3600000,icons=["⚽","🧤","👟","👕","🏆","🥅"];let timer=null,profileBase;
 const B=(s,fn,c="secondary")=>{const b=document.createElement("button");b.type="button";b.className=c;b.textContent=s;b.onclick=fn;return b},T=(s)=>safeText("p",s,"muted"),P=(a,b)=>{const e=document.createElement("section");e.className="feature-panel";e.append(safeText("h2",a),T(b));return e},F=n=>(Math.round(n*100)/100).toLocaleString("ru-RU",{maximumFractionDigits:2})+"%",own=()=>getUserTeam()?.players||[];
-function rel(t,p,n){state.relationships||={};let k=playerRelationKey(t,p),v=Math.max(0,Math.min(100,Number(state.relationships[k]||0)+n/100));state.relationships[k]=v;return v}
+function rel(t,p,n){state.relationships||={};let k=playerRelationKey(t,p),before=Number(state.relationships[k]||0),v=Math.max(0,Math.min(100,before+n/100));state.relationships[k]=v;if(v>before){state.relationshipHistory=Array.isArray(state.relationshipHistory)?state.relationshipHistory:[];state.relationshipHistory.push({team:t.id,playerId:p.careerId||p.id||p.name,player:p.name,after:v,at:Date.now()})}return v}
 function transfer(){openPage("transfers")}
 function install(){
  state.relationships||={};state.trainingCooldowns||={};state.trainingHistory||=[];state.transferHistory||=[];state.externalRosters||={};state.coachGoals||={};
@@ -35,7 +35,7 @@ function localDayStart(now=Date.now()){const d=new Date(now);d.setHours(0,0,0,0)
   }
   if(goal.id==="external-relation"){
    const ownId=team?.id;let best=0;
-   (leagueData?.teams||[]).filter(t=>t.id!==ownId).forEach(t=>(t.players||[]).forEach(p=>{best=Math.max(best,Number(state.relationships?.[playerRelationKey(t,p)]||0))}));
+   (state.relationshipHistory||[]).filter(x=>Number(x.at)>=start&&x.team!==ownId).forEach(x=>{best=Math.max(best,Number(x.after)||0)});
    return {current:Math.min(50,Math.floor(best)),total:50,done:best>=50};
   }
   return {current:0,total:1,done:false}
