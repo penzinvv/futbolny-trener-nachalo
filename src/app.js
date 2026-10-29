@@ -635,6 +635,7 @@ function makeTeamRoster(team) {
   const header = document.createElement("div"); header.className = "team-detail-head";
   if (team.logo) { const img = document.createElement("img"); img.src="/images/logoteams/"+team.logo+".jpg"; img.alt="Эмблема "+team.name; img.className="team-logo-large"; img.onerror=()=>img.remove(); header.append(img); }
   const title = document.createElement("div"); title.append(safeText("h2",team.name), safeText("p","Тренер: "+team.coach), safeText("p",team.league+" · "+team.players.length+" футболистов"));
+  const coachButton=document.createElement("button");coachButton.type="button";coachButton.className="team-coach-profile-button";coachButton.textContent="Профиль тренера →";coachButton.addEventListener("click",()=>openCoachProfile(team,wrap));title.append(coachButton);
   header.append(title); wrap.append(header);
   if(team.chant) { const chant=document.createElement("blockquote"); chant.className="team-chant"; chant.textContent="«"+team.chant+"»"; wrap.append(chant); }
   const grid=document.createElement("div"); grid.className="player-cards-grid";
@@ -646,6 +647,35 @@ function makeTeamRoster(team) {
     card.append(img,info,makeRelationBadge(team,p),stats); grid.append(card);
   });
   wrap.append(grid); return wrap;
+}
+function openCoachProfile(team,returnView) {
+  const wrap=document.createElement("div");wrap.className="coach-profile";
+  const back=document.createElement("button");back.type="button";back.className="coach-profile-back";back.textContent="← К команде";back.addEventListener("click",()=>{const container=document.querySelector(".team-roster-container");if(container&&returnView)container.replaceChildren(returnView);else openPage("players");});
+  const head=document.createElement("section");head.className="coach-profile-head";
+  const details=document.createElement("div");details.className="coach-profile-identity";
+  details.append(safeText("p","ПРОФИЛЬ ТРЕНЕРА","eyebrow"),safeText("h2",team.coach||"Тренер"),safeText("p",team.name,"coach-profile-team"),safeText("p",team.league+" · Сезон "+(state.seasonNumber||1),"muted"));
+  head.append(details);
+  const isUserTeam=Boolean(team.isUserTeam||team.id===getUserTeam()?.id||team.name===state.teamName);
+  const history=state.careerHistory||{};
+  const officialMatches=isUserTeam&&Array.isArray(history.officialMatches)?history.officialMatches:[];
+  const totals=officialMatches.reduce((acc,match)=>{acc.played++;acc.wins+=match.result==="W"?1:0;acc.draws+=match.result==="D"?1:0;acc.losses+=match.result==="L"?1:0;acc.gf+=Number(match.goalsFor||0);acc.ga+=Number(match.goalsAgainst||0);return acc;},{played:0,wins:0,draws:0,losses:0,gf:0,ga:0});
+  const grid=document.createElement("div");grid.className="cabinet-metrics coach-profile-metrics";
+  const metrics=[
+    ["Команда",team.name],
+    ["Лига",team.league||"—"],
+    ["Футболистов",String((team.players||[]).length)+" / 10"],
+    ["Сезон","Сезон "+(state.seasonNumber||1)],
+    ["Матчи",isUserTeam?String(totals.played):"—"],
+    ["Победы / ничьи / поражения",isUserTeam?totals.wins+" / "+totals.draws+" / "+totals.losses:"—"],
+    ["Забито / пропущено",isUserTeam?totals.gf+" / "+totals.ga:"—"],
+    ["Опыт тренера",isUserTeam?(state.xp||0)+" XP":"—"],
+    ["Постоянный рейтинг",isUserTeam?String(state.permanentRating||0):"—"]
+  ];
+  metrics.forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));grid.append(card);});
+  const note=safeText("p",isUserTeam?"Показатели взяты из текущего сохранения тренера. Официальные результаты будут отражаться после подключения сохранения матчей.":"Профиль тренера команды доступен. Индивидуальная статистика будет отображаться после появления общей официальной истории матчей лиги.","muted");
+  wrap.append(back,head,grid,note);
+  const container=document.querySelector(".team-roster-container");
+  if(container)container.replaceChildren(wrap);
 }
 function teamsPlayerIndex(team,p) { let n=1; if(leagueData) for(const t of leagueData.teams){for(const x of t.players){if(t.id===team.id && x.name===p.name)return n;n++;}} return n; }
 function renderPlayers() {
