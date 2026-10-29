@@ -710,6 +710,7 @@ const MATCH_FORMATIONS = {
   "1–3–1": ["ЗЩ","ПЗ","ПЗ","ПЗ","НП"],
   "3–1–1": ["ЗЩ","ЗЩ","ЗЩ","ПЗ","НП"]
 };
+function matchButton(label,onClick,cls){const b=document.createElement("button");b.type="button";b.className=cls||"secondary";b.textContent=label;b.addEventListener("click",onClick);return b}
 function officialRoundDay(round){return round<=10?round*7:108+(round-11)*7}
 function officialRoundForDay(day){for(let r=1;r<=20;r++)if(officialRoundDay(r)===day)return r;return 0}
 function officialMatchKey(round,home,away){return String(state.seasonNumber||1)+"-"+round+"-"+home.id+"-"+away.id}
@@ -752,7 +753,7 @@ function ensureRoundBackgroundResults(round,userFixture,userResult){
  getOfficialRoundFixtures(round).forEach(f=>{
   const key=roundFixtureKey(round,f);if(state.leagueResults[key])return;
   if(userFixture&&f.home.id===userFixture.home.id&&f.away.id===userFixture.away.id&&userResult){state.leagueResults[key]=userResult;return}
-  state.leagueResults[key]={round,homeId:f.home.id,awayId:f.away.id,homeScore:scoreRandomTeam(f.home),awayScore:scoreRandomTeam(f.away),simulated:true};
+  state.leagueResults[key]={season:Number(state.seasonNumber)||1,round,homeId:f.home.id,awayId:f.away.id,homeScore:scoreRandomTeam(f.home),awayScore:scoreRandomTeam(f.away),simulated:true};
  });
 }
 function getCurrentStandings(){
@@ -877,9 +878,6 @@ function applyOfficialMatchResult(session,home,away){
  state.careerHistory=state.careerHistory||{officialMatches:[],seasons:{}};
  state.careerHistory.officialMatches=Array.isArray(state.careerHistory.officialMatches)?state.careerHistory.officialMatches:[];
  state.careerHistory.officialMatches.push({season:result.season,round:result.round,day:result.day,homeId:home.id,awayId:away.id,homeScore:result.homeScore,awayScore:result.awayScore,events:result.events,substitutions:result.substitutions});
- state.permanentRating=(Number(state.permanentRating)||0)+Math.max(0,result.homeScore-result.awayScore)*(home.isUserTeam?10:0)+Math.max(0,result.awayScore-result.homeScore)*(away.isUserTeam?10:0);
- if(home.isUserTeam){state.seasonRating=(Number(state.seasonRating)||0)+(result.homeScore>result.awayScore?30:result.homeScore===result.awayScore?10:0)}
- if(away.isUserTeam){state.seasonRating=(Number(state.seasonRating)||0)+(result.awayScore>result.homeScore?30:result.awayScore===result.homeScore?10:0)}
  state.officialMatchSession=null;saveState();render();openPage("league");
 }
 function renderMatchPage(){
@@ -888,9 +886,9 @@ function renderMatchPage(){
  let session=state.officialMatchSession;
  if(!session){
   const round=officialRoundForDay(Number(state.gameDay)||1),fixture=currentOfficialFixture();
-  if(!round||!fixture){wrap.append(safeText("h2","Сегодня нет официального матча"),safeText("p","Матчи назначены на дни 7–70 и 108–171. Продолжай календарь кнопкой «Пропустить день».","muted"));wrap.append(B("Вернуться в турниры",()=>openPage("league"),"secondary"));return wrap}
+  if(!round||!fixture){wrap.append(safeText("h2","Сегодня нет официального матча"),safeText("p","Матчи назначены на дни 7–70 и 108–171. Продолжай календарь кнопкой «Пропустить день».","muted"));wrap.append(matchButton("Вернуться в турниры",()=>openPage("league"),"secondary"));return wrap}
   const existing=state.leagueResults?.[roundFixtureKey(round,fixture)];
-  if(existing){wrap.append(safeText("h2","Матч тура "+round+" уже завершён"),safeText("p",matchTeamLabel(fixture.home)+" "+existing.homeScore+":"+existing.awayScore+" "+matchTeamLabel(fixture.away)));wrap.append(B("К календарю",()=>openPage("league"),"primary"));return wrap}
+  if(existing){wrap.append(safeText("h2","Матч тура "+round+" уже завершён"),safeText("p",matchTeamLabel(fixture.home)+" "+existing.homeScore+":"+existing.awayScore+" "+matchTeamLabel(fixture.away)));wrap.append(matchButton("К календарю",()=>openPage("league"),"primary"));return wrap}
   const formation="2–2–1";
   const homeLineup=buildOfficialLineup(fixture.home,formation),awayLineup=buildOfficialLineup(fixture.away,formation);
   const setup=document.createElement("section");setup.className="match-setup panel";
@@ -902,7 +900,7 @@ function renderMatchPage(){
   const preview=document.createElement("div");preview.className="match-lineup-preview";
   const drawPreview=()=>{preview.replaceChildren();const myTeam=getUserTeam();const lineup=buildOfficialLineup(myTeam,formationSelect.value);lineup.forEach(x=>{const card=document.createElement("div");card.className="match-lineup-card";card.append(makeMatchPortrait(x.player,myTeam),safeText("b",x.player.name),safeText("small",x.role,"match-role-tag"));preview.append(card)})};
   formationSelect.addEventListener("change",drawPreview);formationLabel.append(formationSelect);setup.append(formationLabel,preview);drawPreview();
-  setup.append(B("НАЧАТЬ МАТЧ",()=>{
+  setup.append(matchButton("НАЧАТЬ МАТЧ",()=>{
    const selectedFormation=formationSelect.value;
    const userHome=fixture.home.isUserTeam,homeTeam=fixture.home,awayTeam=fixture.away;
    const myLineup=buildOfficialLineup(getUserTeam(),selectedFormation);
@@ -946,7 +944,7 @@ function renderMatchPage(){
     row.append(makeMatchPortrait(entry.player,team),safeText("span",entry.role+" · "+entry.player.name));
     const select=document.createElement("select");select.className="match-substitution-select";const blank=document.createElement("option");blank.value="";blank.textContent="Без замены";select.append(blank);
     bench.forEach(p=>{const o=document.createElement("option");o.value=p.name;o.textContent=entry.role+" ← "+p.name+" ("+p.position+")";select.append(o)});
-    const go=B("Заменить",()=>{
+    const go=matchButton("Заменить",()=>{
      if(session.substitutions>=3){alert("За матч разрешено не более трёх замен.");return}
      const name=select.value;if(!name)return;
      const incoming=bench.find(p=>p.name===name);if(!incoming)return;
@@ -955,22 +953,21 @@ function renderMatchPage(){
     },"secondary");go.disabled=session.substitutions>=3||bench.length===0;row.append(select,go);choices.append(row)
    });
   });
-  ht.append(choices,B("НАЧАТЬ ВТОРОЙ ТАЙМ",()=>{session.halfTime=false;session.half=2;state.officialMatchSession=session;saveState();openPage("match")},"primary"));wrap.append(ht)
+  ht.append(choices,matchButton("НАЧАТЬ ВТОРОЙ ТАЙМ",()=>{session.halfTime=false;session.half=2;state.officialMatchSession=session;saveState();openPage("match")},"primary"));wrap.append(ht)
  }else if(!session.finished){
   const actions=document.createElement("div");actions.className="match-control-row";
-  actions.append(B(session.minute===0?"НАЧАТЬ МАТЧ":"СЛЕДУЮЩАЯ МИНУТА",()=>{
+  actions.append(matchButton(session.minute===0?"НАЧАТЬ МАТЧ":"СЛЕДУЮЩАЯ МИНУТА",()=>{
    if(session.minute===0){session.events.push({minute:0,type:"play",text:"Судья даёт стартовый свисток. Начинается матч."})}
-   if(session.minute===10&&!session.halfTime){session.halfTime=true;state.officialMatchSession=session;saveState();openPage("match");return}
    session.minute++;
    const event=createMatchEvent(session,home,away,session.minute);session.events.push(event);
    if(session.minute===10){session.halfTime=true;session.events.push({minute:10,type:"halftime",text:"Свисток на перерыв. Тренер может разобрать ключевые эпизоды и сделать до трёх замен."})}
    if(session.minute>=20){session.events.push({minute:20,type:"fulltime",text:"Финальный свисток! Итоговый счёт "+session.score.home+":"+session.score.away+"."});applyOfficialMatchResult(session,home,away);return}
    state.officialMatchSession=session;saveState();openPage("match");
   },"primary"));
-  actions.append(B("СОХРАНИТЬ И ВЕРНУТЬСЯ ПОЗЖЕ",()=>{state.officialMatchSession=session;saveState();openPage("league")},"secondary"));
+  actions.append(matchButton("СОХРАНИТЬ И ВЕРНУТЬСЯ ПОЗЖЕ",()=>{state.officialMatchSession=session;saveState();openPage("league")},"secondary"));
   wrap.append(actions)
  }else{
-  wrap.append(safeText("h2","Матч завершён"),B("К календарю",()=>openPage("league"),"primary"))
+  wrap.append(safeText("h2","Матч завершён"),matchButton("К календарю",()=>openPage("league"),"primary"))
  }
  return wrap
 }
