@@ -412,3 +412,48 @@
  .league-standing-team .tournament-team-link span{font-size:10px}
  .league-standing-team .tournament-team-logo{width:22px;height:22px;flex-basis:22px}
 }
+
+/* Версия 1.3.4 — день матча и послематчевый отчёт */
+.start-match-button{display:block;margin-top:10px;width:100%;max-width:310px;padding:13px 18px;border:1px solid #8bf0b8;border-radius:12px;background:#65dfa0;color:#08281b;font-weight:950;letter-spacing:.04em;cursor:pointer;box-shadow:0 8px 24px #0002}
+.start-match-button:hover{filter:brightness(1.05);transform:translateY(-1px)}
+.match-scoreboard{padding:12px 18px!important;margin-bottom:10px!important}
+.match-scoreboard .match-scoreline{gap:14px}
+.match-scoreboard .match-score-number{font-size:clamp(26px,4vw,42px)}
+.match-scoreboard .match-clock{margin:5px 0 0;font-size:13px}
+.official-match-pitch{min-height:300px!important;height:clamp(260px,38vw,390px)!important;margin:10px 0!important}
+.match-summary-score{padding:16px!important}
+.match-summary-scoreline{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:14px}
+.match-summary-team{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;min-width:0}
+.match-summary-team b{font-size:clamp(13px,2vw,18px);overflow-wrap:anywhere}
+.match-summary-team strong{font-size:clamp(26px,4vw,38px)}
+.match-summary-divider{font-size:24px;color:var(--muted)}
+.match-summary-outcome{text-align:center;margin:12px 0 0;font-weight:900;color:var(--green,#65dfa0)}
+.match-summary-panel{margin-top:12px;padding:16px}
+.match-summary-panel h2{margin-top:0}
+.match-summary-goal,.match-summary-event{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.match-summary-goal:last-child,.match-summary-event:last-child{border-bottom:0}
+.match-summary-goal b,.match-summary-event b{color:var(--green,#65dfa0)}
+.match-summary-stats{display:grid;gap:0}
+.match-summary-stat-row{display:grid;grid-template-columns:1fr minmax(120px,1.4fr) 1fr;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.match-summary-stat-row b:first-child{text-align:right}
+.match-summary-stat-row span{text-align:center;color:var(--muted);font-size:13px}
+.match-summary-lineups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.match-summary-lineup h3{font-size:14px}
+.match-summary-player{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px}
+.match-summary-player img{width:32px;height:34px;object-fit:cover;border-radius:7px}
+.match-summary-player span{flex:1;min-width:0}
+.match-summary-player b{white-space:nowrap}
+.match-summary-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.match-summary-actions button{flex:1}
+@media(max-width:650px){
+ .start-match-button{max-width:none}
+ .match-scoreboard{padding:10px 12px!important}
+ .official-match-pitch{height:310px!important;min-height:260px!important}
+ .match-summary-scoreline{gap:6px}
+ .match-summary-team{gap:5px;flex-direction:column}
+ .match-summary-team .tournament-team-logo{width:24px;height:24px}
+ .match-summary-team b{font-size:12px;text-align:center}
+ .match-summary-team strong{font-size:28px}
+ .match-summary-lineups{grid-template-columns:1fr}
+ .match-summary-panel{padding:12px}
+}
