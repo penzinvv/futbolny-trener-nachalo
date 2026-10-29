@@ -172,3 +172,21 @@
  .season-fixture-matchup{gap:5px}
  .season-fixture-matchup>b{font-size:11px}
 }
+
+/* Профили тренеров команд */
+.team-coach-profile-button,.coach-profile-back{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;padding:9px 12px;border:1px solid #3d7659;border-radius:10px;background:#123b2a;color:#dff8e8;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.team-coach-profile-button:hover,.coach-profile-back:hover{background:#1b5238;border-color:var(--green,#4bd58b)}
+.coach-profile{max-width:760px;margin:10px 0 20px}
+.coach-profile-back{margin:0 0 14px}
+.coach-profile-head{display:flex;align-items:center;min-height:130px;margin:0 0 18px;padding:22px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(135deg,rgba(75,213,139,.12),rgba(255,255,255,.02))}
+.coach-profile-identity .eyebrow{margin:0 0 8px;font-size:10px;letter-spacing:.12em;color:var(--green,#4bd58b);font-weight:800}
+.coach-profile-identity h2{margin:0 0 7px;font-size:26px;overflow-wrap:anywhere}
+.coach-profile-team{margin:0 0 5px;font-size:15px;font-weight:700}
+.coach-profile-identity .muted{margin:0;font-size:12px}
+.coach-profile-metrics{margin-bottom:16px}
+@media(max-width:600px){
+ .team-detail-head{align-items:flex-start;gap:10px}
+ .team-coach-profile-button{padding:8px 10px;font-size:11px}
+ .coach-profile-head{min-height:110px;padding:16px}
+ .coach-profile-identity h2{font-size:22px}
+}
