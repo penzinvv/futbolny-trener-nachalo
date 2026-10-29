@@ -676,8 +676,16 @@ function ensureCareerIdentity() {
 function getUserTeam() {
   if (!leagueData) return null;
   const team = leagueData.teams.find(t => t.isUserTeam || t.name === "{teamName}");
-  if (team) { team.name = state.teamName || "Моя команда"; team.coach = state.coachName || "Тренер"; }
-  return team || null;
+  if (!team) return null;
+  // Возвращаем представление пользовательской команды, не меняя общий справочник лиги.
+  // Иначе шаблон {teamName} теряется и календарь перестаёт распознавать матчи пользователя.
+  return {
+    ...team,
+    name: state.teamName || "Моя команда",
+    coach: state.coachName || "Тренер",
+    isUserTeam: true,
+    players: team.players || []
+  };
 }
 function getPortrait(index) { return "/images/portretplayers/portret" + (((index - 1) % 50) + 1) + ".jpg"; }
 function getFlag(nationality) {
