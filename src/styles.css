@@ -190,3 +190,33 @@
  .coach-profile-head{min-height:110px;padding:16px}
  .coach-profile-identity h2{font-size:22px}
 }
+
+
+/* Главная: компактная колонка из трёх широких кнопок в окне тренера */
+.hero{padding-right:210px}
+.hero-manager-actions{right:24px;top:50%;transform:translateY(-50%);display:grid;grid-template-columns:1fr;gap:8px;width:164px}
+.cabinet-button{width:100%;min-width:0;padding:8px 10px;gap:5px;border-radius:12px}
+.cabinet-button .cabinet-button-image{width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;object-position:center;border-radius:8px}
+.cabinet-button b{font-size:12px;letter-spacing:.06em}
+.menu-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
+.menu-grid button{min-width:0;height:100%}
+.menu-grid button .menu-button-image{width:100%;height:auto;aspect-ratio:16/5;object-fit:cover;object-position:center}
+.menu-grid button b{font-size:13px;line-height:1.3}
+.menu-grid button small{font-size:11px;line-height:1.35}
+.menu-image-placeholder{display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:16/5;min-height:68px;border:1px dashed #426e59;border-radius:9px;background:linear-gradient(135deg,#102d22,#0a2018);color:#789687;font-size:10px;letter-spacing:.12em}
+.menu-grid button.menu-placeholder{cursor:pointer}
+@media(max-width:850px){
+ .hero{padding-right:180px}
+ .hero-manager-actions{right:18px;width:146px}
+ .cabinet-button .cabinet-button-image{aspect-ratio:16/9}
+}
+@media(max-width:600px){
+ .hero{padding-right:0}
+ .hero-manager-actions{position:relative;top:auto;right:auto;transform:none;width:auto;padding:0 16px 16px;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start}
+ .cabinet-button{display:grid;min-width:0;padding:6px;gap:5px}
+ .cabinet-button .cabinet-button-image{width:100%;height:auto;aspect-ratio:16/9}
+ .cabinet-button b{font-size:10px;letter-spacing:0}
+ .menu-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .menu-grid button .menu-button-image,.menu-image-placeholder{aspect-ratio:16/6;min-height:58px}
+ .menu-grid button{padding:9px}
+}
