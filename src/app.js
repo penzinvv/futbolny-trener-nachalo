@@ -411,7 +411,74 @@ function renderCabinet() {
       }
       renderTabWithLeague(activeLeague);
     } else if(key==="matches"){
-      p=panel("Матчи команды","Ближайшие встречи и история результатов.");p.append(safeText("p","Когда начнётся сезон, здесь появятся ближайшие игры и результаты сыгранных матчей.","muted"));
+      const activeLeague=team?.league||state.selectedLeague||"Нижняя лига";
+      p=panel("Календарь матчей",activeLeague+" · сезон "+(state.seasonNumber||1));
+      const leagueTeams=(Array.isArray(leagueData?.teams)?leagueData.teams:[]).filter(item=>item.league===activeLeague).map(item=>({...item}));
+      const template=leagueTeams.find(item=>item.name==="{teamName}");
+      if(template){template.name=state.teamName||"Моя команда";template.coach=state.coachName||"Тренер";template.isUserTeam=true;}
+      let userEntry=leagueTeams.find(item=>item.id===team?.id||item.isUserTeam);
+      if(!userEntry){
+        userEntry={id:team?.id||state.careerTeamId||"user-team",name:state.teamName||"Моя команда",league:activeLeague,isUserTeam:true};
+        leagueTeams.push(userEntry);
+      }
+      const stableTeams=leagueTeams.slice(0,6);
+      const teamSignature=stableTeams.map(item=>String(item.id)+":"+String(item.name)).sort().join("|");
+      const calendarKey="S"+(state.seasonNumber||1)+"::"+activeLeague+"::"+teamSignature;
+      state.seasonCalendars=state.seasonCalendars||{};
+      const shuffle=(items)=>{for(let i=items.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[items[i],items[j]]=[items[j],items[i]];}return items;};
+      const generateCalendar=()=>{
+        const participants=shuffle(stableTeams.map(item=>({id:String(item.id),name:item.name,isUserTeam:Boolean(item.isUserTeam)})));
+        const rotating=participants.slice();const baseRounds=[];
+        for(let round=0;round<participants.length-1;round++){
+          const pairings=[];
+          for(let j=0;j<participants.length/2;j++){
+            const first=rotating[j],second=rotating[rotating.length-1-j];
+            const flip=Math.random()<0.5;
+            pairings.push({home:flip?first:second,away:flip?second:first});
+          }
+          baseRounds.push(pairings);
+          const fixed=rotating[0];const rest=rotating.slice(1);rest.unshift(rest.pop());rotating.splice(0,rotating.length,fixed,...rest);
+        }
+        const rounds=[];
+        for(let leg=0;leg<4;leg++){
+          const order=shuffle(baseRounds.map((matches,index)=>({matches,index})));
+          order.forEach(({matches})=>{
+            const fixtures=matches.map((pair,index)=>{
+              const reverse=leg%2===1;
+              const home=reverse?pair.away:pair.home,away=reverse?pair.home:pair.away;
+              const meeting=leg+1;
+              const fixtureId="S"+(state.seasonNumber||1)+"-"+activeLeague.replace(/\\s+/g,"-")+"-"+[home.id,away.id].sort().join("-")+"-"+meeting;
+              return {fixtureId,round:rounds.length+1,leg:leg+1,homeTeamId:home.id,homeTeamName:home.name,awayTeamId:away.id,awayTeamName:away.name,homeIsUser:Boolean(home.isUserTeam),awayIsUser:Boolean(away.isUserTeam)};
+            });
+            rounds.push(fixtures);
+          });
+        }
+        return {seasonNumber:Number(state.seasonNumber||1),league:activeLeague,teamSignature,generatedAt:new Date().toISOString(),rounds};
+      };
+      let calendar=state.seasonCalendars[calendarKey];
+      if(!calendar||calendar.teamSignature!==teamSignature||calendar.rounds?.length!==20){
+        calendar=generateCalendar();state.seasonCalendars[calendarKey]=calendar;saveState();
+      }
+      const ownFixtures=calendar.rounds.map((fixtures,index)=>({round:index+1,fixture:fixtures.find(item=>item.homeIsUser||item.awayIsUser)})).filter(item=>item.fixture);
+      const officialMatches=Array.isArray(state.careerHistory?.officialMatches)?state.careerHistory.officialMatches:[];
+      const list=document.createElement("div");list.className="season-fixture-list";
+      const completed=ownFixtures.filter(item=>officialMatches.some(match=>match.fixtureId===item.fixture.fixtureId)).length;
+      const summary=document.createElement("div");summary.className="cabinet-metrics season-fixture-summary";
+      [["Матчей в сезоне",String(ownFixtures.length)],["Завершено официально",String(completed)],["Осталось",String(Math.max(0,ownFixtures.length-completed))]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));summary.append(card);});
+      p.append(summary);
+      const title=safeText("h3","Календарь сезона");title.className="season-fixture-heading";p.append(title);
+      ownFixtures.forEach(({round,fixture})=>{
+        const row=document.createElement("article");row.className="season-fixture-row"+(fixture.homeIsUser||fixture.awayIsUser?" is-user-fixture":"");
+        const roundLabel=safeText("span","Тур "+round);roundLabel.className="season-fixture-round";
+        const matchup=document.createElement("div");matchup.className="season-fixture-matchup";
+        matchup.append(safeText("b",fixture.homeTeamName),safeText("span","—"),safeText("b",fixture.awayTeamName));
+        const result=officialMatches.find(match=>match.fixtureId===fixture.fixtureId);
+        const status=safeText("span",result?(Number(result.goalsFor||0)+":"+Number(result.goalsAgainst||0)):(round===completed+1?"Следующий":"Предстоит"));
+        status.className="season-fixture-status"+(result?" is-played":"");
+        row.append(roundLabel,matchup,status);list.append(row);
+      });
+      p.append(list);
+      p.append(safeText("p","Календарь создаётся случайно один раз для состава лиги и сезона, сохраняется в этом сохранении игры и не меняется при открытии страницы. В каждом из четырёх кругов порядок туров перемешивается; против каждого соперника предусмотрено 2 домашних и 2 выездных матча. Результаты появятся только после подключения официального протокола матча.","muted"));
     } else {
       p=panel("Карьера тренера","Постоянная история тренера и команды. Официальная статистика будет расти только от завершённых официальных матчей.");
       const grid=document.createElement("div");grid.className="cabinet-metrics";
