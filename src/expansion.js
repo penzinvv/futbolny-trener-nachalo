@@ -27,9 +27,39 @@ function match3(t,p){
  board=Array.from({length:64},rand);for(let i=0;i<64;i++)while((i%8>1&&board[i]===board[i-1]&&board[i]===board[i-2])||(i>15&&board[i]===board[i-8]&&board[i]===board[i-16]))board[i]=rand();actions.append(B("Выйти без награды",close));draw()
 }
 function training(){
- const w=document.createElement("div"),p=P("Индивидуальная тренировка","По позиции: ВР — поймай мяч (+5, конец после 10 пропущенных); ЗЩ — выбей мяч (+5, промах −3, конец после 3 ошибок); ПЗ/НП — змейка (+10 за мяч). Повтор раз в 4 часа.");
- const list=document.createElement("div");list.className="feature-player-list";const t=getUserTeam();if(!t){w.append(placeholder("Сначала создай команду."));return w}
- t.players.forEach(player=>{const row=document.createElement("div");row.className="feature-player-row";row.append(safeText("b",player.name+" · "+player.position));const id=t.id+"::"+player.name,left=cd-(Date.now()-Number(state.trainingCooldowns[id]||0));const b=B(left>0?"Доступно через "+Math.ceil(left/60000)+" мин.":"Начать тренировку",()=>playTraining(t,player,id),left>0?"secondary":"primary");b.disabled=left>0;row.append(b);list.append(row)});p.append(list);w.append(p,P("Расчёт наград","Каждые 100 итоговых очков = 1 п.п. отношений без округления. Каждые 200 положительных очков дают +1 к основной характеристике, остаток сгорает. Опыт тренера растёт на положительный итоговый счёт."));return w
+ const w=document.createElement("div"),t=getUserTeam();
+ if(!t){w.append(placeholder("Сначала создай команду."));return w}
+ const teamPanel=P("Командная тренировка","Каждый футболист получает ровно +1 к одной характеристике. Случайно выбранный игрок получает балл к основной характеристике; остальные — к случайной характеристике не своей основной позиции. Повтор — раз в 8 часов.");
+ const cdKey="team-training",left=28800000-(Date.now()-Number(state.trainingCooldowns[cdKey]||0));
+ const tb=B(left>0?"Доступно через "+Math.ceil(left/60000)+" мин.":"Провести командную тренировку",()=>runTeamTraining(t),left>0?"secondary":"primary");tb.disabled=left>0;
+ teamPanel.append(tb,T("Правило распределения: один случайный игрок тренируется по своей основной позиции; у всех остальных случайно выбирается одна из трёх неподходящих основной позиции характеристик. Каждый игрок получает ровно +1, без повторов и без превышения 100."));
+ const listPanel=P("Индивидуальная тренировка","ВР — поймай мяч (+5, конец после 10 пропущенных); ЗЩ — выбей мяч (+5, промах −3, конец после 3 ошибок); ПЗ/НП — змейка (+10 за мяч). Повтор раз в 4 часа.");
+ const list=document.createElement("div");list.className="feature-player-list";
+ t.players.forEach(player=>{const row=document.createElement("div");row.className="feature-player-row";row.append(safeText("b",player.name+" · "+player.position));const id=t.id+"::"+player.name,left=cd-(Date.now()-Number(state.trainingCooldowns[id]||0));const b=B(left>0?"Доступно через "+Math.ceil(left/60000)+" мин.":"Начать тренировку",()=>playTraining(t,player,id),left>0?"secondary":"primary");b.disabled=left>0;row.append(b);list.append(row)});listPanel.append(list);
+ w.append(teamPanel,listPanel,P("Расчёт наград индивидуальной тренировки","Каждые 100 итоговых очков = 1 п.п. отношений без округления. Каждые 200 положительных очков дают +1 к основной характеристике, остаток сгорает. Опыт тренера растёт на положительный итоговый счёт."));
+ return w
+}
+function runTeamTraining(t){
+ const key="team-training",cooldown=28800000,left=cooldown-(Date.now()-Number(state.trainingCooldowns[key]||0));
+ if(left>0){alert("Командная тренировка будет доступна через "+Math.ceil(left/60000)+" мин.");return}
+ const stats=["ВР","ЗЩ","ПЗ","НП"],mainIndex=Math.floor(Math.random()*t.players.length),results=[];
+ if(!t.players.length){alert("В команде нет футболистов.");return}
+ t.players.forEach((p,i)=>{
+  p.skills=p.skills||{};
+  stats.forEach(s=>{if(!Number.isFinite(Number(p.skills[s])))p.skills[s]=0});
+  const main=stats.includes(p.position)?p.position:"ПЗ";
+  const choices=i===mainIndex?[main]:stats.filter(s=>s!==main);
+  const chosen=choices[Math.floor(Math.random()*choices.length)];
+  const before=Number(p.skills[chosen])||0;
+  p.skills[chosen]=Math.min(100,before+1);
+  results.push({name:p.name,position:main,stat:chosen,main:i===mainIndex,atCap:before>=100});
+ });
+ state.trainingCooldowns[key]=Date.now();state.teamTrainingHistory=state.teamTrainingHistory||[];
+ state.teamTrainingHistory.push({at:Date.now(),team:t.id,results});
+ state.xp=Math.max(0,Number(state.xp)||0)+10;saveState();
+ const ov=document.createElement("div");ov.className="feature-game-overlay";const m=document.createElement("section");m.className="feature-game-modal";const body=document.createElement("div");body.className="feature-player-list";
+ results.forEach(r=>{const row=document.createElement("div");row.className="feature-player-row";row.append(safeText("b",r.name+" · "+r.position),safeText("span",(r.main?"Основная позиция":"Случайная характеристика")+" → "+r.stat+(r.atCap?" (уже 100)":" +1")));body.append(row)});
+ const close=()=>{ov.remove();openPage("training")};m.append(safeText("h2","⚽ Командная тренировка завершена"),T("Каждый футболист получил одну случайно распределённую попытку развития. Начислено +10 XP тренеру."),body,B("Готово",close,"primary"));ov.append(m);document.body.append(ov)
 }
 function playTraining(t,p,id){
  const ov=document.createElement("div");ov.className="feature-game-overlay";const m=document.createElement("section");m.className="feature-game-modal";const scoreLine=safeText("p","Очки: 0","feature-game-stats"),field=document.createElement("div");field.className="training-playfield";const actions=document.createElement("div");actions.className="feature-actions";ov.append(m);m.append(safeText("h2",p.position==="ВР"?"🧤 ПОЙМАЙ МЯЧ":p.position==="ЗЩ"?"🛡️ УСПЕЙ ВЫБИТЬ МЯЧ":"🐍 ФУТБОЛЬНАЯ ЗМЕЙКА"),T(p.name),scoreLine,field,actions);document.body.append(ov);
