@@ -16,7 +16,7 @@ function install(){
  saveState()
 }
 function match3(t,p){
- let board=[],sel=-1,score=0,lock=false,done=false,closed=false;
+ let board=[],sel=-1,score=0,lock=false,done=false,closed=false,timer=null;
  const ov=document.createElement("div");ov.className="feature-game-overlay";
  const m=document.createElement("section");m.className="feature-game-modal";
  const stat=safeText("p","Очки: 0","feature-game-stats"),grid=document.createElement("div");grid.className="relation-match3-board";
@@ -26,8 +26,8 @@ function match3(t,p){
  const close=()=>{if(closed)return;closed=true;clearTimeout(timer);ov.remove()};
  const icons=["⚽","🧤","👟","👕","©️","🏆","🦵","🥅"];
  const rand=()=>Math.floor(Math.random()*icons.length);
- function draw(){grid.replaceChildren();board.forEach((v,i)=>{const b=B(icons[v]||"⚽",()=>pick(i),"relation-match3-cell"+(sel===i?" selected":""));b.setAttribute("aria-label","Футбольный предмет");b.disabled=lock||done;grid.append(b)});stat.textContent="Очки: "+score}
- function matches(){let f=new Set();for(let r=0;r<8;r++)for(let c=0;c<8;c++){let i=r*8+c,v=board[i];if(c<6&&v===board[i+1]&&v===board[i+2])for(let x=c;x<8&&board[r*8+x]===v;x++)f.add(r*8+x);if(r<6&&v===board[i+8]&&v===board[i+16])for(let y=r;y<8&&board[y*8+c]===v;y++)f.add(y*8+c)}return f}
+ function draw(){grid.replaceChildren();board.forEach((v,i)=>{const b=B(v<0?"":icons[v]||"⚽",()=>pick(i),"relation-match3-cell"+(sel===i?" selected":""));b.setAttribute("aria-label",v<0?"Пустая клетка":"Футбольный предмет");b.disabled=lock||done||v<0;grid.append(b)});stat.textContent="Очки: "+score}
+ function matches(){let f=new Set();for(let r=0;r<8;r++)for(let c=0;c<8;c++){let i=r*8+c,v=board[i];if(v<0)continue;if(c<6&&board[i+1]===v&&board[i+2]===v)for(let x=c;x<8&&board[r*8+x]===v;x++)f.add(r*8+x);if(r<6&&board[i+8]===v&&board[i+16]===v)for(let y=r;y<8&&board[y*8+c]===v;y++)f.add(y*8+c)}return f}
  function settle(){if(done||closed)return;let f=matches();if(!f.size){lock=false;draw();return}f.forEach(i=>board[i]=-1);score+=f.size*5;draw();timer=setTimeout(()=>{for(let c=0;c<8;c++){let s=[];for(let r=7;r>=0;r--)if(board[r*8+c]>=0)s.push(board[r*8+c]);while(s.length<8)s.push(rand());for(let r=7;r>=0;r--)board[r*8+c]=s[7-r]}draw();timer=setTimeout(settle,90)},120)}
  function saveAndExit(){if(done||closed)return;done=true;clearTimeout(timer);const before=Number(state.relationships[playerRelationKey(t,p)]||0),after=rel(t,p,score),delta=after-before;state.xp=Math.max(0,Number(state.xp)||0)+score;state.trainingHistory=Array.isArray(state.trainingHistory)?state.trainingHistory:[];state.trainingHistory.push({type:"match3-relations",team:t.id,player:p.name,score,delta,at:Date.now()});saveState();msg.textContent="Результат сохранён. Очки: "+score+". Отношения с игроком: +"+F(delta)+". Общие отношения: "+F(after)+".";grid.replaceChildren();actions.replaceChildren(B("Вернуться в профиль",()=>{close();openPlayerProfile(t,p,0)},"primary"),B("Закрыть",close))}
  function pick(i){if(lock||done||closed)return;if(sel<0){sel=i;draw();return}if(Math.abs(Math.floor(sel/8)-Math.floor(i/8))+Math.abs(sel%8-i%8)!==1){sel=i;draw();return}let a=sel,b=i;sel=-1;[board[a],board[b]]=[board[b],board[a]];if(!matches().size){[board[a],board[b]]=[board[b],board[a]];draw();return}lock=true;draw();settle()}
@@ -41,10 +41,10 @@ function training(){
  const cdKey="team-training",left=28800000-(Date.now()-Number(state.trainingCooldowns[cdKey]||0));
  const tb=B(left>0?"Доступно через "+Math.ceil(left/60000)+" мин.":"Провести командную тренировку",()=>runTeamTraining(t),left>0?"secondary":"primary");tb.disabled=left>0;
  teamPanel.append(tb,T("Правило распределения: один случайный игрок тренируется по своей основной позиции; у всех остальных случайно выбирается одна из трёх неподходящих основной позиции характеристик. Каждый игрок получает ровно +1, без повторов и без превышения 100."));
- const listPanel=P("Индивидуальная тренировка","ВР — поймай мяч (+5, конец после 10 пропущенных); ЗЩ — выбей мяч (+5, промах −3, конец после 3 ошибок); ПЗ/НП — змейка (+10 за мяч). Повтор раз в 4 часа.");
+ const listPanel=P("Индивидуальная тренировка","ВР — поймай мяч (+5, конец после 10 пропущенных); ЗЩ — перехват мяча (+5, бесконечная игра, конец после 3 промахов или по кнопке сохранения); ПЗ/НП — змейка (+5 за мяч). Повтор раз в 4 часа.");
  const list=document.createElement("div");list.className="feature-player-list";
  t.players.forEach(player=>{const row=document.createElement("div");row.className="feature-player-row";row.append(safeText("b",player.name+" · "+player.position));const id=t.id+"::"+player.name,left=cd-(Date.now()-Number(state.trainingCooldowns[id]||0));const b=B(left>0?"Доступно через "+Math.ceil(left/60000)+" мин.":"Начать тренировку",()=>playTraining(t,player,id),left>0?"secondary":"primary");b.disabled=left>0;row.append(b);list.append(row)});listPanel.append(list);
- w.append(teamPanel,listPanel,P("Расчёт наград индивидуальной тренировки","Каждые 100 итоговых очков = 1 п.п. отношений без округления. Каждые 200 положительных очков дают +1 к основной характеристике, остаток сгорает. Опыт тренера растёт на положительный итоговый счёт."));
+ w.append(teamPanel,listPanel,P("Расчёт наград индивидуальной тренировки","Каждые 100 итоговых очков = 1 п.п. отношений без округления. Каждые 300 положительных очков дают +1 к основной характеристике, остаток сгорает. Опыт тренера растёт на положительный итоговый счёт."));
  return w
 }
 function runTeamTraining(t){
@@ -64,10 +64,10 @@ function runTeamTraining(t){
  });
  state.trainingCooldowns[key]=Date.now();state.teamTrainingHistory=state.teamTrainingHistory||[];
  state.teamTrainingHistory.push({at:Date.now(),team:t.id,results});
- state.xp=Math.max(0,Number(state.xp)||0)+10;saveState();
+ state.xp=Math.max(0,Number(state.xp)||0)+1000;saveState();
  const ov=document.createElement("div");ov.className="feature-game-overlay";const m=document.createElement("section");m.className="feature-game-modal";const body=document.createElement("div");body.className="feature-player-list";
  results.forEach(r=>{const row=document.createElement("div");row.className="feature-player-row";row.append(safeText("b",r.name+" · "+r.position),safeText("span",(r.main?"Основная позиция":"Случайная характеристика")+" → "+r.stat+(r.atCap?" (уже 100)":" +1")));body.append(row)});
- const close=()=>{ov.remove();openPage("training")};m.append(safeText("h2","⚽ Командная тренировка завершена"),T("Каждый футболист получил одну случайно распределённую попытку развития. Начислено +10 XP тренеру."),body,B("Готово",close,"primary"));ov.append(m);document.body.append(ov)
+ const close=()=>{ov.remove();openPage("training")};m.append(safeText("h2","⚽ Командная тренировка завершена"),T("Каждый футболист получил одну случайно распределённую попытку развития. Начислено +1000 XP тренеру."),body,B("Готово",close,"primary"));ov.append(m);document.body.append(ov)
 }
 function playTraining(t,p,id){
  const ov=document.createElement("div");ov.className="feature-game-overlay";
@@ -94,14 +94,15 @@ function playTraining(t,p,id){
  }else if(p.position==="ЗЩ"){
    field.classList.add("defender-field");field.append(controls);let round=0,active=false,target=null,missed=0;
    const status=safeText("p","Приготовься…","defender-round");field.append(status);
-   function spawn(){if(ended||closed)return;if(round>=20){finish("Тренировка завершена: "+score/5+" мячей перехвачено, "+missed+" промахов.");return}round++;active=true;target=B("⚽",()=>{if(!active||ended)return;active=false;clearTimeout(timer);target?.remove();target=null;score+=5;scoreLine.textContent="Очки: "+score+" · Попытка "+round+"/20";status.textContent="Отличный перехват!";timer=setTimeout(spawn,550)},"defender-ball-target");target.style.left=(8+Math.random()*78)+"%";target.style.top=(12+Math.random()*58)+"%";field.append(target);status.textContent="Мяч "+round+"/20 — нажми на него, пока он виден!";timer=setTimeout(()=>{if(!active||ended)return;active=false;missed++;target?.remove();target=null;scoreLine.textContent="Очки: "+score+" · Промахи: "+missed;status.textContent="Не успел! Следующий мяч…";timer=setTimeout(spawn,450)},1000)}
+   function spawn(){if(ended||closed)return;round++;active=true;target=B("⚽",()=>{if(!active||ended)return;active=false;clearTimeout(timer);target?.remove();target=null;score+=5;scoreLine.textContent="Очки: "+score+" · Перехваты: "+(score/5)+" · Промахи: "+missed+"/3";status.textContent="Отличный перехват!";timer=setTimeout(spawn,350)},"defender-ball-target");target.style.left=(8+Math.random()*78)+"%";target.style.top=(12+Math.random()*58)+"%";field.append(target);status.textContent="Мяч "+round+" — нажми на него, пока он виден!";timer=setTimeout(()=>{if(!active||ended)return;active=false;missed++;target?.remove();target=null;scoreLine.textContent="Очки: "+score+" · Промахи: "+missed+"/3";status.textContent=missed>=3?"Три промаха — результат сохранён.":"Не успел! Следующий мяч…";if(missed>=3){finish("Три промаха. Перехвачено мячей: "+score/5+".");return}timer=setTimeout(spawn,350)},1000)}
+   actions.append(B("СОХРАНИТЬ РЕЗУЛЬТАТ И ВЫЙТИ",()=>finish("Результат сохранён по решению тренера. Перехвачено мячей: "+score/5+"."),"primary"));
    timer=setTimeout(spawn,500);
  }else{
    field.classList.add("snake-training-field");const grid=document.createElement("div");grid.className="snake-grid";field.append(grid,controls);
    let snake=[{x:4,y:4},{x:3,y:4}],dir={x:1,y:0},food={x:7,y:4},obstacles=[];
    function placeFood(){let tries=0;do{food={x:Math.floor(Math.random()*10),y:Math.floor(Math.random()*10)};tries++}while(tries<200&&(snake.some(s=>s.x===food.x&&s.y===food.y)||obstacles.some(s=>s.x===food.x&&s.y===food.y)))}
-   function draw(){grid.replaceChildren();for(let y=0;y<10;y++)for(let x=0;x<10;x++){const c=document.createElement("span");c.className="snake-cell"+(snake.some(s=>s.x===x&&s.y===y)?" snake-body":"")+(food.x===x&&food.y===y?" snake-food":"")+(obstacles.some(s=>s.x===x&&s.y===y)?" snake-obstacle":"");c.textContent=food.x===x&&food.y===y?"⚽":obstacles.some(s=>s.x===x&&s.y===y)?"🧍":"";grid.append(c)}scoreLine.textContent="Очки: "+score+" · Мячей: "+score/10}
-   function tick(){if(ended||closed)return;const h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};if(h.x<0||h.y<0||h.x>=10||h.y>=10||snake.slice(0,-1).some(s=>s.x===h.x&&s.y===h.y)||obstacles.some(s=>s.x===h.x&&s.y===h.y)){finish("Змейка столкнулась с футболистом или границей. Собрано мячей: "+score/10+".");return}snake.unshift(h);if(h.x===food.x&&h.y===food.y){score+=10;placeFood();if(score%50===0&&obstacles.length<8){let o;do{o={x:Math.floor(Math.random()*10),y:Math.floor(Math.random()*10)}}while((snake.some(s=>s.x===o.x&&s.y===o.y)||(food.x===o.x&&food.y===o.y)||obstacles.some(s=>s.x===o.x&&s.y===o.y)));obstacles.push(o)}}else snake.pop();draw()}
+   function draw(){grid.replaceChildren();for(let y=0;y<10;y++)for(let x=0;x<10;x++){const c=document.createElement("span");c.className="snake-cell"+(snake.some(s=>s.x===x&&s.y===y)?" snake-body":"")+(food.x===x&&food.y===y?" snake-food":"")+(obstacles.some(s=>s.x===x&&s.y===y)?" snake-obstacle":"");c.textContent=food.x===x&&food.y===y?"⚽":obstacles.some(s=>s.x===x&&s.y===y)?"🧍":"";grid.append(c)}scoreLine.textContent="Очки: "+score+" · Мячей: "+score/5}
+   function tick(){if(ended||closed)return;const h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};if(h.x<0||h.y<0||h.x>=10||h.y>=10||snake.slice(0,-1).some(s=>s.x===h.x&&s.y===h.y)||obstacles.some(s=>s.x===h.x&&s.y===h.y)){finish("Змейка столкнулась с футболистом или границей. Собрано мячей: "+score/10+".");return}snake.unshift(h);if(h.x===food.x&&h.y===food.y){score+=5;placeFood();if(score%50===0&&obstacles.length<8){let o;do{o={x:Math.floor(Math.random()*10),y:Math.floor(Math.random()*10)}}while((snake.some(s=>s.x===o.x&&s.y===o.y)||(food.x===o.x&&food.y===o.y)||obstacles.some(s=>s.x===o.x&&s.y===o.y)));obstacles.push(o)}}else snake.pop();draw()}
    function keySnake(ev){const map={arrowup:[0,-1],arrowdown:[0,1],arrowleft:[-1,0],arrowright:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]},v=map[ev.key.toLowerCase()];if(v&&!(v[0]===-dir.x&&v[1]===-dir.y)){dir={x:v[0],y:v[1]};ev.preventDefault()}}
    document.addEventListener("keydown",keySnake);extraCleanup=()=>document.removeEventListener("keydown",keySnake);
    timer=setInterval(tick,280);draw();
