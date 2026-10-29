@@ -193,16 +193,15 @@ function renderCabinet() {
     } else if(key==="team"||key==="relations"){
       p=panel(key==="team"?"Футболисты команды":"Отношения с футболистами",key==="team"?"Состав вашей команды. Выберите игрока, чтобы открыть его профиль.":"Уровень доверия каждого игрока к тренеру.");
       const list=document.createElement("div");list.className="cabinet-roster";
-      roster.forEach((player,i)=>{const row=document.createElement("button");row.type="button";row.className="cabinet-roster-row";const img=document.createElement("img");img.src=getPortrait(player.portraitIndex||teamsPlayerIndex(team,player)+1);img.alt="";img.loading="lazy";img.onerror=()=>img.remove();const info=document.createElement("span");info.className="cabinet-roster-info";info.append(safeText("b",player.name),safeText("small",player.position+" · "+player.nationality));row.append(img,info);if(key==="relations")row.append(makeRelationBadge(team,player));else row.append(safeText("span","Открыть профиль","cabinet-row-action"));row.addEventListener("click",()=>openPlayerProfile(team,player,i));list.append(row);});
+      roster.forEach((player,i)=>{const row=document.createElement("button");row.type="button";row.className="cabinet-roster-row";const img=document.createElement("img");img.src=getPortrait(player.portraitIndex||teamsPlayerIndex(team,player));img.alt="";img.loading="lazy";img.onerror=()=>img.remove();const info=document.createElement("span");info.className="cabinet-roster-info";info.append(safeText("b",player.name),safeText("small",player.position+" · "+player.nationality));row.append(img,info);if(key==="relations")row.append(makeRelationBadge(team,player));else row.append(safeText("span","Открыть профиль","cabinet-row-action"));row.addEventListener("click",()=>openPlayerProfile(team,player,i));list.append(row);});
       p.append(list);
     } else if(key==="stats"){
       p=panel("Статистика команды","Сводка по составу на текущий момент.");const positions=["ВР","ЗЩ","ПЗ","НП"];const grid=document.createElement("div");grid.className="cabinet-metrics";
       [["Всего футболистов",String(roster.length)],...positions.map(pos=>["Позиция "+pos,String(roster.filter(player=>player.position===pos).length)]),["Средние отношения",roster.length?Math.round(roster.reduce((sum,player)=>sum+getPlayerRelation(team,player),0)/roster.length)+"%":"—"]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));grid.append(card);});
       p.append(grid,safeText("p","Игровая статистика, результаты и голы появятся по мере проведения матчей.","muted"));
     } else if(key==="table"){
-      p=panel("Турнирная таблица",team?.league||state.selectedLeague||"Нижняя лига");const teams=(leagueData?.teams||[]).filter(t=>t.league===(team?.league||state.selectedLeague||"Нижняя лига"));const list=document.createElement("div");list.className="cabinet-standing-list";
-      teams.forEach((t,i)=>{const row=document.createElement("div");row.className="cabinet-standing-row";row.append(safeText("span",String(i+1)),safeText("b",t.name==="{teamName}"?(state.teamName||"Моя команда"):t.name),safeText("span","— очков"));list.append(row);});
-      p.append(list,safeText("p","Турнирные места и очки обновятся после начала чемпионата.","muted"));
+      p=panel("Турнирная таблица",team?.league||state.selectedLeague||"Нижняя лига");
+      p.append(safeText("p","Турнирная таблица появится после проведения матчей чемпионата. Сейчас результаты сезона ещё не сформированы.","muted"));
     } else if(key==="matches"){
       p=panel("Матчи команды","Ближайшие встречи и история результатов.");p.append(safeText("p","Когда начнётся сезон, здесь появятся ближайшие игры и результаты сыгранных матчей.","muted"));
     } else {
@@ -286,7 +285,7 @@ function makeTeamRoster(team) {
   const grid=document.createElement("div"); grid.className="player-cards-grid";
   team.players.forEach((p,i)=>{
     const card=document.createElement("button"); card.type="button"; card.className="player-card"; card.addEventListener("click",()=>openPlayerProfile(team,p,i));
-    const img=document.createElement("img"); img.src=getPortrait(p.portraitIndex || (teamsPlayerIndex(team,p)+1)); img.alt=p.name; img.loading="lazy"; img.onerror=()=>{img.style.display="none"};
+    const img=document.createElement("img"); img.src=getPortrait(p.portraitIndex || teamsPlayerIndex(team,p)); img.alt=p.name; img.loading="lazy"; img.onerror=()=>{img.style.display="none"};
     const info=document.createElement("div"); info.className="player-card-info"; info.append(safeText("b",p.name),safeText("small",p.position+" · "+p.nationality));
     const stats=makePlayerSkillSummary(team,p);
     card.append(img,info,makeRelationBadge(team,p),stats); grid.append(card);
@@ -329,7 +328,7 @@ function renderLeague() {
 }
 function openPlayerProfile(team,p,index) {
   const wrap=document.createElement("div");wrap.className="player-profile";
-  const portrait=document.createElement("img");portrait.className="player-profile-portrait";portrait.src=getPortrait(teamsPlayerIndex(team,p));portrait.alt=p.name;
+  const portrait=document.createElement("img");portrait.className="player-profile-portrait";portrait.src=getPortrait(p.portraitIndex || teamsPlayerIndex(team,p));portrait.alt=p.name;
   const head=document.createElement("div");head.className="player-profile-head";head.append(portrait);
   const bio=document.createElement("div");bio.append(safeText("h2",p.name),safeText("p",team.name===" {teamName}"?state.teamName:(team.name==="{teamName}"?state.teamName:team.name),"player-team-name"));
   const nation=document.createElement("div");nation.className="player-nationality";const flag=getFlag(p.nationality);if(flag){const f=document.createElement("img");f.src=flag;f.alt="";nation.append(f);}nation.append(safeText("span",p.nationality+" · "+p.position));bio.append(nation,safeText("p","Тренер: "+(team.coach==="(имя тренера)"?state.coachName:team.coach),"muted"));head.append(bio);wrap.append(head);
