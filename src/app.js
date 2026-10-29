@@ -575,9 +575,100 @@ function openPlayerProfile(team,p,index) {
   const back=document.createElement("button");back.className="back-button";back.textContent="← К составу";back.addEventListener("click",()=>{openPage("cabinet");setTimeout(()=>{const tab=[...document.querySelectorAll(".cabinet-tab")].find(b=>b.textContent.trim()==="Футболисты");if(tab)tab.click();},0);});wrap.append(back);
   $("pageTitle").textContent=p.name;$("pageEyebrow").textContent="КАРТОЧКА ФУТБОЛИСТА";const content=$("pageContent");content.replaceChildren(wrap);renderTab("player");
 }
+function trainingPlayerKey(team,player,index) {
+  return String(player.careerId || playerRelationKey(team,player) || (team.id+"::"+index));
+}
+function getTrainingCooldown(playerKey) {
+  const last=Number(state.individualTraining?.[playerKey]?.lastAt||0);
+  return Math.max(0,4*60*60*1000-(Date.now()-last));
+}
+function formatCooldown(milliseconds) {
+  const total=Math.ceil(milliseconds/1000);
+  const hours=Math.floor(total/3600);
+  const minutes=Math.floor((total%3600)/60);
+  const seconds=total%60;
+  return [hours,minutes,seconds].map(v=>String(v).padStart(2,"0")).join(":");
+}
 function renderTraining() {
-  const wrap = document.createElement("div");
-  wrap.append(placeholder("Тренировочные занятия скоро станут доступны."));
+  const wrap=document.createElement("div");
+  const team=getUserTeam();
+  const roster=team?.players||[];
+  const panel=document.createElement("section");panel.className="cabinet-panel training-panel";
+  panel.append(safeText("h2","Индивидуальная тренировка"),safeText("p","Выбери футболиста и характеристику. За успешное занятие характеристика повышается на 1 пункт.","muted"));
+  if(!roster.length) {
+    panel.append(placeholder("Сначала загрузи состав команды — тогда можно будет проводить тренировки."));
+    wrap.append(panel);return wrap;
+  }
+  const form=document.createElement("div");form.className="training-form";
+  const playerLabel=safeText("label","Футболист");playerLabel.htmlFor="trainingPlayer";
+  const playerSelect=document.createElement("select");playerSelect.id="trainingPlayer";playerSelect.className="league-select";
+  roster.forEach((player,i)=>{const option=document.createElement("option");option.value=String(i);option.textContent=player.name+" · "+player.position;playerSelect.append(option);});
+  const skillLabel=safeText("label","Характеристика");skillLabel.htmlFor="trainingSkill";
+  const skillSelect=document.createElement("select");skillSelect.id="trainingSkill";skillSelect.className="league-select";
+  const info=document.createElement("div");info.className="training-player-summary";
+  const status=safeText("p","","training-status");status.setAttribute("aria-live","polite");
+  const trainButton=document.createElement("button");trainButton.type="button";trainButton.className="primary-button";trainButton.textContent="Провести тренировку";
+  const refreshSkillOptions=()=>{
+    const player=roster[Number(playerSelect.value)]||roster[0];
+    skillSelect.replaceChildren();
+    ["ВР","ЗЩ","ПЗ","НП"].forEach(key=>{
+      const option=document.createElement("option");option.value=key;
+      const value=Number(player.skills?.[key]||0);
+      option.textContent=key+" · "+(value>=100?"максимум 100":("текущее значение "+value));
+      option.disabled=value>=100;
+      skillSelect.append(option);
+    });
+    const firstAvailable=[...skillSelect.options].find(option=>!option.disabled);
+    if(firstAvailable) skillSelect.value=firstAvailable.value;
+    updatePlayerSummary();
+  };
+  const updatePlayerSummary=()=>{
+    const player=roster[Number(playerSelect.value)]||roster[0];
+    const key=trainingPlayerKey(team,player,Number(playerSelect.value));
+    const relation=getPlayerRelation(team,player);
+    const remaining=getTrainingCooldown(key);
+    const img=document.createElement("img");img.src=getPortrait(player.portraitIndex||teamsPlayerIndex(team,player));img.alt="";img.onerror=()=>img.remove();
+    const copy=document.createElement("div");copy.className="training-player-copy";
+    copy.append(safeText("b",player.name),safeText("span",player.position+" · "+player.nationality),safeText("span","Отношения: "+relation+"%"));
+    const known=getUnlockedSkills(player,relation);
+    const skillGrid=document.createElement("div");skillGrid.className="training-skill-preview";
+    ["ВР","ЗЩ","ПЗ","НП"].forEach(stat=>{
+      const value=Number(player.skills?.[stat]||0);
+      skillGrid.append(safeText("span",known.includes(stat)?stat+" "+value:stat+" ???",known.includes(stat)?"skill-known":"skill-hidden"));
+    });
+    info.replaceChildren();info.append(img,copy,skillGrid);
+    if(remaining>0){status.textContent="Следующая тренировка этого футболиста через "+formatCooldown(remaining)+".";trainButton.disabled=true;}
+    else if([...skillSelect.options].every(option=>option.disabled)){status.textContent="Все характеристики достигли максимума 100.";trainButton.disabled=true;}
+    else {status.textContent="Тренировка доступна. После занятия этот футболист будет ждать 4 часа до следующего.";trainButton.disabled=false;}
+  };
+  playerSelect.addEventListener("change",refreshSkillOptions);
+  skillSelect.addEventListener("change",updatePlayerSummary);
+  trainButton.addEventListener("click",()=>{
+    const index=Number(playerSelect.value);
+    const player=roster[index];if(!player)return;
+    const key=trainingPlayerKey(team,player,index);
+    if(getTrainingCooldown(key)>0){updatePlayerSummary();return;}
+    const stat=skillSelect.value;
+    const current=Number(player.skills?.[stat]);
+    if(!Number.isFinite(current)||current<0||current>=100){status.textContent="Эту характеристику нельзя повысить дальше.";return;}
+    if(!state.individualTraining||typeof state.individualTraining!=="object")state.individualTraining={};
+    if(!state.trainingHistory||typeof state.trainingHistory!=="object")state.trainingHistory={};
+    player.skills[stat]=Math.min(100,current+1);
+    const now=Date.now();
+    state.individualTraining[key]={lastAt:now};
+    if(!Array.isArray(state.trainingHistory[key]))state.trainingHistory[key]=[];
+    state.trainingHistory[key].push({at:now,stat,before:current,after:player.skills[stat],type:"individual"});
+    saveState();
+    status.textContent="Тренировка завершена: "+player.name+" — "+stat+" повышена с "+current+" до "+player.skills[stat]+".";
+    refreshSkillOptions();
+    updatePlayerSummary();
+    trainButton.disabled=true;
+    status.textContent+=" Следующая тренировка этого футболиста будет доступна через 04:00:00.";
+  });
+  form.append(playerLabel,playerSelect,skillLabel,skillSelect,info,status,trainButton);
+  panel.append(form,safeText("p","Правила: одна индивидуальная тренировка на футболиста раз в 4 часа; +1 к выбранной характеристике; максимальное значение — 100. Таймер сохраняется в этом браузере.","muted"));
+  wrap.append(panel);
+  refreshSkillOptions();
   return wrap;
 }
 
