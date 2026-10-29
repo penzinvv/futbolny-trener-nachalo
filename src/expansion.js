@@ -12,7 +12,53 @@ function install(){
  const nav=document.querySelector(".menu-grid");if(nav&&!nav.querySelector('[data-page="transfers"]')&&!document.getElementById("transferHome")){const b=B("🔁 ТРАНСФЕРНЫЙ ОБМЕН ИГРОКАМИ",transfer,"transfer-home-button");b.id="transferHome";nav.append(b)}
  const old=pages.cabinet.render;if(!old.wrap){const w=function(){const n=old();n.prepend(B("🔁 Трансферный обмен игроками",transfer,"primary"));return n};w.wrap=true;pages.cabinet.render=w}
  profileBase=openPlayerProfile;openPlayerProfile=function(t,p,i){profileBase(t,p,i);if(t.id===getUserTeam()?.id)return;const box=P("Отношения с футболистом","Каждые 100 очков в «Три в ряд» дают +1 процентный пункт отношений.");box.append(B("ПОДНЯТЬ ОТНОШЕНИЯ С ИГРОКОМ",()=>match3(t,p),"primary"),B("Выбрать для наблюдения в следующем матче",()=>{state.matchRelationSelections||={};state.matchRelationSelections[t.id]=p.name;saveState();alert("Выбран игрок для наблюдения: "+p.name+". Начисление отношений после матча появится вместе с матчевым движком.")}),B("Предложить обмен",()=>{state.transferTarget={team:t.id,name:p.name};saveState();transfer()}));document.querySelector("#pageContent .player-profile")?.append(box)};
- pages.training.render=training;pages.freeyard={title:"Свободный двор",eyebrow:"НОВЫЕ ФУТБОЛИСТЫ",render:()=>placeholder("Раздел свободного двора подготовлен для будущего наполнения. Игровые механики не изменены.")};pages.transfers={title:"Трансферный обмен игроками",eyebrow:"ТРАНСФЕРЫ",render:transfersPage};
+ pages.training.render=training;
+function freeYardMonthKey(){const day=Math.max(1,Number(state.gameDay)||1),season=Math.max(1,Number(state.seasonNumber)||1);return season+":"+ (Math.floor((day-1)/28)+1)}
+function randomFreeYardPlayer(){
+ const all=[];(leagueData?.teams||[]).forEach(team=>(team.players||[]).forEach(player=>{const parts=String(player.name||"").trim().split(/\s+/);if(parts.length>1)all.push({first:parts.slice(1).join(" "),last:parts[0]})}));
+ const firsts=[...new Set(all.map(x=>x.first).filter(Boolean))],lasts=[...new Set(all.map(x=>x.last).filter(Boolean))];
+ const first=firsts[Math.floor(Math.random()*firsts.length)]||"Алексей",last=lasts[Math.floor(Math.random()*lasts.length)]||"Смирнов";
+ const position=["ВР","ЗЩ","ПЗ","НП"][Math.floor(Math.random()*4)],skills={ВР:15+Math.floor(Math.random()*56),ЗЩ:15+Math.floor(Math.random()*56),ПЗ:15+Math.floor(Math.random()*56),НП:15+Math.floor(Math.random()*56)};
+ skills[position]=Math.min(75,skills[position]+8);
+ return {id:"free-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),name:last+" "+first,position,nationality:"Россия",age:14+Math.floor(Math.random()*7),skills,potential:35+Math.floor(Math.random()*56),portraitIndex:1+Math.floor(Math.random()*77),freeYard:true,invited:false};
+}
+function ensureFreeYardPlayer(){
+ state.freeYardPlayers=Array.isArray(state.freeYardPlayers)?state.freeYardPlayers:[];
+ state.freeYardMonthsSeen=Array.isArray(state.freeYardMonthsSeen)?state.freeYardMonthsSeen:[];
+ const month=freeYardMonthKey();
+ if(!state.freeYardMonthsSeen.includes(month)){state.freeYardPlayers.push({...randomFreeYardPlayer(),monthKey:month});state.freeYardMonthsSeen.push(month);saveState()}
+}
+function freeYardPage(){
+ const w=document.createElement("div");
+ if(!leagueData){w.append(placeholder("Загружаю список футболистов…"));return w}
+ const team=getUserTeam();if(!team){w.append(placeholder("Сначала создай команду."));return w}
+ ensureFreeYardPlayer();
+ const available=(state.freeYardPlayers||[]).filter(p=>!p.invited);
+ w.append(P("Новые игроки двора","Каждый игровой месяц появляется один новый футболист. Если его не пригласить, он останется доступен и в следующие месяцы."));
+ if(team.players.length>=10)w.append(T("В команде уже 10 футболистов — освободите место, прежде чем приглашать новичка."));
+ if(!available.length){w.append(placeholder("Пока нет свободных футболистов."));return w}
+ available.forEach(player=>{
+  const relationKey="free-yard::"+player.id,relation=Math.max(0,Math.min(100,Number(state.relationships[relationKey]||0)));
+  const panel=document.createElement("section");panel.className="feature-panel free-yard-player";
+  const row=document.createElement("div");row.className="feature-player-row";
+  const img=document.createElement("img");img.className="free-yard-portrait";img.src="/images/portretplayers/portret"+((((Number(player.portraitIndex)||1)-1)%77)+1)+".jpg";img.alt=player.name;img.loading="lazy";
+  const info=document.createElement("div");info.className="free-yard-player-info";info.append(safeText("h3",player.name),T(player.position+" · "+player.age+" лет · Отношения "+F(relation)));
+  if(relation>=60){const stats=Object.entries(player.skills||{}).map(([k,v])=>k+": "+v).join(" · ");info.append(T("Характеристики: "+stats),T("Скрытый потенциал: "+player.potential))}
+  else info.append(T("Характеристики и скрытый потенциал откроются при отношениях 60%."));
+  row.append(img,info);panel.append(row);
+  const actions=document.createElement("div");actions.className="feature-actions";
+  actions.append(B("Познакомиться (+10%)",()=>{const current=Math.max(0,Math.min(100,Number(state.relationships[relationKey]||0)));state.relationships[relationKey]=Math.min(100,current+10);saveState();openPage("freeyard")},"secondary"));
+  const invite=B("Пригласить в команду",()=>{
+   if(team.players.length>=10){alert("В команде не может быть больше 10 футболистов.");return}
+   const newPlayer={...player,skills:{...(relation>=60?player.skills:{ВР:0,ЗЩ:0,ПЗ:0,НП:0})},potential:relation>=60?player.potential:null,portraitIndex:player.portraitIndex};
+   team.players.push(newPlayer);state.userRoster=team.players;player.invited=true;state.freeYardPlayers=state.freeYardPlayers||[];saveState();openPage("freeyard");
+  },"primary");invite.disabled=team.players.length>=10;
+  actions.append(invite);panel.append(actions);w.append(panel);
+ });
+ return w
+}
+pages.freeyard={title:"Свободный двор",eyebrow:"НОВЫЕ ФУТБОЛИСТЫ",render:freeYardPage};
+pages.transfers={title:"Трансферный обмен игроками",eyebrow:"ТРАНСФЕРЫ",render:transfersPage};
  saveState()
 }
 function match3(t,p){
