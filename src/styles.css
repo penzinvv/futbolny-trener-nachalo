@@ -181,3 +181,12 @@
 .day-event-notice{position:relative;z-index:2;margin:14px 0 0;padding:11px 14px;border:1px solid rgba(111,224,161,.4);border-radius:10px;background:rgba(7,26,16,.75);color:var(--green);font-size:13px;font-weight:700}
 .day-event-notice.hidden{display:none}
 @media(max-width:600px){.game-day-actions{width:100%}.skip-day-button{width:100%}}
+
+
+/* Предварительный протокол матча из календаря */
+.match-preview-panel,.match-preview-result{margin:14px 0}
+.match-preview-panel .primary-button{margin-top:8px}
+.match-preview-score{font-size:clamp(20px,4vw,30px);font-weight:900;letter-spacing:.03em;margin:12px 0}
+.match-preview-events{display:grid;gap:6px;margin-top:12px}
+.match-preview-events p{margin:0;padding:8px 10px;border-left:3px solid var(--green,#4bd58b);border-radius:0 8px 8px 0;background:rgba(255,255,255,.035);font-size:13px}
+@media(max-width:600px){.match-preview-score{font-size:22px}.match-preview-events p{font-size:12px}}
