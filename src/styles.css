@@ -220,3 +220,27 @@
  .menu-grid button .menu-button-image,.menu-image-placeholder{aspect-ratio:16/6;min-height:58px}
  .menu-grid button{padding:9px}
 }
+
+
+/* Football training mini-games */
+.football-training-field{position:relative;overflow:hidden;min-height:320px;border:2px solid #4d9a6a;border-radius:14px;background:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 42px,transparent 42px 84px),linear-gradient(135deg,#187247,#0e5536 55%,#176c42);touch-action:manipulation}
+.goalkeeper-field:before{content:"";position:absolute;inset:10px;border:2px solid rgba(255,255,255,.55);border-bottom:0;border-radius:8px 8px 0 0;pointer-events:none}
+.football-goal{position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:54px;line-height:1.1;filter:drop-shadow(0 3px 2px #063b25)}
+.goalkeeper-sprite{position:absolute;top:78%;left:50%;transform:translate(-50%,-50%);font-size:42px;z-index:3;user-select:none;filter:drop-shadow(0 3px 2px #063b25)}
+.football-ball-layer{position:absolute;inset:0;pointer-events:none}
+.training-ball{position:absolute;transform:translate(-50%,-50%);font-size:27px;line-height:1;filter:drop-shadow(0 2px 2px #063b25)}
+.football-touch-controls{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;padding:8px}
+.football-touch-controls button{min-width:44px;min-height:38px;font-size:17px}
+.defender-field{min-height:320px;position:relative;background:repeating-linear-gradient(0deg,transparent 0 54px,rgba(255,255,255,.07) 54px 56px),linear-gradient(135deg,#187247,#0e5536);overflow:hidden}
+.defender-ball-target{position:absolute;z-index:2;min-width:54px;min-height:54px;border-radius:50%;font-size:30px;background:rgba(255,255,255,.12);border:2px solid #b4f4c9;box-shadow:0 0 18px #b4f4c977}
+.defender-round{position:absolute;left:0;right:0;bottom:8px;text-align:center;pointer-events:none;font-weight:700;text-shadow:0 2px 4px #052c1b}
+.snake-training-field{display:flex;flex-direction:column;align-items:center;gap:10px;background:linear-gradient(135deg,#187247,#0e5536)}
+.snake-training-field .snake-grid{max-width:360px;width:min(100%,360px);aspect-ratio:1;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:2px;background:#0c4a2e;padding:7px;border:2px solid #a3dcb3;border-radius:10px}
+.snake-training-field .snake-cell{display:flex;align-items:center;justify-content:center;min-width:0;aspect-ratio:1;background:#278252;border-radius:3px;font-size:clamp(12px,2.8vw,21px)}
+.snake-training-field .snake-cell:nth-child(odd){background:#216f47}
+.snake-training-field .snake-body{background:#f2d24e!important;border:1px solid #fff0a0}
+.snake-training-field .snake-food{background:#f7f7f0!important}
+.snake-training-field .snake-obstacle{background:#a9d6bd!important}
+.relation-match3-cell{font-size:clamp(18px,4vw,30px);min-height:38px}
+.feature-game-modal .feature-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+@media(max-width:600px){.football-training-field,.defender-field{min-height:260px}.goalkeeper-sprite{font-size:36px}.football-goal{font-size:42px}}
