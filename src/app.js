@@ -169,7 +169,7 @@ $("setupForm").addEventListener("submit", (event) => {
 
 const pages = {
   players: {title:"Футболисты", eyebrow:"СОСТАВ", render: renderPlayers},
-  mail: {title:"Почта", eyebrow:"СООБЩЕНИЯ", render: () => placeholder("Почтовая система ещё не реализована. Здесь появятся сообщения, приглашения и важные новости.")},
+  mail: {title:"Почта", eyebrow:"СООБЩЕНИЯ", render: () => placeholder("Новых сообщений пока нет.")},
   training: {title:"Тренировка", eyebrow:"РАЗВИТИЕ", render: renderTraining},
   upbringing: {title:"Воспитание", eyebrow:"ОТНОШЕНИЯ", render: () => placeholder("Раздел воспитания пока пустой. Позже добавим отношения, события и решения тренера.")},
   league: {title:"Лиги и команды", eyebrow:"СОРЕВНОВАНИЯ", render: renderLeague},
@@ -304,14 +304,14 @@ function openPlayerProfile(team,p,index) {
   wrap.append(stats);
   if(relation<50)wrap.append(safeText("p","При 50% отношений откроется показатель по позиции футболиста.","muted"));
   else if(relation<80)wrap.append(safeText("p","Новые характеристики открываются при 60%, 70% и 80% отношений.","muted"));
-  if(relation>=90)wrap.append(safeText("p","Потенциал: значения ещё не добавлены в данные футболистов.","muted"));
+  if(relation>=90)wrap.append(safeText("p","Потенциал пока неизвестен.","muted"));
   else wrap.append(safeText("p","Потенциал откроется при 90% отношений.","muted"));
   const back=document.createElement("button");back.className="back-button";back.textContent="← К составу";back.addEventListener("click",()=>openPage("players"));wrap.append(back);
   $("pageTitle").textContent=p.name;$("pageEyebrow").textContent="КАРТОЧКА ФУТБОЛИСТА";const content=$("pageContent");content.replaceChildren(wrap);
 }
 function renderTraining() {
   const wrap = document.createElement("div");
-  wrap.append(placeholder("Пока подготовлена структура раздела. Индивидуальная «Змейка», таймеры на 4 часа, командная тренировка на 8 часов и тренировочные матчи подключим поэтапно."));
+  wrap.append(placeholder("Тренировочные занятия скоро станут доступны."));
   return wrap;
 }
 
