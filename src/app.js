@@ -798,6 +798,11 @@ function chooseAttackingSide(session){
 function isImportantMatchEvent(event){return Boolean(event&&(event.type==="goal"||event.card==="yellow"||event.card==="red"||event.type==="injury"||event.injury));}
 function getEventTeamSide(event){return event?.type==="goal"?(event.scoringSide||event.side):event?.side||null;}
 function deriveMatchStats(session){const events=session.events||[],stats={home:{shots:0,onTarget:0,possessionMinutes:0},away:{shots:0,onTarget:0,possessionMinutes:0}};const minutes=Math.max(1,Math.min(20,Number(session.minute)||20)),hp=Number(session.matchStats?.home?.possessionMinutes)||0,ap=Number(session.matchStats?.away?.possessionMinutes)||0,total=hp+ap||1;stats.home.possessionMinutes=Math.round(minutes*hp/total);stats.away.possessionMinutes=minutes-stats.home.possessionMinutes;events.forEach(e=>{const side=getEventTeamSide(e);if(!stats[side])return;if(e.shot===true||["goal","save","chance","penalty"].includes(e.type))stats[side].shots++;if(e.onTarget===true||["goal","save"].includes(e.type))stats[side].onTarget++;});["home","away"].forEach(side=>{const goals=events.filter(e=>e.type==="goal"&&getEventTeamSide(e)===side).length;stats[side].shots=Math.max(stats[side].shots,goals);stats[side].onTarget=Math.max(stats[side].onTarget,goals);});return stats;}
+function calculateMatchPlayerRatings(session){
+ const counts={home:{goals:new Map(),assists:new Map()},away:{goals:new Map(),assists:new Map()}};
+ (session.events||[]).filter(e=>e.type==="goal").forEach(e=>{const side=getEventTeamSide(e);if(!counts[side])return;if(e.scorer)counts[side].goals.set(e.scorer,(counts[side].goals.get(e.scorer)||0)+1);if(e.assist)counts[side].assists.set(e.assist,(counts[side].assists.get(e.assist)||0)+1);});
+ return ["home","away"].flatMap(side=>(session.lineups?.[side]||[]).map(entry=>{const p=entry.player||entry,goals=counts[side].goals.get(p.name)||0,assists=counts[side].assists.get(p.name)||0;return {playerName:p.name,side,played:true,goals,assists,rating:Math.min(10,6+goals+assists)};}));
+}
 function applyPostMatchSkillGrowth(session,ownSide,result){if(result.skillGrowth)return result.skillGrowth;const team=getUserTeam();if(!team)return {changes:[]};const active=(session.lineups?.[ownSide]||[]).filter(e=>!e.sentOff).map(e=>e.player||e).filter(p=>p&&team.players.some(x=>(x.careerId||x.name)===(p.careerId||p.name)));const changes=[],grow=(p,reason)=>{const keys=["ВР","ЗЩ","ПЗ","НП"],skill=keys[Math.floor(Math.random()*keys.length)];p.skills=p.skills||{};const before=Number(p.skills[skill]||0),after=Math.min(100,before+1);p.skills[skill]=after;changes.push({playerName:p.name,skill,before,after,reason});};const own=ownSide==="home"?result.homeScore:result.awayScore,opp=ownSide==="home"?result.awayScore:result.homeScore;if(own>opp){const pool=[...active];for(let i=0;i<3&&pool.length;i++)grow(pool.splice(Math.floor(Math.random()*pool.length),1)[0],"Победа команды");}else if(active.length){const ratings=new Map((result.playerRatings||[]).filter(x=>x.played).map(x=>[x.playerName,Number(x.rating)||6]));const best=Math.max(...active.map(p=>ratings.get(p.name)||6)),pool=active.filter(p=>(ratings.get(p.name)||6)===best);grow(pool[Math.floor(Math.random()*pool.length)],own===opp?"Ничья":"Поражение");}result.skillGrowth=changes;return changes;}
 function createMatchEvent(session,home,away,minute){
  const side=chooseAttackingSide(session),attack=session.lineups[side].filter(x=>!x.sentOff),defSide=side==="home"?"away":"home",defence=session.lineups[defSide].filter(x=>!x.sentOff);
@@ -892,7 +897,7 @@ function applyOfficialMatchResult(session,home,away){
  result.spectatorNotes=buildPostMatchSpectatorNotes(session,home,away);
  const relationshipReport=calculateOfficialMatchRelations(session,home,away,result);
  result.relationshipChanges=relationshipReport.changes;
- result.playerRatings=relationshipReport.ratings;const ownSide=home.id===getUserTeam()?.id?"home":"away";result.skillGrowth=applyPostMatchSkillGrowth(session,ownSide,result);state.leagueResults=state.leagueResults||{};state.leagueResults[roundFixtureKey(session.round,fixture)]=result;
+ result.playerRatings=calculateMatchPlayerRatings(session);const ownSide=home.id===getUserTeam()?.id?"home":"away";result.skillGrowth=applyPostMatchSkillGrowth(session,ownSide,result);state.leagueResults=state.leagueResults||{};state.leagueResults[roundFixtureKey(session.round,fixture)]=result;
  state.lastMatchReport=result;
  ensureRoundBackgroundResults(session.round,fixture,result);
  state.careerHistory=state.careerHistory||{officialMatches:[],seasons:{}};
@@ -947,7 +952,7 @@ function renderMatchSummaryPage(){
  const list=document.createElement("div");list.className="match-summary-lineups";
  [[home,result.homeLineup||[]],[away,result.awayLineup||[]]].forEach(([team,entries])=>{
   const col=document.createElement("div");col.className="match-summary-lineup";col.append(safeText("h3",matchTeamLabel(team)));
-  entries.forEach(entry=>{const player=entry.player||entry;const row=document.createElement("div");row.className="match-summary-player";row.append(makeMatchPortrait(player,team),safeText("span",player.name+" · "+(entry.role||player.position||"—")));const marks=goals.filter(g=>g.scorer===player.name).length;if(marks)row.append(safeText("b","⚽ "+marks));col.append(row)});
+  entries.forEach(entry=>{const player=entry.player||entry;const row=document.createElement("div");row.className="match-summary-player";row.append(makeMatchPortrait(player,team),safeText("span",player.name+" · "+(entry.role||player.position||"—")));const side=team.id===result.homeId?"home":"away",marks=goals.filter(g=>getEventTeamSide(g)===side&&g.scorer===player.name).length,rating=(result.playerRatings||[]).find(r=>r.side===side&&r.playerName===player.name)?.rating;if(Number.isFinite(rating))row.append(safeText("b","★ "+rating.toFixed(1)));if(marks)row.append(safeText("b","⚽ "+marks));col.append(row)});
   list.append(col);
  });lineups.append(list);
  const spectators=document.createElement("section");spectators.className="panel match-summary-panel";spectators.append(safeText("h2","Что обсуждали на трибунах"));
@@ -962,7 +967,7 @@ function renderMatchSummaryPage(){
  const roundPanel=document.createElement("section");roundPanel.className="panel match-summary-panel";roundPanel.append(safeText("h2","Другие результаты тура"));
  getOfficialRoundFixtures(result.round).forEach(f=>{const key=roundFixtureKey(result.round,f),r=state.leagueResults?.[key];roundPanel.append(tournamentMatchRow(result.round,f,r,f.home.id===ownId||f.away.id===ownId))});
  const actions=document.createElement("div");actions.className="match-summary-actions";actions.append(matchButton("К ТУРНИРНОЙ ТАБЛИЦЕ",()=>openPage("league"),"primary"),matchButton("ВЕРНУТЬСЯ НА ГЛАВНУЮ",()=>{$("pageView").classList.add("hidden");$("dashboard").classList.remove("hidden")},"secondary"));
- wrap.append(actions,header,goalsPanel,statsPanel,lineups,spectators,eventsPanel,relationPanel,roundPanel);return wrap;
+ wrap.append(actions,header,goalsPanel,statsPanel,lineups,spectators,eventsPanel,relationPanel,growthPanel,roundPanel);return wrap;
 }
 function renderMatchPage(){
  const wrap=document.createElement("div");wrap.className="official-match-view";
