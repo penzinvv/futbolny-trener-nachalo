@@ -82,3 +82,18 @@
   .player-profile-tab{padding:9px 10px;font-size:12px}
   .relationship-thresholds{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
+
+/* Раздел отношений с футболистами */
+.relationship-roster{margin-top:14px}
+.relationship-roster-row{grid-template-columns:58px minmax(0,1fr) minmax(180px,260px);gap:14px;align-items:center}
+.relationship-roster-row>img{width:58px;height:66px;object-fit:cover;border-radius:9px}
+.relationship-roster-row .cabinet-roster-info{min-width:0;gap:5px}
+.relationship-roster-row .player-relationship{margin:0;min-width:0}
+.relationship-next-step{font-size:12px;color:var(--muted);line-height:1.35}
+.relationship-summary{margin:18px 0}
+@media(max-width:700px){
+  .relationship-roster-row{grid-template-columns:48px minmax(0,1fr);gap:10px}
+  .relationship-roster-row>img{width:48px;height:56px}
+  .relationship-roster-row .player-relationship{grid-column:1/-1;width:100%;margin-top:2px}
+  .relationship-next-step{font-size:11px}
+}
