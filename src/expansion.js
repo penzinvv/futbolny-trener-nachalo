@@ -103,11 +103,9 @@ function playTraining(t,p,id){
    function draw(){grid.replaceChildren();for(let y=0;y<10;y++)for(let x=0;x<10;x++){const c=document.createElement("span");c.className="snake-cell"+(snake.some(s=>s.x===x&&s.y===y)?" snake-body":"")+(food.x===x&&food.y===y?" snake-food":"")+(obstacles.some(s=>s.x===x&&s.y===y)?" snake-obstacle":"");c.textContent=food.x===x&&food.y===y?"⚽":obstacles.some(s=>s.x===x&&s.y===y)?"🧍":"";grid.append(c)}scoreLine.textContent="Очки: "+score+" · Мячей: "+score/10}
    function tick(){if(ended||closed)return;const h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};if(h.x<0||h.y<0||h.x>=10||h.y>=10||snake.slice(0,-1).some(s=>s.x===h.x&&s.y===h.y)||obstacles.some(s=>s.x===h.x&&s.y===h.y)){finish("Змейка столкнулась с футболистом или границей. Собрано мячей: "+score/10+".");return}snake.unshift(h);if(h.x===food.x&&h.y===food.y){score+=10;placeFood();if(score%50===0&&obstacles.length<8){let o;do{o={x:Math.floor(Math.random()*10),y:Math.floor(Math.random()*10)}}while((snake.some(s=>s.x===o.x&&s.y===o.y)||(food.x===o.x&&food.y===o.y)||obstacles.some(s=>s.x===o.x&&s.y===o.y)));obstacles.push(o)}}else snake.pop();draw()}
    function keySnake(ev){const map={arrowup:[0,-1],arrowdown:[0,1],arrowleft:[-1,0],arrowright:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]},v=map[ev.key.toLowerCase()];if(v&&!(v[0]===-dir.x&&v[1]===-dir.y)){dir={x:v[0],y:v[1]};ev.preventDefault()}}
-   document.addEventListener("keydown",keySnake);const oldClose=close; // key listener is removed by close below
-   const removeSnakeKeys=()=>document.removeEventListener("keydown",keySnake);
-   const priorFinish=finish;
+   document.addEventListener("keydown",keySnake);extraCleanup=()=>document.removeEventListener("keydown",keySnake);
    timer=setInterval(tick,280);draw();
-   actions.append(B("Выйти без награды",()=>{removeSnakeKeys();oldClose()}));
+   actions.append(B("Выйти без награды",close));
  }
  if(p.position!=="ЗЩ"&&p.position!=="ВР") actions.append(B("Выйти без награды",close));
 }
