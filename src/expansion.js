@@ -1,19 +1,61 @@
 (function(){
 "use strict";
-const cd=14400000,icons=["⚽","🧤","👟","👕","🏆","🥅"];let timer=null,profileBase;
+const cd=3600000,icons=["⚽","🧤","👟","👕","🏆","🥅"];let timer=null,profileBase;
 const B=(s,fn,c="secondary")=>{const b=document.createElement("button");b.type="button";b.className=c;b.textContent=s;b.onclick=fn;return b},T=(s)=>safeText("p",s,"muted"),P=(a,b)=>{const e=document.createElement("section");e.className="feature-panel";e.append(safeText("h2",a),T(b));return e},F=n=>(Math.round(n*100)/100).toLocaleString("ru-RU",{maximumFractionDigits:2})+"%",own=()=>getUserTeam()?.players||[];
 function rel(t,p,n){state.relationships||={};let k=playerRelationKey(t,p),v=Math.max(0,Math.min(100,Number(state.relationships[k]||0)+n/100));state.relationships[k]=v;return v}
 function transfer(){openPage("transfers")}
 function install(){
- state.relationships||={};state.trainingCooldowns||={};state.trainingHistory||=[];state.transferHistory||=[];state.externalRosters||={};
+ state.relationships||={};state.trainingCooldowns||={};state.trainingHistory||=[];state.transferHistory||=[];state.externalRosters||={};state.coachGoals||={};
  const baseGetTeam=getUserTeam;
  getUserTeam=function(){const t=baseGetTeam();if(t&&Array.isArray(state.userRoster))t.players=state.userRoster;return t};
 
  const nav=document.querySelector(".menu-grid");if(nav&&!nav.querySelector('[data-page="transfers"]')&&!document.getElementById("transferHome")){const b=B("🔁 ТРАНСФЕРНЫЙ ОБМЕН ИГРОКАМИ",transfer,"transfer-home-button");b.id="transferHome";nav.append(b)}
  const old=pages.cabinet.render;if(!old.wrap){const w=function(){const n=old();n.prepend(B("🔁 Трансферный обмен игроками",transfer,"primary"));return n};w.wrap=true;pages.cabinet.render=w}
  profileBase=openPlayerProfile;openPlayerProfile=function(t,p,i){profileBase(t,p,i);if(t.id===getUserTeam()?.id)return;const box=P("Отношения с футболистом","Каждые 100 очков в «Три в ряд» дают +1 процентный пункт отношений.");box.append(B("ПОДНЯТЬ ОТНОШЕНИЯ С ИГРОКОМ",()=>match3(t,p),"primary"),B("Выбрать для наблюдения в следующем матче",()=>{state.matchRelationSelections||={};state.matchRelationSelections[t.id]=p.name;saveState();alert("Выбран игрок для наблюдения: "+p.name+". Начисление отношений после матча появится вместе с матчевым движком.")}),B("Предложить обмен",()=>{state.transferTarget={team:t.id,name:p.name};saveState();transfer()}));document.querySelector("#pageContent .player-profile")?.append(box)};
- pages.training.render=training;
-function freeYardMonthKey(){const day=Math.max(1,Number(state.gameDay)||1),season=Math.max(1,Number(state.seasonNumber)||1);return season+":"+ (Math.floor((day-1)/28)+1)}
+ pages.training.render=training;pages.goals.render=renderCoachGoals;
+function localDayStart(now=Date.now()){const d=new Date(now);d.setHours(0,0,0,0);return d.getTime()}
+ function goalWindow(id,now=Date.now()){state.coachGoals=state.coachGoals||{};const g=state.coachGoals[id]||{};return Math.max(localDayStart(now),Number(g.completedAt||0)+72000000)}
+ function goalDefinitions(){return [
+  {id:"train-all",title:"Проведи индивидуальную тренировку со всеми футболистами",description:"Проведи индивидуальную тренировку с каждым футболистом своей команды в текущем цикле.",reward:1000},
+  {id:"win-three",title:"Выиграй 3 официальных матча",description:"Одержи три победы в официальных матчах в текущем цикле.",reward:5000},
+  {id:"external-relation",title:"Наладь отношения с футболистом другой команды",description:"Доведи отношения хотя бы с одним футболистом другой команды до 50%.",reward:5000}
+ ]}
+ function getGoalProgress(goal,now=Date.now()){
+  const start=goalWindow(goal.id,now),team=getUserTeam();
+  if(goal.id==="train-all"){
+   const roster=team?.players||[];if(!roster.length)return {current:0,total:0,done:false};
+   const records=(state.trainingHistory||[]).filter(x=>x&&x.type==="individual"&&x.team===team.id&&Number(x.at)>=start);
+   const trained=new Set(records.map(x=>x.playerId||x.player));
+   const current=roster.filter(p=>trained.has(p.careerId||p.id||p.name)||trained.has(p.name)).length;
+   return {current,total:roster.length,done:current>=roster.length};
+  }
+  if(goal.id==="win-three"){
+   const records=(state.careerHistory?.officialMatches||[]).filter(x=>Number(x.at||x.completedAt||0)>=start&&x.result==="W");
+   return {current:records.length,total:3,done:records.length>=3};
+  }
+  if(goal.id==="external-relation"){
+   const ownId=team?.id;let best=0;
+   (leagueData?.teams||[]).filter(t=>t.id!==ownId).forEach(t=>(t.players||[]).forEach(p=>{best=Math.max(best,Number(state.relationships?.[playerRelationKey(t,p)]||0))}));
+   return {current:Math.min(50,Math.floor(best)),total:50,done:best>=50};
+  }
+  return {current:0,total:1,done:false}
+ }
+ function renderCoachGoals(){
+  const w=document.createElement("div");if(!getUserTeam()){w.append(placeholder("Сначала создай команду."));return w}
+  w.append(P("Цели тренера","Цели обновляются по реальному календарю. После выполнения награда автоматически начисляется в XP тренера, а повторное выполнение открывается через 20 часов."));
+  const now=Date.now();
+  goalDefinitions().forEach(goal=>{
+   state.coachGoals=state.coachGoals||{};let record=state.coachGoals[goal.id]||{};state.coachGoals[goal.id]=record;
+   const unlock=Number(record.completedAt||0)+72000000,locked=now<unlock,progress=getGoalProgress(goal,now);
+   if(progress.done&&!locked&&Number(record.rewardedAt||0)<goalWindow(goal.id,now)){
+    state.xp=Math.max(0,Number(state.xp)||0)+goal.reward;record.completedAt=now;record.rewardedAt=now;record.lastReward=goal.reward;saveState();
+    w.append(P("Цель выполнена!",goal.title+" — начислено "+goal.reward.toLocaleString("ru-RU")+" XP. Следующее выполнение доступно через 20 часов."));return;
+   }
+   const card=P(goal.title,goal.description),line=locked?"Повторно доступна через "+Math.ceil((unlock-now)/3600000)+" ч. "+Math.ceil(((unlock-now)%3600000)/60000)+" мин.":"Прогресс: "+progress.current+" / "+progress.total;
+   card.append(T("Награда: "+goal.reward.toLocaleString("ru-RU")+" XP"),T(line));if(!locked&&progress.done)card.append(T("Цель выполнена. Награда будет начислена при обновлении целей."));w.append(card);
+  });return w
+ }
+ function freeYardMonthKey(){const day=Math.max(1,Number(state.gameDay)||1),season=Math.max(1,Number(state.seasonNumber)||1);return season+":"+ (Math.floor((day-1)/28)+1)}
 function randomFreeYardPlayer(){
  const all=[];(leagueData?.teams||[]).forEach(team=>(team.players||[]).forEach(player=>{const parts=String(player.name||"").trim().split(/\s+/);if(parts.length>1)all.push({first:parts.slice(1).join(" "),last:parts[0]})}));
  const firsts=[...new Set(all.map(x=>x.first).filter(Boolean))],lasts=[...new Set(all.map(x=>x.last).filter(Boolean))];
@@ -87,7 +129,7 @@ function training(){
  const cdKey="team-training",left=28800000-(Date.now()-Number(state.trainingCooldowns[cdKey]||0));
  const tb=B(left>0?"Доступно через "+Math.ceil(left/60000)+" мин.":"Провести командную тренировку",()=>runTeamTraining(t),left>0?"secondary":"primary");tb.disabled=left>0;
  teamPanel.append(tb,T("Правило распределения: один случайный игрок тренируется по своей основной позиции; у всех остальных случайно выбирается одна из трёх неподходящих основной позиции характеристик. Каждый игрок получает ровно +1, без повторов и без превышения 100."));
- const listPanel=P("Индивидуальная тренировка","ВР — поймай мяч (+5, конец после 10 пропущенных); ЗЩ — перехват мяча (+5, бесконечная игра, конец после 3 промахов или по кнопке сохранения); ПЗ/НП — змейка (+5 за мяч). Повтор раз в 4 часа.");
+ const listPanel=P("Индивидуальная тренировка","ВР — поймай мяч (+5, конец после 10 пропущенных); ЗЩ — перехват мяча (+5, бесконечная игра, конец после 3 промахов или по кнопке сохранения); ПЗ/НП — змейка (+5 за мяч). Повтор раз в 1 час.");
  const list=document.createElement("div");list.className="feature-player-list";
  t.players.forEach(player=>{const row=document.createElement("div");row.className="feature-player-row";row.append(safeText("b",player.name+" · "+player.position));const id=t.id+"::"+player.name,left=cd-(Date.now()-Number(state.trainingCooldowns[id]||0));const b=B(left>0?"Доступно через "+Math.ceil(left/60000)+" мин.":"Начать тренировку",()=>playTraining(t,player,id),left>0?"secondary":"primary");b.disabled=left>0;row.append(b);list.append(row)});listPanel.append(list);
  w.append(teamPanel,listPanel,P("Расчёт наград индивидуальной тренировки","Каждые 100 итоговых очков = 1 п.п. отношений без округления. Каждые 200 положительных очков дают +1 к основной характеристике, остаток сгорает. Опыт тренера растёт на положительный итоговый счёт."));
@@ -124,7 +166,7 @@ function playTraining(t,p,id){
  const actions=document.createElement("div");actions.className="feature-actions";ov.append(m);m.append(safeText("h2",title),T(p.name),scoreLine,field,hint,actions);document.body.append(ov);
  let score=0,miss=0,ended=false,closed=false,timer=null,raf=0,keys=new Set(),extraCleanup=()=>{};
  const close=()=>{if(closed)return;closed=true;clearInterval(timer);clearTimeout(timer);cancelAnimationFrame(raf);document.removeEventListener("keydown",key);document.removeEventListener("keyup",keyup);extraCleanup();ov.remove()};
- function finish(details){if(ended||closed)return;ended=true;clearInterval(timer);clearTimeout(timer);cancelAnimationFrame(raf);document.removeEventListener("keydown",key);document.removeEventListener("keyup",keyup);extraCleanup();let net=Math.max(0,score),before=Number(p.skills?.[p.position]||0),growth=Math.min(Math.floor(net/200),100-before),beforeRel=Number(state.relationships[playerRelationKey(t,p)]||0),after=rel(t,p,score);p.skills=p.skills||{};p.skills[p.position]=Math.min(100,before+growth);state.xp=Math.max(0,Number(state.xp)||0)+net;state.trainingCooldowns[id]=Date.now();state.trainingHistory=Array.isArray(state.trainingHistory)?state.trainingHistory:[];state.trainingHistory.push({type:"individual",team:t.id,player:p.name,score,delta:after-beforeRel,growth,at:Date.now()});saveState();scoreLine.textContent="Итог: "+score+" очков · Отношения +"+F(after-beforeRel)+" · "+p.position+" +"+growth;field.replaceChildren(T(details));actions.replaceChildren(B("Готово",()=>{close();openPage("training")},"primary"))}
+ function finish(details){if(ended||closed)return;ended=true;clearInterval(timer);clearTimeout(timer);cancelAnimationFrame(raf);document.removeEventListener("keydown",key);document.removeEventListener("keyup",keyup);extraCleanup();let net=Math.max(0,score),before=Number(p.skills?.[p.position]||0),growth=Math.min(Math.floor(net/200),100-before),beforeRel=Number(state.relationships[playerRelationKey(t,p)]||0),after=rel(t,p,score);p.skills=p.skills||{};p.skills[p.position]=Math.min(100,before+growth);state.xp=Math.max(0,Number(state.xp)||0)+net;state.trainingCooldowns[id]=Date.now();state.trainingHistory=Array.isArray(state.trainingHistory)?state.trainingHistory:[];state.trainingHistory.push({type:"individual",team:t.id,player:p.name,playerId:p.careerId||p.id||p.name,score,delta:after-beforeRel,growth,at:Date.now()});saveState();scoreLine.textContent="Итог: "+score+" очков · Отношения +"+F(after-beforeRel)+" · "+p.position+" +"+growth;field.replaceChildren(T(details));actions.replaceChildren(B("Готово",()=>{close();openPage("training")},"primary"))}
  function key(ev){const k=ev.key.toLowerCase();if(["arrowleft","arrowright","arrowup","arrowdown","a","d","w","s"].includes(k)){keys.add(k);ev.preventDefault()}}
  function keyup(ev){keys.delete(ev.key.toLowerCase())}
  document.addEventListener("keydown",key);document.addEventListener("keyup",keyup);
@@ -159,9 +201,9 @@ function playTraining(t,p,id){
 }
 function transfersPage(){
  const w=document.createElement("div");if(!leagueData){w.append(placeholder("Загружаю команды…"));return w} Object.entries(state.externalRosters||{}).forEach(([id,players])=>{const t=leagueData.teams.find(x=>x.id===id);if(t&&Array.isArray(players))t.players=players});
- if(state.transferTarget){const t=leagueData.teams.find(x=>x.id===state.transferTarget.team),p=t?.players.find(x=>x.name===state.transferTarget.name);if(t&&p){const panel=P("Обмен игроками","Выбери игрока своей команды в обмен на "+p.name+".");const sel=document.createElement("select");sel.className="league-select";own().forEach((x,i)=>sel.add(new Option(x.name+" · "+x.position,String(i))));panel.append(sel,B("Подтвердить обмен",()=>{const i=+sel.value,mine=own()[i];if(!mine||!confirm("Отдать "+mine.name+" и получить "+p.name+"?"))return;const ut=getUserTeam();ut.players.splice(i,1);t.players.splice(t.players.findIndex(x=>x.name===p.name),1);ut.players.push({...p});t.players.push({...mine});state.userRoster=ut.players;state.externalRosters[t.id]=t.players;state.transferHistory.push({team:t.id,received:p.name,given:mine.name,at:Date.now()});delete state.transferTarget;saveState();openPage("transfers")},"primary"),B("Отмена",()=>{delete state.transferTarget;openPage("transfers")}));w.append(panel);return w}}
- w.append(P("Трансферный обмен игроками","Просматривай отношения с игроками других команд и предлагай обмен. Подтверждение обязательно; переговоры и вероятность отказа пока не моделируются."));
- leagueData.teams.filter(t=>t.id!==getUserTeam()?.id).forEach(t=>{const p=P(t.name,t.league);t.players.forEach(x=>{const r=document.createElement("div");r.className="feature-player-row";r.append(safeText("span",x.name+" · "+x.position+" · "+F(getPlayerRelation(t,x))),B("Профиль",()=>openPlayerProfile(t,x,teamsPlayerIndex(t,x))),B("Обмен",()=>{state.transferTarget={team:t.id,name:x.name};saveState();openPage("transfers")},"primary"));p.append(r)});w.append(p)});return w
+ if(state.transferTarget){const t=leagueData.teams.find(x=>x.id===state.transferTarget.team),p=t?.players.find(x=>x.name===state.transferTarget.name);if(t&&p){const relation=Number(getPlayerRelation(t,p));if(relation<50){delete state.transferTarget;saveState();alert("Для обмена нужны отношения с футболистом не ниже 50%.");}else{const panel=P("Обмен игроками","Отношения с "+p.name+": "+F(relation)+". Выбери футболиста своей команды для обмена.");const sel=document.createElement("select");sel.className="league-select";own().forEach((x,i)=>sel.add(new Option(x.name+" · "+x.position,String(i))));panel.append(sel,B("Попробовать обмен",()=>{const i=+sel.value,mine=own()[i];if(!mine||!confirm("Предложить обмен: "+mine.name+" на "+p.name+"?"))return;if(relation<70){alert("Наш футболист не хочет, и мы сами не можем согласиться на этот обмен. Налаживайте с ним отношения сами.");delete state.transferTarget;saveState();openPage("transfers");return}if(relation<90&&Math.random()>=0.5){alert(Math.random()<0.5?"Футболист отказался от обмена. Попробуйте наладить отношения ещё лучше.":"Тренер команды отказал в обмене. Налаживайте отношения с футболистом дальше.");delete state.transferTarget;saveState();openPage("transfers");return}const ut=getUserTeam(),idx=t.players.findIndex(x=>x.name===p.name);if(idx<0||!ut.players[i]){alert("Не удалось завершить обмен: состав изменился.");return}ut.players.splice(i,1);t.players.splice(idx,1);ut.players.push({...p});t.players.push({...mine});state.userRoster=ut.players;state.externalRosters[t.id]=t.players;state.transferHistory.push({team:t.id,received:p.name,given:mine.name,at:Date.now(),relation,success:true});delete state.transferTarget;saveState();alert("Обмен успешно состоялся!");openPage("transfers")},"primary"),B("Отмена",()=>{delete state.transferTarget;openPage("transfers")}));w.append(panel);return w}}
+  w.append(P("Трансферный обмен игроками","Обмен открывается при отношениях от 50%. От 50% до менее 70% — гарантированный отказ; от 70% до менее 90% — шанс согласия 50%; от 90% — обмен гарантирован."));
+  leagueData.teams.filter(t=>t.id!==getUserTeam()?.id).forEach(t=>{const p=P(t.name,t.league);t.players.forEach(x=>{const relation=Number(getPlayerRelation(t,x));const r=document.createElement("div");r.className="feature-player-row";const label=safeText("span",x.name+" · "+x.position+" · "+F(relation));const profile=B("Профиль",()=>openPlayerProfile(t,x,teamsPlayerIndex(t,x)));const exchange=B(relation<50?"Обмен закрыт — нужно 50%":relation<70?"Обмен недоступен — нужно 70%":relation<90?"Попробовать обмен (50/50)":"Обмен гарантирован",()=>{if(relation<50)return;state.transferTarget={team:t.id,name:x.name};saveState();openPage("transfers")},relation>=50?"primary":"secondary");exchange.disabled=relation<50;r.append(label,profile,exchange);p.append(r)});w.append(p)});return w
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
 })();
