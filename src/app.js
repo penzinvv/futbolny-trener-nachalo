@@ -640,9 +640,10 @@ function renderCabinet() {
       const officialMatches=Array.isArray(state.careerHistory?.officialMatches)?state.careerHistory.officialMatches:[];
       const list=document.createElement("div");list.className="season-fixture-list";
       const completed=ownFixtures.filter(item=>officialMatches.some(match=>match.fixtureId===item.fixture.fixtureId)).length;
-      const firstUnplayedRound=ownFixtures.find(item=>!officialMatches.some(match=>match.fixtureId===item.fixture.fixtureId))?.round;
+      const testCompleted=ownFixtures.filter(item=>(state.completedFixtures||[]).includes(item.fixture.fixtureId)&&!officialMatches.some(match=>match.fixtureId===item.fixture.fixtureId)).length;
+      const firstUnplayedRound=ownFixtures.find(item=>!officialMatches.some(match=>match.fixtureId===item.fixture.fixtureId)&&!(state.completedFixtures||[]).includes(item.fixture.fixtureId))?.round;
       const summary=document.createElement("div");summary.className="cabinet-metrics season-fixture-summary";
-      [["Матчей в сезоне",String(ownFixtures.length)],["Завершено официально",String(completed)],["Осталось",String(Math.max(0,ownFixtures.length-completed))]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));summary.append(card);});
+      [["Матчей в сезоне",String(ownFixtures.length)],["Официально завершено",String(completed)],["Тестово пройдено",String(testCompleted)],["Не сыграно",String(Math.max(0,ownFixtures.length-completed-testCompleted))]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));summary.append(card);});
       p.append(summary);
       const todaysFixture=getCurrentOfficialFixture();
       const currentFixtureIsCompleted=Boolean(todaysFixture&&((state.completedFixtures||[]).includes(todaysFixture.fixtureId)||officialMatches.some(match=>match.fixtureId===todaysFixture.fixtureId)));
