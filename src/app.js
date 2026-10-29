@@ -222,7 +222,7 @@ async function playNextTrack() {
   lastTrackPath = shuffledTracks[currentTrackIndex];
   try {
     await musicPlayer.play();
-    musicToggle.textContent = "♫ Выключить музыку";
+    musicToggle.textContent = "♫ Выключить радио";
     musicToggle.setAttribute("aria-pressed", "true");
   } catch (error) {
     musicEnabled = false;
@@ -247,7 +247,7 @@ musicToggle.addEventListener("click", async () => {
   if (musicEnabled) {
     musicEnabled = false;
     musicPlayer.pause();
-    musicToggle.textContent = "♫ Включить музыку";
+    musicToggle.textContent = "♫ Включить радио";
     musicToggle.setAttribute("aria-pressed", "false");
     return;
   }
@@ -257,7 +257,7 @@ musicToggle.addEventListener("click", async () => {
   if (musicPlayer.src && musicPlayer.paused && currentTrackIndex >= 0) {
     try {
       await musicPlayer.play();
-      musicToggle.textContent = "♫ Выключить музыку";
+      musicToggle.textContent = "♫ Выключить радио";
       musicToggle.setAttribute("aria-pressed", "true");
     } catch { await playNextTrack(); }
   } else {
