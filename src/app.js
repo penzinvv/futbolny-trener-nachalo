@@ -598,9 +598,9 @@ function makeMatchPreviewPanel(fixture){
 }
 function makeMatchPreviewResult(preview){
   const panel=document.createElement("section");panel.className="cabinet-panel match-preview-result";
-  panel.append(safeText("h2","Матч завершён · тестовый результат"),
+  panel.append(safeText("h2","Матч завершён · официальный локальный протокол"),
     safeText("p",preview.homeName+"  "+preview.homeGoals+" : "+preview.awayGoals+"  "+preview.awayName,"match-preview-score"),
-    safeText("p","Оценки предварительные: они показывают работу модели и пока не сохраняются в карьеру или историю наград.","muted"));
+    safeText("p","Результат и оценки сохранены в локальной карьере. Используется упрощённая модель матча; серверная синхронизация пока не подключена.","muted"));
   const events=document.createElement("div");events.className="match-preview-events";
   preview.events.forEach(event=>events.append(safeText("p",event.text)));
   panel.append(events);
@@ -856,7 +856,7 @@ function renderCabinet() {
         row.append(roundLabel,matchup,status);list.append(row);
       });
       p.append(list);
-      p.append(safeText("p","Сезон длится 182 игровых дня. Матчи 1–10 назначены на дни 7–70 с недельным интервалом; затем идут 31 день каникул, после которых матчи проходят в дни 108–171 с недельным интервалом. Результаты появятся только после подключения официального протокола матча.","muted"));
+      p.append(safeText("p","Сезон длится 182 игровых дня. Матчи 1–10 назначены на дни 7–70 с недельным интервалом; затем идут 31 день каникул, после которых матчи проходят в дни 108–171 с недельным интервалом. Результаты локальных официальных матчей отображаются после проведения тура; серверная синхронизация ещё не подключена.","muted"));
     } else {
       p=panel("Карьера тренера","Постоянная история тренера и команды. Официальная статистика будет расти только от завершённых официальных матчей.");
       const grid=document.createElement("div");grid.className="cabinet-metrics";
@@ -865,7 +865,7 @@ function renderCabinet() {
       const totals=officialMatches.reduce((a,m)=>{a.played++;a.wins+=m.result==="W"?1:0;a.draws+=m.result==="D"?1:0;a.losses+=m.result==="L"?1:0;a.gf+=Number(m.goalsFor||0);a.ga+=Number(m.goalsAgainst||0);return a;},{played:0,wins:0,draws:0,losses:0,gf:0,ga:0});
       [["Текущий сезон","Сезон "+(state.seasonNumber||1)],["Официальные матчи",String(totals.played)],["Победы / ничьи / поражения",totals.wins+" / "+totals.draws+" / "+totals.losses],["Забито / пропущено",totals.gf+" / "+totals.ga],["Опыт аккаунта",(state.xp||0)+" XP"],["Постоянный рейтинг",String(state.permanentRating||0)],["ID тренера",(state.careerCoachId||"не создан").slice(0,8)],["ID команды",(state.careerTeamId||"не создан").slice(0,8)]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));grid.append(card);});
       p.append(grid);
-      const note=safeText("p","Важно: тестовые матчи на странице «Тестовая игра» не попадают в официальную статистику. Сейчас результаты официальных матчей ещё не подключены к серверному архиву, поэтому показатели останутся нулевыми, пока не будет подключён защищённый серверный протокол.","muted");
+      const note=safeText("p","Важно: отдельная страница «Тестовая игра» не попадает в официальную статистику. Матчи календаря сохраняются локально в этом браузере; защищённый серверный архив и синхронизация между устройствами ещё не подключены.","muted");
       p.append(note);
       const seasons=Object.values(history.seasons||{}).sort((a,b)=>(a.seasonNumber||0)-(b.seasonNumber||0));
       if(seasons.length){const list=document.createElement("div");list.className="cabinet-roster";seasons.forEach(season=>{const row=document.createElement("div");row.className="cabinet-roster-row";row.append(safeText("b","Сезон "+season.seasonNumber),safeText("span",(season.teamName||state.teamName)+" · место: "+(season.finalPlace??"—")+" · матчи: "+(season.played||0)));list.append(row);});p.append(list);}
