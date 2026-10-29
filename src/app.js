@@ -978,7 +978,7 @@ function renderLeague() {
   const details=document.createElement("details");details.className="tournament-round-details";if(r===round)details.open=false;
   const summary=document.createElement("summary");summary.textContent="Тур "+r+" · День "+officialRoundDay(r);details.append(summary);
   const list=document.createElement("div");list.className="tournament-round-list";
-  getOfficialRoundFixtures(r).forEach(f=>{const result=state.leagueResults?.[roundFixtureKey(r,f)]||null;list.append(tournamentMatchRow(r,f,result,f.home.id===ownId||f.away.id===ownId))});
+  getOfficialRoundFixtures(r).forEach(f=>{if(f.home.id===ownId||f.away.id===ownId)return;const result=state.leagueResults?.[roundFixtureKey(r,f)]||null;list.append(tournamentMatchRow(r,f,result,false))});
   details.append(list);otherSection.append(details);
  }
  wrap.append(otherSection);
