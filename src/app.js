@@ -313,9 +313,52 @@ function renderCabinet() {
         p.append(safeText("p","Отношения сейчас не повышаются автоматически. Когда будут согласованы игровые действия воспитания, здесь появятся реальные способы их улучшать.","muted"));
       }
     } else if(key==="stats"){
-      p=panel("Статистика команды","Сводка по составу на текущий момент.");const positions=["ВР","ЗЩ","ПЗ","НП"];const grid=document.createElement("div");grid.className="cabinet-metrics";
-      [["Всего футболистов",String(roster.length)],...positions.map(pos=>["Позиция "+pos,String(roster.filter(player=>player.position===pos).length)]),["Средние отношения",roster.length?Math.round(roster.reduce((sum,player)=>sum+getPlayerRelation(team,player),0)/roster.length)+"%":"—"]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));grid.append(card);});
-      p.append(grid,safeText("p","Игровая статистика, результаты и голы появятся по мере проведения матчей.","muted"));
+      p=panel("Статистика команды","Сводка по текущему составу, развитию игроков и отношениям. Официальные игровые показатели появятся после подключения сохранения матчей.");
+      const positions=["ВР","ЗЩ","ПЗ","НП"];
+      const grid=document.createElement("div");grid.className="cabinet-metrics team-stat-metrics";
+      const avgRelation=roster.length?Math.round(roster.reduce((sum,player)=>sum+getPlayerRelation(team,player),0)/roster.length):0;
+      const avgMain=roster.length?Math.round(roster.reduce((sum,player)=>sum+Number(player.skills?.[player.position]||0),0)/roster.length):0;
+      const trainingRecords=Object.values(state.trainingHistory||{}).flat().filter(entry=>entry&&entry.type==="individual");
+      const statValues=positions.map(pos=>({pos,players:roster.filter(player=>player.position===pos)}));
+      const metrics=[
+        ["Футболистов в составе",String(roster.length)+" / 10"],
+        ["Средние отношения",roster.length?avgRelation+"%":"—"],
+        ["Средняя профильная характеристика",roster.length?String(avgMain):"—"],
+        ["Проведено индивидуальных тренировок",String(trainingRecords.length)],
+        ...positions.map(pos=>["Игроков · "+pos,String(roster.filter(player=>player.position===pos).length)])
+      ];
+      metrics.forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));grid.append(card);});
+      p.append(grid);
+      const bars=document.createElement("section");bars.className="team-stat-section";bars.append(safeText("h3","Распределение по позициям"));
+      statValues.forEach(({pos,players})=>{
+        const row=document.createElement("div");row.className="team-stat-bar-row";
+        const label=safeText("span",pos+" · "+players.length);
+        const track=document.createElement("div");track.className="team-stat-track";
+        const fill=document.createElement("div");fill.className="team-stat-fill";fill.style.width=(roster.length?players.length/roster.length*100:0)+"%";
+        track.append(fill);row.append(label,track);bars.append(row);
+      });
+      p.append(bars);
+      const visibleSection=document.createElement("section");visibleSection.className="team-stat-section";
+      visibleSection.append(safeText("h3","Профильные характеристики"));
+      visibleSection.append(safeText("p","Показываются только профильные значения, доступные по текущему уровню отношений с тренером.","muted"));
+      const visiblePlayers=roster.map(player=>({player,relation:getPlayerRelation(team,player),value:Number(player.skills?.[player.position])})).filter(item=>getUnlockedSkills(item.player,item.relation).includes(item.player.position)&&Number.isFinite(item.value));
+      if(visiblePlayers.length){
+        visiblePlayers.sort((a,b)=>b.value-a.value);
+        visiblePlayers.forEach(({player,value})=>{
+          const row=document.createElement("div");row.className="team-stat-player";
+          const name=safeText("span",player.name+" · "+player.position);
+          const track=document.createElement("div");track.className="team-stat-track";
+          const fill=document.createElement("div");fill.className="team-stat-fill";fill.style.width=Math.max(0,Math.min(100,value))+"%";
+          const number=safeText("b",String(value));track.append(fill);row.append(name,track,number);visibleSection.append(row);
+        });
+      } else visibleSection.append(placeholder("Профильные характеристики пока скрыты. Повышай отношения с футболистами, чтобы открыть их."));
+      p.append(visibleSection);
+      const matches=Array.isArray(state.careerHistory?.officialMatches)?state.careerHistory.officialMatches:[];
+      const matchGrid=document.createElement("div");matchGrid.className="cabinet-metrics team-stat-metrics";
+      const officialTotals=matches.reduce((acc,match)=>{acc.played++;acc.wins+=match.result==="W"?1:0;acc.draws+=match.result==="D"?1:0;acc.losses+=match.result==="L"?1:0;acc.gf+=Number(match.goalsFor||0);acc.ga+=Number(match.goalsAgainst||0);return acc;},{played:0,wins:0,draws:0,losses:0,gf:0,ga:0});
+      [["Официальные матчи",String(officialTotals.played)],["Победы / ничьи / поражения",officialTotals.wins+" / "+officialTotals.draws+" / "+officialTotals.losses],["Забито / пропущено",officialTotals.gf+" / "+officialTotals.ga]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));matchGrid.append(card);});
+      const matchSection=document.createElement("section");matchSection.className="team-stat-section";matchSection.append(safeText("h3","Результаты матчей"),matchGrid,safeText("p","В официальную статистику входят только завершённые официальные матчи. Тестовые матчи не учитываются.","muted"));
+      p.append(matchSection);
     } else if(key==="table"){
       p=panel("Турнирная таблица",team?.league||state.selectedLeague||"Нижняя лига");
       p.append(safeText("p","Турнирная таблица появится после проведения матчей чемпионата. Сейчас результаты сезона ещё не сформированы.","muted"));
