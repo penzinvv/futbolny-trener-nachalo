@@ -2,7 +2,7 @@ const STORAGE_KEY = "football-coach-start-v1";
 const defaultState = {
   coachName: "", teamName: "", emblem: "🛡️", teamLogoIndex: 1, avatarIndex: 1, seasonNumber: 1, avatarChangeUsedSeason: 0,
   xp: 0, permanentRating: 0, seasonRating: 0, respect: 0, gameDay: 1, players: [], relationships: {},
-  careerCoachId: null, careerTeamId: null, careerPlayerIds: {}, careerHistory: { officialMatches: [], seasons: {} }, completedFixtures: []
+  careerCoachId: null, careerTeamId: null, careerPlayerIds: {}, careerHistory: { officialMatches: [], seasons: {} }, completedFixtures: [], playerMatchRatings: []
 };
 let state = loadState();
 let leagueData = null;
@@ -468,12 +468,15 @@ function simulateFixturePreview(fixture){
   if(!events.length)events.push({minute:20,text:"Матч прошёл без опасных моментов."});
   const userResult=userGoals>opponentGoals?"W":userGoals<opponentGoals?"L":"D";
   const opponentResult=userResult==="W"?"L":userResult==="L"?"W":"D";
-  const rate=(stats,against,result)=>stats.map(item=>({
-    name:item.player.name,position:item.player.position,rating:calculatePlayerMatchRating(item,against,result),
+  const rate=(stats,against,result,team)=>stats.map(item=>({
+    name:item.player.name,position:item.player.position,
+    playerKey:String(item.player.careerId||((team.id||team.name)+"::"+item.player.name)),
+    teamId:String(team.id||""),teamName:team.name,
+    rating:calculatePlayerMatchRating(item,against,result),
     goals:item.goals,assists:item.assists,saves:item.saves,tackles:item.tackles,keyPasses:item.keyPasses,shots:item.shots
   })).sort((a,b)=>b.rating-a.rating);
-  const userRatings=rate(userStats,opponentGoals,userResult);
-  const opponentRatings=rate(opponentStats,userGoals,opponentResult);
+  const userRatings=rate(userStats,opponentGoals,userResult,userTeam);
+  const opponentRatings=rate(opponentStats,userGoals,opponentResult,opponentTeam);
   return {
     fixtureId:fixture.fixtureId,homeName:fixture.homeTeamName,awayName:fixture.awayTeamName,
     homeGoals:userIsHome?userGoals:opponentGoals,awayGoals:userIsHome?opponentGoals:userGoals,
@@ -487,7 +490,18 @@ function runCalendarMatch(fixture){
   lastMatchPreview=simulateFixturePreview(fixture);
   state.completedFixtures=Array.isArray(state.completedFixtures)?state.completedFixtures:[];
   state.completedFixtures.push(fixture.fixtureId);
-  // Не сохраняем счёт, события, статистику, XP или рейтинг и не отправляем их в Supabase.
+  // Сохраняем только тестовые персональные оценки. Они помечены как preview и не являются официальной статистикой.
+  state.playerMatchRatings=Array.isArray(state.playerMatchRatings)?state.playerMatchRatings:[];
+  const ratingRecord={
+    fixtureId:fixture.fixtureId,seasonNumber:Number(state.seasonNumber||1),
+    round:Number(fixture.round||Math.ceil(Number(state.gameDay||1)/7)),
+    gameDay:Number(state.gameDay||1),recordType:"preview",
+    homeName:fixture.homeTeamName,awayName:fixture.awayTeamName,
+    homeGoals:lastMatchPreview.homeGoals,awayGoals:lastMatchPreview.awayGoals,
+    players:[...lastMatchPreview.userRatings,...lastMatchPreview.opponentRatings].map(item=>({...item}))
+  };
+  state.playerMatchRatings=state.playerMatchRatings.filter(record=>!(record.fixtureId===fixture.fixtureId&&record.seasonNumber===ratingRecord.seasonNumber));
+  state.playerMatchRatings.push(ratingRecord);
   saveState();
   openPage("cabinet");
   const matchesTab=document.querySelector('[data-cabinet-tab="matches"]');
@@ -1003,7 +1017,31 @@ function openPlayerProfile(team,p,index) {
       });
       body.append(thresholds);
     } else {
-      body.append(safeText("h3","История карьеры"),placeholder("История команд, сезонов, переходов и достижений появится по мере реализации и заполнения карьерных данных."));
+      body.append(safeText("h3","История карьеры"));
+      const playerKey=String(p.careerId||((team.id||team.name)+"::"+p.name));
+      const history=(Array.isArray(state.playerMatchRatings)?state.playerMatchRatings:[])
+        .filter(record=>(record.players||[]).some(item=>item.playerKey===playerKey))
+        .sort((a,b)=>Number(b.seasonNumber||0)-Number(a.seasonNumber||0)||Number(b.gameDay||0)-Number(a.gameDay||0));
+      if(!history.length){
+        body.append(placeholder("После первых тестовых матчей здесь появятся оценки футболиста. Официальная история матчей и наград ещё не подключена."));
+      }else{
+        const testNote=safeText("p","Тестовые оценки прототипа. Они сохраняются локально для проверки баланса, не являются официальной статистикой и пока не дают наград.","muted");
+        body.append(testNote);
+        history.slice(0,10).forEach(record=>{
+          const item=(record.players||[]).find(entry=>entry.playerKey===playerKey);
+          if(!item)return;
+          const row=document.createElement("article");row.className="career-rating-row";
+          const meta=document.createElement("div");meta.className="career-rating-meta";
+          meta.append(safeText("b","Сезон "+record.seasonNumber+" · Тур "+record.round),safeText("span","День "+record.gameDay+" · "+record.homeName+" "+record.homeGoals+":"+record.awayGoals+" "+record.awayName));
+          const score=safeText("strong",Number(item.rating).toFixed(1));score.className="match-rating-score";
+          const actions=[];if(item.goals)actions.push("Голы "+item.goals);if(item.assists)actions.push("Ассисты "+item.assists);if(item.saves)actions.push("Сейвы "+item.saves);if(item.tackles)actions.push("Отборы "+item.tackles);if(item.keyPasses)actions.push("Ключевые передачи "+item.keyPasses);
+          row.append(meta,score);
+          row.append(safeText("p",actions.join(" · ")||"Без ключевых действий","match-rating-details"));
+          body.append(row);
+        });
+      }
+      body.append(safeText("h3","Награды"));
+      body.append(placeholder("Награды будут выдаваться после подключения официальных протоколов всех матчей лиги. Тестовые оценки не участвуют в выборе победителей."));
     }
   };
   tabItems.forEach(([key,label])=>{const b=document.createElement("button");b.type="button";b.className="player-profile-tab";b.dataset.tab=key;b.setAttribute("role","tab");b.textContent=label;b.addEventListener("click",()=>renderTab(key));tabs.append(b);});
