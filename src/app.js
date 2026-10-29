@@ -839,12 +839,55 @@ function createMatchEvent(session,home,away,minute){
  return event;
 }
 function autoAdvanceOfficialMatch(session,home,away){if(session.autoPlaying||session.finished||session.halfTime)return;session.autoPlaying=true;const step=()=>{if(state.officialMatchSession!==session||session.finished||session.halfTime){session.autoPlaying=false;saveState();if(!document.getElementById("pageView")?.classList.contains("hidden"))openPage("match");return}if(session.minute===0)session.events.push({minute:0,type:"play",text:"Судья даёт стартовый свисток. Начинается матч."});session.minute++;session.events.push(createMatchEvent(session,home,away,session.minute));if(session.minute===10){session.halfTime=true;session.events.push({minute:10,type:"halftime",text:"Свисток на перерыв. Тренер может разобрать ключевые эпизоды и сделать до трёх замен."});session.autoPlaying=false}if(session.minute>=20){session.events.push({minute:20,type:"fulltime",text:"Финальный свисток! Итоговый счёт "+session.score.home+":"+session.score.away+"."});session.autoPlaying=false;applyOfficialMatchResult(session,home,away);return}state.officialMatchSession=session;saveState();openPage("match");if(session.autoPlaying)setTimeout(step,1200)};setTimeout(step,400)}
+function calculateOfficialMatchRelations(session,home,away,result){
+ const userTeam=getUserTeam();
+ if(!userTeam)return {changes:[],ratings:[]};
+ const userIsHome=home.id===userTeam.id;
+ const ownSide=userIsHome?"home":"away";
+ const ownLineup=session.lineups?.[ownSide]||[];
+ const allPlayers=userTeam.players||[];
+ const goalsByName=new Map(),assistsByName=new Map();
+ (session.events||[]).filter(e=>e.type==="goal").forEach(e=>{
+  if(e.scorer)goalsByName.set(e.scorer,(goalsByName.get(e.scorer)||0)+1);
+  if(e.assist)assistsByName.set(e.assist,(assistsByName.get(e.assist)||0)+1);
+ });
+ const goalDiff=userIsHome?result.homeScore-result.awayScore:result.awayScore-result.homeScore;
+ const teamBonus=goalDiff>0?0.5:goalDiff===0?0.25:0;
+ const starters=new Set(ownLineup.map(x=>(x.player||x).name));
+ const players=allPlayers.map(p=>{
+  const goals=goalsByName.get(p.name)||0,assists=assistsByName.get(p.name)||0;
+  const played=starters.has(p.name);
+  const rating=played?Math.min(10,6+goals+assists):null;
+  return {player:p,played,goals,assists,rating};
+ });
+ const performers=players.filter(x=>x.played);
+ const bestScore=Math.max(0,...performers.map(x=>x.goals*2+x.assists));
+ const changes=[];
+ players.forEach(item=>{
+  let personalBonus=0;
+  if(item.played&&item.rating>=7)personalBonus+=0.5;
+  if(item.played&&bestScore>0&&item.goals*2+item.assists===bestScore)personalBonus+=0.5;
+  const raw=teamBonus+personalBonus;
+  const delta=Math.min(2,Math.round(raw*100)/100);
+  if(delta<=0)return;
+  const key=playerRelationKey(userTeam,item.player);
+  const before=getPlayerRelation(userTeam,item.player);
+  const after=Math.min(100,Math.round((before+delta)*100)/100);
+  state.relationships=state.relationships||{};
+  state.relationships[key]=after;
+  changes.push({playerId:item.player.id||null,playerName:item.player.name,played:item.played,rating:item.rating,teamBonus,personalBonus,delta:Math.round((after-before)*100)/100,before,after});
+ });
+ return {changes,ratings:players.map(x=>({playerName:x.player.name,played:x.played,rating:x.rating,goals:x.goals,assists:x.assists}))};
+}
 function applyOfficialMatchResult(session,home,away){
  if(session.finished)return;
  session.finished=true;session.finishedAtDay=Number(state.gameDay)||1;
  const fixture={home,away};const result={season:Number(state.seasonNumber)||1,round:session.round,day:session.day,homeId:home.id,awayId:away.id,homeScore:session.score.home,awayScore:session.score.away,events:session.events,homeLineup:session.lineups.home,awayLineup:session.lineups.away,substitutions:session.substitutions,finished:true};
  result.stats=session.matchStats||{home:{shots:0,onTarget:0,possessionMinutes:0},away:{shots:0,onTarget:0,possessionMinutes:0}};
  result.spectatorNotes=buildPostMatchSpectatorNotes(session,home,away);
+ const relationshipReport=calculateOfficialMatchRelations(session,home,away,result);
+ result.relationshipChanges=relationshipReport.changes;
+ result.playerRatings=relationshipReport.ratings;
  state.leagueResults=state.leagueResults||{};state.leagueResults[roundFixtureKey(session.round,fixture)]=result;
  state.lastMatchReport=result;
  ensureRoundBackgroundResults(session.round,fixture,result);
@@ -907,7 +950,10 @@ function renderMatchSummaryPage(){
  (result.spectatorNotes||[]).forEach(note=>spectators.append(safeText("p","💬 "+note,"spectator-note")));
  const eventsPanel=document.createElement("section");eventsPanel.className="panel match-summary-panel";eventsPanel.append(safeText("h2","Хроника матча"));
  (result.events||[]).slice().reverse().forEach(e=>{const row=document.createElement("div");row.className="match-summary-event";row.append(safeText("b",e.minute+"'"),safeText("span",e.text));eventsPanel.append(row)});
- const relationPanel=document.createElement("section");relationPanel.className="panel match-summary-panel";relationPanel.append(safeText("h2","Отношения с игроками"),safeText("p","Изменения отношений после официального матча пока не начисляются: правило начисления ещё не согласовано. Текущие отношения и развитие по-прежнему доступны в разделе «Отношения».","muted"));
+ const relationPanel=document.createElement("section");relationPanel.className="panel match-summary-panel";relationPanel.append(safeText("h2","Изменения отношений"));
+ if(result.relationshipChanges?.length){result.relationshipChanges.forEach(change=>{const row=document.createElement("div");row.className="match-summary-event";row.append(safeText("b",change.delta>0?"+"+change.delta.toFixed(2).replace(".",",")+" п.п.":"0 п.п."),safeText("span",change.playerName+" · "+change.before.toFixed(2).replace(".",",")+"% → "+change.after.toFixed(2).replace(".",",")+"%"+(change.played?" · играл":" · командный бонус")));relationPanel.append(row)})}
+ else relationPanel.append(safeText("p","Отношения не изменились.","muted"));
+ relationPanel.append(safeText("p","Командный бонус: победа +0,50 п.п., ничья +0,25 п.п., поражение +0. Личный бонус: оценка от 7,0 — +0,50 п.п.; лучший игрок матча — ещё +0,50 п.п. Запасные получают командный бонус. Максимум +2 п.п. на игрока за матч.","muted"));
  const roundPanel=document.createElement("section");roundPanel.className="panel match-summary-panel";roundPanel.append(safeText("h2","Другие результаты тура"));
  getOfficialRoundFixtures(result.round).forEach(f=>{const key=roundFixtureKey(result.round,f),r=state.leagueResults?.[key];roundPanel.append(tournamentMatchRow(result.round,f,r,f.home.id===ownId||f.away.id===ownId))});
  const actions=document.createElement("div");actions.className="match-summary-actions";actions.append(matchButton("К ТУРНИРНОЙ ТАБЛИЦЕ",()=>openPage("league"),"primary"),matchButton("ВЕРНУТЬСЯ НА ГЛАВНУЮ",()=>{$("pageView").classList.add("hidden");$("dashboard").classList.remove("hidden")},"secondary"));
