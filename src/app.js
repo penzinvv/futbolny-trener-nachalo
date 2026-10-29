@@ -845,10 +845,17 @@ function createMatchEvent(session,home,away,minute){
  const keeper=defence.find(x=>x.role==="ВР")||defence[0];
  const r=Math.random();let event;
  if(r<.09){
-  const offender=pick(defence)||pick(attack);event={minute,text:"Фол: "+(offender?.player.name||"Игрок")+" нарушает правила. Судья назначает штрафной.",type:"foul",side:defSide};
-  if(Math.random()<.28){event.text+=" Жёлтая карточка за грубую игру.";event.card="yellow";event.player=offender?.player.name}
-  if(Math.random()<.025){event.text+=" Судья показывает красную карточку.";event.card="red";event.player=offender?.player.name;if(offender)offender.sentOff=true}
-  if(Math.random()<.23&&scorer){event.text+=" Прямой удар со штрафного — гол! Автор: "+scorer.player.name+(helper?" (ассист: "+helper.player.name+")":"")+". ";event.type="goal";event.scorer=scorer.player.name;event.assist=helper?.player.name||null;session.score[side]++}
+  const offender=pick(defence)||pick(attack);
+  if(Math.random()<.08){
+   event={minute,text:"ПЕНАЛЬТИ! Судья указывает на точку после нарушения в штрафной.",type:"penalty",side};
+   if(Math.random()<.72&&scorer){event.text+=" "+scorer.player.name+" реализует пенальти — ГОЛ!"+(helper?" Ассист перед фолом: "+helper.player.name+".":"");event.type="goal";event.scorer=scorer.player.name;event.assist=helper?.player.name||null;session.score[side]++}
+   else event.text+=" Вратарь угадывает направление удара и спасает команду!";
+  }else{
+   event={minute,text:"Фол: "+(offender?.player.name||"Игрок")+" нарушает правила. Судья назначает штрафной.",type:"foul",side:defSide};
+   if(Math.random()<.28){event.text+=" Жёлтая карточка за грубую игру.";event.card="yellow";event.player=offender?.player.name}
+   if(Math.random()<.025){event.text+=" Судья показывает красную карточку.";event.card="red";event.player=offender?.player.name;if(offender)offender.sentOff=true}
+   if(Math.random()<.23&&scorer){event.text+=" Прямой удар со штрафного — гол! Автор: "+scorer.player.name+(helper?" (ассист: "+helper.player.name+")":"")+". ";event.type="goal";event.scorer=scorer.player.name;event.assist=helper?.player.name||null;session.score[side]++}
+  }
  }else if(r<.15){
   const offender=pick(attack);event={minute,text:"Офсайд! Атака "+matchTeamLabel(attackTeam)+" остановлена. "+(offender?.player.name||"Нападающий")+" оказался за линией защиты.",type:"offside",side};
  }else if(r<.19){
