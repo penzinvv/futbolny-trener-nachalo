@@ -297,10 +297,22 @@ function renderCabinet() {
       [["Команда",state.teamName||"—"],["Лига",team?.league||state.selectedLeague||"Нижняя лига"],["Футболисты",String(roster.length||state.players.length||10)+" / 10"],["Сезон","Сезон "+(state.seasonNumber||1)],["Опыт тренера",(state.xp||0)+" XP"],["Уважение",String(state.respect||0)]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));grid.append(card);});
       p.append(grid,safeText("p","Здесь собраны состав, отношения с игроками, результаты команды и история вашей тренерской карьеры.","muted"));
     } else if(key==="team"||key==="relations"){
-      p=panel(key==="team"?"Футболисты команды":"Отношения с футболистами",key==="team"?"Состав вашей команды. Выберите игрока, чтобы открыть его профиль.":"Уровень доверия каждого игрока к тренеру.");
-      const list=document.createElement("div");list.className="cabinet-roster";
-      roster.forEach((player,i)=>{const row=document.createElement("button");row.type="button";row.className="cabinet-roster-row";const img=document.createElement("img");img.src=getPortrait(player.portraitIndex||teamsPlayerIndex(team,player));img.alt="";img.loading="lazy";img.onerror=()=>img.remove();const info=document.createElement("span");info.className="cabinet-roster-info";info.append(safeText("b",player.name),safeText("small",player.position+" · "+player.nationality));row.append(img,info);if(key==="relations")row.append(makeRelationBadge(team,player));else row.append(safeText("span","Открыть профиль","cabinet-row-action"));row.addEventListener("click",()=>openPlayerProfile(team,player,i));list.append(row);});
-      p.append(list);
+      p=panel(key==="team"?"Футболисты команды":"Отношения с футболистами",key==="team"?"Весь состав команды. Выберите карточку, чтобы открыть профиль футболиста.":"Отношения с каждым футболистом и прогресс до следующего порога.");
+      if(key==="team"){
+        const grid=document.createElement("div");grid.className="cabinet-player-grid";
+        roster.forEach((player,i)=>{
+          const card=document.createElement("button");card.type="button";card.className="cabinet-player-card";card.addEventListener("click",()=>openPlayerProfile(team,player,i));
+          const img=document.createElement("img");img.src=getPortrait(player.portraitIndex||teamsPlayerIndex(team,player));img.alt=player.name;img.loading="lazy";img.onerror=()=>img.remove();
+          const info=document.createElement("span");info.className="cabinet-player-info";info.append(safeText("b",player.name),safeText("small",player.position+" · "+player.nationality));
+          const mainSkill=player.skills?.[player.position];if(mainSkill!==undefined)info.append(safeText("span",player.position+": "+mainSkill,"cabinet-player-main-skill"));
+          card.append(img,info,makeRelationBadge(team,player),makePlayerSkillSummary(team,player));grid.append(card);
+        });
+        p.append(grid);
+      } else {
+        const list=document.createElement("div");list.className="cabinet-roster";
+        roster.forEach((player,i)=>{const row=document.createElement("button");row.type="button";row.className="cabinet-roster-row";const img=document.createElement("img");img.src=getPortrait(player.portraitIndex||teamsPlayerIndex(team,player));img.alt="";img.loading="lazy";img.onerror=()=>img.remove();const info=document.createElement("span");info.className="cabinet-roster-info";info.append(safeText("b",player.name),safeText("small",player.position+" · "+player.nationality));row.append(img,info,makeRelationBadge(team,player));row.addEventListener("click",()=>openPlayerProfile(team,player,i));list.append(row);});
+        p.append(list);
+      }
     } else if(key==="stats"){
       p=panel("Статистика команды","Сводка по составу на текущий момент.");const positions=["ВР","ЗЩ","ПЗ","НП"];const grid=document.createElement("div");grid.className="cabinet-metrics";
       [["Всего футболистов",String(roster.length)],...positions.map(pos=>["Позиция "+pos,String(roster.filter(player=>player.position===pos).length)]),["Средние отношения",roster.length?Math.round(roster.reduce((sum,player)=>sum+getPlayerRelation(team,player),0)/roster.length)+"%":"—"]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));grid.append(card);});
@@ -413,7 +425,7 @@ function makePlayerSkillSummary(team,p) {
   const stats=document.createElement("div");stats.className="player-card-stats";
   ["ВР","ЗЩ","ПЗ","НП"].forEach(key=>{
     const known=unlocked.includes(key);
-    stats.append(safeText("span",known?key+" "+p.skills[key]:key+" ···",known?"skill-known":"skill-hidden"));
+    stats.append(safeText("span",known?key+" "+p.skills[key]:key+" ???",known?"skill-known":"skill-hidden"));
   });
   return stats;
 }
@@ -473,25 +485,54 @@ function openPlayerProfile(team,p,index) {
   const wrap=document.createElement("div");wrap.className="player-profile";
   const portrait=document.createElement("img");portrait.className="player-profile-portrait";portrait.src=getPortrait(p.portraitIndex || teamsPlayerIndex(team,p));portrait.alt=p.name;
   const head=document.createElement("div");head.className="player-profile-head";head.append(portrait);
-  const bio=document.createElement("div");bio.append(safeText("h2",p.name),safeText("p",team.name===" {teamName}"?state.teamName:(team.name==="{teamName}"?state.teamName:team.name),"player-team-name"));
-  const nation=document.createElement("div");nation.className="player-nationality";const flag=getFlag(p.nationality);if(flag){const f=document.createElement("img");f.src=flag;f.alt="";nation.append(f);}nation.append(safeText("span",p.nationality+" · "+p.position));bio.append(nation,safeText("p","Тренер: "+(team.coach==="(имя тренера)"?state.coachName:team.coach),"muted"));head.append(bio);wrap.append(head);
+  const bio=document.createElement("div");
+  const teamName=team.name===" {teamName}"||team.name==="{teamName}"?state.teamName:team.name;
+  bio.append(safeText("h2",p.name),safeText("p",teamName,"player-team-name"));
+  const nation=document.createElement("div");nation.className="player-nationality";const flag=getFlag(p.nationality);if(flag){const f=document.createElement("img");f.src=flag;f.alt="";nation.append(f);}nation.append(safeText("span",p.nationality+" · "+p.position));
+  bio.append(nation,safeText("p","Тренер: "+(team.coach==="(имя тренера)"?state.coachName:team.coach),"muted"));head.append(bio);wrap.append(head);
+  const relation=getPlayerRelation(team,p);
   wrap.append(makeRelationBadge(team,p));
-  const stats=document.createElement("div");stats.className="skill-bars";
-  const relation=getPlayerRelation(team,p);const unlocked=getUnlockedSkills(p,relation);
-  ["ВР","ЗЩ","ПЗ","НП"].forEach(k=>{
-    const known=unlocked.includes(k);const line=document.createElement("div");line.className="skill-line"+(known?"":" skill-line-locked");
-    line.append(safeText("span",k),safeText("b",known?String(p.skills[k]):"Скрыто"));
-    if(known){const track=document.createElement("div");track.className="skill-track";const fill=document.createElement("div");fill.className="skill-fill";fill.style.width=Math.max(0,Math.min(100,p.skills[k]))+"%";track.append(fill);line.append(track);}
-    else line.append(safeText("small", "Откроется при росте отношений"));
-    stats.append(line);
-  });
-  wrap.append(stats);
-  if(relation<50)wrap.append(safeText("p","При 50% отношений откроется показатель по позиции футболиста.","muted"));
-  else if(relation<80)wrap.append(safeText("p","Новые характеристики открываются при 60%, 70% и 80% отношений.","muted"));
-  if(relation>=90)wrap.append(safeText("p","Потенциал пока неизвестен.","muted"));
-  else wrap.append(safeText("p","Потенциал откроется при 90% отношений.","muted"));
-  const back=document.createElement("button");back.className="back-button";back.textContent="← К составу";back.addEventListener("click",()=>openPage("players"));wrap.append(back);
-  $("pageTitle").textContent=p.name;$("pageEyebrow").textContent="КАРТОЧКА ФУТБОЛИСТА";const content=$("pageContent");content.replaceChildren(wrap);
+  const tabs=document.createElement("div");tabs.className="player-profile-tabs";tabs.setAttribute("role","tablist");
+  const body=document.createElement("div");body.className="player-profile-tab-content";
+  const tabItems=[["player","Футболист"],["training","Тренировка"],["relations","Отношения"],["career","Карьера"]];
+  const renderTab=(key)=>{
+    body.replaceChildren();
+    tabs.querySelectorAll("button").forEach(b=>{const active=b.dataset.tab===key;b.classList.toggle("active",active);b.setAttribute("aria-selected",String(active));});
+    if(key==="player"){
+      const stats=document.createElement("div");stats.className="skill-bars";
+      const unlocked=getUnlockedSkills(p,relation);
+      ["ВР","ЗЩ","ПЗ","НП"].forEach(k=>{
+        const known=unlocked.includes(k);const line=document.createElement("div");line.className="skill-line"+(known?"":" skill-line-locked");
+        line.append(safeText("span",k),safeText("b",known?String(p.skills[k]):"???"));
+        if(known){const track=document.createElement("div");track.className="skill-track";const fill=document.createElement("div");fill.className="skill-fill";fill.style.width=Math.max(0,Math.min(100,p.skills[k]))+"%";track.append(fill);line.append(track);}
+        else line.append(safeText("small","Откроется при росте отношений"));
+        stats.append(line);
+      });
+      body.append(safeText("h3","Игровые характеристики"),stats);
+      if(relation<50)body.append(safeText("p","При 50% отношений откроется главная характеристика по позиции футболиста.","muted"));
+      else if(relation<80)body.append(safeText("p","Следующие скрытые характеристики открываются при достижении 60%, 70% и 80% отношений.","muted"));
+      if(relation>=90)body.append(safeText("p","Порог потенциала достигнут. Значение потенциала пока не задано в игровых данных.","muted"));
+      else body.append(safeText("p","Потенциал откроется при 90% отношений. Само раскрытие не повышает навыки.","muted"));
+    } else if(key==="training"){
+      body.append(safeText("h3","Развитие футболиста"),placeholder("Индивидуальные тренировки и история изменения характеристик будут доступны после реализации тренировочной механики."));
+    } else if(key==="relations"){
+      body.append(safeText("h3","Отношения с тренером"),makeRelationBadge(team,p));
+      const next=relation<50?50:relation<60?60:relation<70?70:relation<80?80:relation<90?90:null;
+      body.append(safeText("p",next===null?"Все пороги отношений достигнуты.":"До следующего порога: "+(next-relation)+" п. п. — "+next+"%.","muted"));
+      const thresholds=document.createElement("div");thresholds.className="relationship-thresholds";
+      [[50,"Главная характеристика"],[60,"Вторая характеристика"],[70,"Третья характеристика"],[80,"Все характеристики"],[90,"Потенциал"]].forEach(([value,label])=>{
+        const item=document.createElement("div");item.className="relationship-threshold"+(relation>=value?" reached":"");
+        item.append(safeText("b",value+"%"),safeText("span",label));thresholds.append(item);
+      });
+      body.append(thresholds);
+    } else {
+      body.append(safeText("h3","История карьеры"),placeholder("История команд, сезонов, переходов и достижений появится по мере реализации и заполнения карьерных данных."));
+    }
+  };
+  tabItems.forEach(([key,label])=>{const b=document.createElement("button");b.type="button";b.className="player-profile-tab";b.dataset.tab=key;b.setAttribute("role","tab");b.textContent=label;b.addEventListener("click",()=>renderTab(key));tabs.append(b);});
+  wrap.append(tabs,body);
+  const back=document.createElement("button");back.className="back-button";back.textContent="← К составу";back.addEventListener("click",()=>{openPage("cabinet");setTimeout(()=>{const tab=[...document.querySelectorAll(".cabinet-tab")].find(b=>b.textContent.trim()==="Футболисты");if(tab)tab.click();},0);});wrap.append(back);
+  $("pageTitle").textContent=p.name;$("pageEyebrow").textContent="КАРТОЧКА ФУТБОЛИСТА";const content=$("pageContent");content.replaceChildren(wrap);renderTab("player");
 }
 function renderTraining() {
   const wrap = document.createElement("div");
