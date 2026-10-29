@@ -382,6 +382,46 @@ function averageMatchSkill(players,keys){
   });
   return values.reduce((sum,value)=>sum+value,0)/values.length;
 }
+function makePlayerMatchStats(players){
+  return players.map(player=>({
+    player,goals:0,assists:0,shots:0,saves:0,tackles:0,keyPasses:0,errors:0
+  }));
+}
+function pickMatchPlayer(stats,positions){
+  const eligible=stats.filter(item=>positions.includes(item.player.position));
+  const pool=eligible.length?eligible:stats;
+  return pool.length?pool[Math.floor(Math.random()*pool.length)]:null;
+}
+function calculatePlayerMatchRating(item,teamGoalsAgainst,teamResult){
+  const player=item.player;
+  const position=player.position;
+  let score=6.0;
+  if(teamResult==="W")score+=0.45;
+  else if(teamResult==="L")score-=0.35;
+  if(position==="ВР"){
+    score+=Math.min(2.0,item.saves*0.45);
+    score-=teamGoalsAgainst*0.4;
+  }else if(position==="ЗЩ"){
+    score+=Math.min(1.6,item.tackles*0.25);
+    score-=item.errors*0.8;
+    score-=teamGoalsAgainst*0.12;
+  }else if(position==="ПЗ"){
+    score+=Math.min(1.5,item.keyPasses*0.22);
+    score+=item.assists*0.85;
+    score+=item.goals*0.45;
+    score-=item.errors*0.35;
+  }else if(position==="НП"){
+    score+=item.goals*1.15;
+    score+=item.assists*0.65;
+    score+=Math.min(0.8,Math.max(0,item.shots-item.goals)*0.08);
+    score-=item.errors*0.3;
+  }else{
+    score+=item.goals*0.8+item.assists*0.6;
+  }
+  // Незначительный разброс отражает действия, не вынесенные в отдельную статистику прототипа.
+  score+=(Math.random()-0.5)*0.5;
+  return Math.round(clampMatchValue(score,1,10)*10)/10;
+}
 function simulateFixturePreview(fixture){
   const userTeam=getUserTeam();
   const userIsHome=Boolean(fixture.homeIsUser);
@@ -389,6 +429,7 @@ function simulateFixturePreview(fixture){
   const opponent=(leagueData?.teams||[]).find(item=>String(item.id)===String(opponentId));
   const opponentTeam=opponent||{id:opponentId,name:userIsHome?fixture.awayTeamName:fixture.homeTeamName,players:[]};
   const userFive=getMatchFive(userTeam),opponentFive=getMatchFive(opponentTeam);
+  const userStats=makePlayerMatchStats(userFive),opponentStats=makePlayerMatchStats(opponentFive);
   const userAttack=averageMatchSkill(userFive,["НП","ПЗ"]);
   const userDefence=(averageMatchSkill(userFive,["ЗЩ"])+averageMatchSkill(userFive,["ВР"]))/2;
   const opponentAttack=averageMatchSkill(opponentFive,["НП","ПЗ"]);
@@ -398,22 +439,45 @@ function simulateFixturePreview(fixture){
   // 20 игровых минут, по одной атакующей цепочке за минуту; владение чередуется.
   for(let minute=1;minute<=20;minute++){
     const userHasBall=minute%2===1;
-    const attack=userHasBall?userAttack:opponentAttack;
+    const attack= userHasBall?userAttack:opponentAttack;
     const defence=userHasBall?opponentDefence:userDefence;
+    const attackingStats=userHasBall?userStats:opponentStats;
+    const defendingStats=userHasBall?opponentStats:userStats;
     const chanceProbability=clampMatchValue(0.40+(attack-defence)*0.002,0.25,0.58);
     const conversionProbability=clampMatchValue(0.30+attack*0.002,0.28,0.52);
+    const midfielder=pickMatchPlayer(attackingStats,["ПЗ"]);
+    if(midfielder&&Math.random()<0.65)midfielder.keyPasses++;
+    const defender=pickMatchPlayer(defendingStats,["ЗЩ"]);
+    if(defender&&Math.random()<0.45)defender.tackles++;
     if(Math.random()<chanceProbability){
+      const shooter=pickMatchPlayer(attackingStats,["НП","ПЗ"]);
+      if(shooter)shooter.shots++;
       if(Math.random()<conversionProbability){
         if(userHasBall)userGoals++;else opponentGoals++;
-        events.push({minute,text:minute+"′ — "+(userHasBall?state.teamName:opponentTeam.name)+" забивает!"});
-      }else events.push({minute,text:minute+"′ — опасный момент: "+(userHasBall?state.teamName:opponentTeam.name)+", но удар не стал голом."});
+        if(shooter)shooter.goals++;
+        const assistCandidate=shooter?.player.position==="НП"?pickMatchPlayer(attackingStats,["ПЗ"]):null;
+        if(assistCandidate&&assistCandidate!==shooter&&Math.random()<0.7)assistCandidate.assists++;
+        events.push({minute,text:minute+"′ — "+(shooter?.player.name|| (userHasBall?state.teamName:opponentTeam.name))+" забивает за "+(userHasBall?state.teamName:opponentTeam.name)+"!"});
+      }else{
+        const keeper=pickMatchPlayer(defendingStats,["ВР"]);
+        if(keeper)keeper.saves++;
+        events.push({minute,text:minute+"′ — опасный момент у "+(userHasBall?state.teamName:opponentTeam.name)+", вратарь или защита отражают удар."});
+      }
     }
   }
   if(!events.length)events.push({minute:20,text:"Матч прошёл без опасных моментов."});
+  const userResult=userGoals>opponentGoals?"W":userGoals<opponentGoals?"L":"D";
+  const opponentResult=userResult==="W"?"L":userResult==="L"?"W":"D";
+  const rate=(stats,against,result)=>stats.map(item=>({
+    name:item.player.name,position:item.player.position,rating:calculatePlayerMatchRating(item,against,result),
+    goals:item.goals,assists:item.assists,saves:item.saves,tackles:item.tackles,keyPasses:item.keyPasses,shots:item.shots
+  })).sort((a,b)=>b.rating-a.rating);
+  const userRatings=rate(userStats,opponentGoals,userResult);
+  const opponentRatings=rate(opponentStats,userGoals,opponentResult);
   return {
     fixtureId:fixture.fixtureId,homeName:fixture.homeTeamName,awayName:fixture.awayTeamName,
     homeGoals:userIsHome?userGoals:opponentGoals,awayGoals:userIsHome?opponentGoals:userGoals,
-    events,userPlayers:userFive.map(player=>player.name),opponentPlayers:opponentFive.map(player=>player.name)
+    events,userRatings,opponentRatings
   };
 }
 function runCalendarMatch(fixture){
@@ -440,10 +504,33 @@ function makeMatchPreviewResult(preview){
   const panel=document.createElement("section");panel.className="cabinet-panel match-preview-result";
   panel.append(safeText("h2","Матч завершён · тестовый результат"),
     safeText("p",preview.homeName+"  "+preview.homeGoals+" : "+preview.awayGoals+"  "+preview.awayName,"match-preview-score"),
-    safeText("p","Это временный результат текущей сессии. Он не записан в официальную статистику, турнирную таблицу или Supabase.","muted"));
+    safeText("p","Оценки предварительные: они показывают работу модели и пока не сохраняются в карьеру или историю наград.","muted"));
   const events=document.createElement("div");events.className="match-preview-events";
   preview.events.forEach(event=>events.append(safeText("p",event.text)));
-  panel.append(events);return panel;
+  panel.append(events);
+  const makeRatings=(title,ratings)=>{
+    const section=document.createElement("section");section.className="match-rating-section";
+    section.append(safeText("h3",title));
+    const list=document.createElement("div");list.className="match-rating-list";
+    ratings.forEach(item=>{
+      const row=document.createElement("div");row.className="match-rating-row";
+      const identity=document.createElement("div");identity.className="match-rating-identity";
+      identity.append(safeText("b",item.name),safeText("span",item.position));
+      const score=safeText("strong",item.rating.toFixed(1));score.className="match-rating-score";
+      const details=[];
+      if(item.goals)details.push("Голы: "+item.goals);
+      if(item.assists)details.push("Ассисты: "+item.assists);
+      if(item.saves)details.push("Сейвы: "+item.saves);
+      if(item.tackles)details.push("Отборы: "+item.tackles);
+      if(item.keyPasses)details.push("Ключевые передачи: "+item.keyPasses);
+      if(item.shots)details.push("Удары: "+item.shots);
+      row.append(identity,safeText("span",details.join(" · ")||"Без ключевых действий","match-rating-details"),score);
+      list.append(row);
+    });
+    section.append(list);return section;
+  };
+  panel.append(makeRatings("Оценки нашей команды",preview.userRatings),makeRatings("Оценки соперника",preview.opponentRatings));
+  return panel;
 }
 
 const pages = {
