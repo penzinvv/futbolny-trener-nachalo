@@ -250,7 +250,7 @@ function transfersPage(){
    const row=document.createElement("div");row.className="feature-player-row";
    const label=safeText("span",player.name+" · "+player.position+" · "+F(relation));
    const profile=B("Профиль",()=>openPlayerProfile(team,player,teamsPlayerIndex(team,player)));
-   const exchangeLabel=relation<50?"Обмен закрыт — нужно 50%":relation<70?"Обмен недоступен — нужно 70%":relation<90?"Попробовать обмен (50/50)":"Обмен гарантирован";
+   const exchangeLabel=relation<50?"Обмен закрыт — нужно 50%":relation<70?"Попробовать обмен (отказ до 70%)":relation<90?"Попробовать обмен (50/50)":"Обмен гарантирован";
    const exchange=B(exchangeLabel,()=>{if(relation<50)return;state.transferTarget={team:team.id,name:player.name};saveState();openPage("transfers")},relation>=50?"primary":"secondary");
    exchange.disabled=relation<50;
    row.append(label,profile,exchange);panel.append(row);
