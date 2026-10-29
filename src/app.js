@@ -168,6 +168,7 @@ $("setupForm").addEventListener("submit", (event) => {
 });
 
 const pages = {
+  cabinet: {title:"Кабинет тренера", eyebrow:"УПРАВЛЕНИЕ КОМАНДОЙ", render: renderCabinet},
   players: {title:"Футболисты", eyebrow:"СОСТАВ", render: renderPlayers},
   mail: {title:"Почта", eyebrow:"СООБЩЕНИЯ", render: () => placeholder("Новых сообщений пока нет.")},
   training: {title:"Тренировка", eyebrow:"РАЗВИТИЕ", render: renderTraining},
@@ -175,6 +176,46 @@ const pages = {
   league: {title:"Лиги и команды", eyebrow:"СОРЕВНОВАНИЯ", render: renderLeague},
   goals: {title:"Цели тренера", eyebrow:"ПРОГРЕСС", render: () => placeholder("Система уникальных и периодических целей будет добавлена после согласования чисел и списка целей.")}
 };
+
+function renderCabinet() {
+  const wrap=document.createElement("div");wrap.className="cabinet-view";
+  const tabs=document.createElement("div");tabs.className="cabinet-tabs";tabs.setAttribute("role","tablist");
+  const body=document.createElement("div");body.className="cabinet-tab-content";
+  const options=[["overview","Обзор"],["team","Футболисты"],["relations","Отношения"],["stats","Статистика команды"],["table","Турнирная таблица"],["matches","Матчи"],["career","Карьера тренера"]];
+  const panel=(title,subtitle)=>{const el=document.createElement("section");el.className="cabinet-panel";el.append(safeText("h2",title),safeText("p",subtitle,"muted"));return el;};
+  const renderTab=(key)=>{
+    body.replaceChildren();const team=getUserTeam();const roster=team?.players||[];let p;
+    if(key==="overview"){
+      p=panel("Кабинет тренера","Главная информация о вашей команде и карьере.");
+      const grid=document.createElement("div");grid.className="cabinet-metrics";
+      [["Команда",state.teamName||"—"],["Лига",team?.league||state.selectedLeague||"Нижняя лига"],["Футболисты",String(roster.length||state.players.length||10)+" / 10"],["Сезон","Сезон "+(state.seasonNumber||1)],["Опыт тренера",(state.xp||0)+" XP"],["Уважение",String(state.respect||0)]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));grid.append(card);});
+      p.append(grid,safeText("p","Здесь собраны состав, отношения с игроками, результаты команды и история вашей тренерской карьеры.","muted"));
+    } else if(key==="team"||key==="relations"){
+      p=panel(key==="team"?"Футболисты команды":"Отношения с футболистами",key==="team"?"Состав вашей команды. Выберите игрока, чтобы открыть его профиль.":"Уровень доверия каждого игрока к тренеру.");
+      const list=document.createElement("div");list.className="cabinet-roster";
+      roster.forEach((player,i)=>{const row=document.createElement("button");row.type="button";row.className="cabinet-roster-row";const img=document.createElement("img");img.src=getPortrait(player.portraitIndex||teamsPlayerIndex(team,player)+1);img.alt="";img.loading="lazy";img.onerror=()=>img.remove();const info=document.createElement("span");info.className="cabinet-roster-info";info.append(safeText("b",player.name),safeText("small",player.position+" · "+player.nationality));row.append(img,info);if(key==="relations")row.append(makeRelationBadge(team,player));else row.append(safeText("span","Открыть профиль","cabinet-row-action"));row.addEventListener("click",()=>openPlayerProfile(team,player,i));list.append(row);});
+      p.append(list);
+    } else if(key==="stats"){
+      p=panel("Статистика команды","Сводка по составу на текущий момент.");const positions=["ВР","ЗЩ","ПЗ","НП"];const grid=document.createElement("div");grid.className="cabinet-metrics";
+      [["Всего футболистов",String(roster.length)],...positions.map(pos=>["Позиция "+pos,String(roster.filter(player=>player.position===pos).length)]),["Средние отношения",roster.length?Math.round(roster.reduce((sum,player)=>sum+getPlayerRelation(team,player),0)/roster.length)+"%":"—"]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));grid.append(card);});
+      p.append(grid,safeText("p","Игровая статистика, результаты и голы появятся по мере проведения матчей.","muted"));
+    } else if(key==="table"){
+      p=panel("Турнирная таблица",team?.league||state.selectedLeague||"Нижняя лига");const teams=(leagueData?.teams||[]).filter(t=>t.league===(team?.league||state.selectedLeague||"Нижняя лига"));const list=document.createElement("div");list.className="cabinet-standing-list";
+      teams.forEach((t,i)=>{const row=document.createElement("div");row.className="cabinet-standing-row";row.append(safeText("span",String(i+1)),safeText("b",t.name==="{teamName}"?(state.teamName||"Моя команда"):t.name),safeText("span","— очков"));list.append(row);});
+      p.append(list,safeText("p","Турнирные места и очки обновятся после начала чемпионата.","muted"));
+    } else if(key==="matches"){
+      p=panel("Матчи команды","Ближайшие встречи и история результатов.");p.append(safeText("p","Когда начнётся сезон, здесь появятся ближайшие игры и результаты сыгранных матчей.","muted"));
+    } else {
+      p=panel("Карьера тренера","История выступлений от сезона к сезону.");const grid=document.createElement("div");grid.className="cabinet-metrics";
+      [["Текущий сезон","Сезон "+(state.seasonNumber||1)],["Опыт аккаунта",(state.xp||0)+" XP"],["Постоянный рейтинг",String(state.permanentRating||0)],["Сезонный рейтинг",String(state.seasonRating||0)]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));grid.append(card);});
+      p.append(grid,safeText("p","После завершения сезона здесь сохранится история мест в лиге, результатов команды и заработанных очков.","muted"));
+    }
+    body.append(p);tabs.querySelectorAll("button").forEach(button=>{const active=button.dataset.cabinetTab===key;button.classList.toggle("active",active);button.setAttribute("aria-selected",String(active));});
+  };
+  options.forEach(([key,label])=>{const button=document.createElement("button");button.type="button";button.className="cabinet-tab";button.dataset.cabinetTab=key;button.textContent=label;button.setAttribute("role","tab");button.addEventListener("click",()=>renderTab(key));tabs.append(button);});
+  wrap.append(tabs,body);renderTab("overview");return wrap;
+}
+
 function placeholder(message) {
   const box = document.createElement("div"); box.className = "placeholder"; box.textContent = message; return box;
 }
@@ -186,6 +227,7 @@ function openPage(key) {
   const rendered = page.render(); if (rendered) content.append(rendered);
 }
 document.querySelectorAll("[data-page]").forEach(button => button.addEventListener("click", () => openPage(button.dataset.page)));
+$("openCabinet").addEventListener("click", () => openPage("cabinet"));
 $("backHome").addEventListener("click", () => { $("pageView").classList.add("hidden"); $("dashboard").classList.remove("hidden"); });
 
 function getUserTeam() {
