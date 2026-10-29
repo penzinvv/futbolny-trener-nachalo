@@ -168,7 +168,7 @@ function render() {
   $("teamName").textContent = state.teamName || "Дворовые";
   $("teamEmblem").innerHTML = '<img src="' + teamLogoPath(state.teamLogoIndex || 1) + '" alt="Логотип команды">';
   $("gameDate").textContent = calendarDateText();
-  const nextRound = Array.from({length:20},(_,i)=>i+1).find(r=>officialRoundDay(r)>=Number(state.gameDay||1));
+  const nextRound = Array.from({length:20},(_,i)=>i+1).find(r=>officialRoundDay(r)>Number(state.gameDay||1)||(officialRoundDay(r)===Number(state.gameDay||1)&&!canAdvanceCoachDay()));
   const nextMatch = $("nextMatchDate"); if(nextMatch) nextMatch.textContent = nextRound ? "День "+officialRoundDay(nextRound) : "Сезон завершён";
   const skipDay = $("skipDayButton"); if(skipDay) skipDay.textContent = Number(state.gameDay)>=182 ? "НАЧАТЬ НОВЫЙ СЕЗОН" : "ПРОПУСТИТЬ ДЕНЬ";
   $("rosterCount").textContent = getUserTeam()?.players?.length || state.players.length || 10;
