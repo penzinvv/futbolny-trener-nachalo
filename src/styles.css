@@ -97,3 +97,28 @@
   .relationship-roster-row .player-relationship{grid-column:1/-1;width:100%;margin-top:2px}
   .relationship-next-step{font-size:11px}
 }
+
+/* Индивидуальная тренировка */
+.training-panel{max-width:900px}
+.training-form{display:grid;gap:10px;margin-top:18px}
+.training-form>label{font-weight:700;font-size:13px;margin-top:4px}
+.training-form>.league-select{width:100%;max-width:560px}
+.training-player-summary{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px 14px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:12px;background:#0b2119;margin-top:8px}
+.training-player-summary>img{width:72px;height:84px;object-fit:cover;border-radius:9px;grid-row:span 2}
+.training-player-copy{display:grid;gap:5px;min-width:0}
+.training-player-copy>b{font-size:16px}
+.training-player-copy>span{font-size:12px;color:var(--muted)}
+.training-skill-preview{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:5px}
+.training-skill-preview>span{padding:8px 6px;border-radius:8px;background:#123326;text-align:center;font-size:12px;font-weight:700}
+.training-skill-preview>.skill-hidden{color:var(--muted);background:#101d18}
+.training-status{margin:8px 0;color:var(--muted);font-size:13px;line-height:1.5}
+.training-form>button{justify-self:start;border:1px solid var(--green);border-radius:10px;background:var(--green);color:#071a10;font:inherit;font-weight:800;padding:12px 18px;cursor:pointer}
+.training-form>button:hover:not(:disabled){filter:brightness(1.08)}
+.training-form>button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:600px){
+  .training-player-summary{grid-template-columns:58px minmax(0,1fr);padding:10px;gap:8px}
+  .training-player-summary>img{width:58px;height:68px}
+  .training-skill-preview{gap:5px}
+  .training-skill-preview>span{font-size:10px;padding:7px 3px}
+  .training-form>button{width:100%}
+}
