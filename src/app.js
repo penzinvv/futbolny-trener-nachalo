@@ -15,6 +15,90 @@ function loadState() {
 }
 function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
+const SUPABASE_URL = "https://qfkekaipmbtzxtuspjqv.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_uEoHSnOBVXtlJm--cZF_IQ_IRXmG55x";
+const cloudClient = window.supabase?.createClient
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+  : null;
+let cloudSyncPromise = null;
+
+async function getCloudSession() {
+  if (!cloudClient) throw new Error("Supabase JS не загрузился. Проверь подключение к интернету и перезагрузи страницу.");
+  let { data: { session } } = await cloudClient.auth.getSession();
+  if (!session) {
+    const { data, error } = await cloudClient.auth.signInAnonymously();
+    if (error) throw new Error("Не удалось создать облачную сессию: " + error.message);
+    session = data.session;
+  }
+  if (!session?.access_token) throw new Error("Supabase не выдал токен сессии.");
+  return session;
+}
+
+async function cloudRequest(method = "GET", body = null) {
+  const session = await getCloudSession();
+  const response = await fetch(SUPABASE_URL + "/functions/v1/career-api", {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_PUBLISHABLE_KEY,
+      "Authorization": "Bearer " + session.access_token
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || result.ok === false) throw new Error(result.error || "Ошибка серверной карьеры (" + response.status + ")");
+  return result;
+}
+
+async function syncCareerToCloud(bootstrap = false) {
+  if (cloudSyncPromise) return cloudSyncPromise;
+  cloudSyncPromise = (async () => {
+    ensureCareerIdentity();
+    if (bootstrap) {
+      const team = getUserTeam();
+      const roster = team?.players || [];
+      if (!roster.length) throw new Error("Состав ещё не загружен. Перезагрузи страницу и попробуй ещё раз.");
+      return cloudRequest("POST", {
+        action: "bootstrap",
+        coachName: state.coachName,
+        teamName: state.teamName,
+        roster: roster.slice(0, 10).map(p => ({
+          careerId: p.careerId,
+          name: p.name,
+          position: p.position,
+          nationality: p.nationality,
+          skills: p.skills || {}
+        }))
+      });
+    }
+    const result = await cloudRequest("GET");
+    if (result.initialized) {
+      state.careerCoachId = result.coach.id;
+      state.careerTeamId = result.team?.id || null;
+      state.careerPlayerIds = state.careerPlayerIds || {};
+      (result.roster || []).forEach(p => {
+        if (p.source_player_key) state.careerPlayerIds[p.source_player_key] = p.id;
+      });
+      state.cloudCareerConnected = true;
+      saveState();
+    }
+    return result;
+  })();
+  try { return await cloudSyncPromise; }
+  finally { cloudSyncPromise = null; }
+}
+
+async function initializeCloudCareer() {
+  try {
+    const result = await syncCareerToCloud(false);
+    if (!result.initialized && state.coachName && state.teamName && leagueData) {
+      await syncCareerToCloud(true);
+    }
+  } catch (error) {
+    console.warn("Облачная карьера пока не подключена:", error);
+  }
+}
+
 const AVATAR_COUNT = 6;
 function avatarPath(index) { return "/images/avatartrener/avatartrener" + index + ".jpg"; }
 function teamLogoPath(index) { return "/images/avatarteam/avatarteam" + index + ".jpg"; }
@@ -154,7 +238,7 @@ musicToggle.addEventListener("click", async () => {
   }
 });
 
-$("setupForm").addEventListener("submit", (event) => {
+$("setupForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const coachName = $("coachName").value.trim();
   const teamName = $("teamNameInput").value.trim();
