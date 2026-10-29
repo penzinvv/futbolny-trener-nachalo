@@ -614,7 +614,7 @@ function renderTraining() {
     ["ВР","ЗЩ","ПЗ","НП"].forEach(key=>{
       const option=document.createElement("option");option.value=key;
       const value=Number(player.skills?.[key]||0);
-      option.textContent=key+" · "+(value>=100?"максимум 100":("текущее значение "+value));
+      option.textContent=key+" · "+(getUnlockedSkills(player,getPlayerRelation(team,player)).includes(key)?(value>=100?"максимум 100":"значение "+value):(value>=100?"недоступно":"скрытая характеристика"));
       option.disabled=value>=100;
       skillSelect.append(option);
     });
@@ -659,7 +659,7 @@ function renderTraining() {
     if(!Array.isArray(state.trainingHistory[key]))state.trainingHistory[key]=[];
     state.trainingHistory[key].push({at:now,stat,before:current,after:player.skills[stat],type:"individual"});
     saveState();
-    status.textContent="Тренировка завершена: "+player.name+" — "+stat+" повышена с "+current+" до "+player.skills[stat]+".";
+    status.textContent="Тренировка завершена: "+player.name+" — характеристика "+stat+" повышена на 1 пункт.";
     refreshSkillOptions();
     updatePlayerSummary();
     trainButton.disabled=true;
