@@ -1029,7 +1029,7 @@ function openPlayerProfile(team,p,index) {
       if(relation>=90)body.append(safeText("p","Порог потенциала достигнут. Значение потенциала пока не задано в игровых данных.","muted"));
       else body.append(safeText("p","Потенциал откроется при 90% отношений. Само раскрытие не повышает навыки.","muted"));
     } else if(key==="training"){
-      body.append(safeText("h3","Развитие футболиста"),placeholder("Индивидуальные тренировки и история изменения характеристик будут доступны после реализации тренировочной механики."));
+      body.append(safeText("h3","История индивидуальных тренировок"));const trainingKey=trainingPlayerKey(team,p,index),trainingHistory=state.trainingHistory?.[trainingKey]||[];if(!trainingHistory.length)body.append(safeText("p","В этой локальной карьере тренировок пока нет.","muted"));else trainingHistory.slice().reverse().forEach(item=>body.append(safeText("p",new Date(item.at).toLocaleString("ru-RU")+" · "+item.stat+": "+item.before+" → "+item.after)));body.append(safeText("p","Новую тренировку можно провести в разделе «Тренировка». История хранится в этом браузере.","muted"));
     } else if(key==="relations"){
       body.append(safeText("h3","Отношения с тренером"),makeRelationBadge(team,p));
       const next=relation<50?50:relation<60?60:relation<70?70:relation<80?80:relation<90?90:null;
@@ -1041,7 +1041,7 @@ function openPlayerProfile(team,p,index) {
       });
       body.append(thresholds);
     } else {
-      body.append(safeText("h3","История карьеры"),placeholder("История команд, сезонов, переходов и достижений появится по мере реализации и заполнения карьерных данных."));
+      body.append(safeText("h3","Официальная статистика футболиста"));let played=0,goals=0,assists=0,cleanSheets=0;Object.values(state.leagueResults||{}).filter(m=>Number(m.season||state.seasonNumber)===Number(state.seasonNumber||1)).forEach(m=>{const isHome=m.homeId===team.id,isAway=m.awayId===team.id;if(!isHome&&!isAway)return;const lineup=isHome?(m.homeLineup||[]):(m.awayLineup||[]);if(!lineup.some(x=>(x.player||x).name===p.name))return;played++;(m.events||[]).forEach(ev=>{if(ev.type==="goal"&&ev.scorer===p.name)goals++;if(ev.type==="goal"&&ev.assist===p.name)assists++});if(p.position==="ВР"&&((isHome&&m.awayScore===0)||(isAway&&m.homeScore===0)))cleanSheets++});const grid=document.createElement("div");grid.className="cabinet-metrics";[["Матчи",played],["Голы",goals],["Ассисты",assists],["Матчи на ноль",cleanSheets]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",String(value)));grid.append(card)});body.append(grid);if(!played)body.append(safeText("p","Официальной статистики пока нет. Она появится после сохранения официальных матчей; тестовые матчи не учитываются.","muted"));
     }
   };
   tabItems.forEach(([key,label])=>{const b=document.createElement("button");b.type="button";b.className="player-profile-tab";b.dataset.tab=key;b.setAttribute("role","tab");b.textContent=label;b.addEventListener("click",()=>renderTab(key));tabs.append(b);});
