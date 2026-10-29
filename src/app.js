@@ -257,8 +257,12 @@ function ensureCareerIdentity() {
     leagueData.teams.forEach(team=>{
       (team.players||[]).forEach((player,index)=>{
         const key=team.id+"::"+index;
-        if (!state.careerPlayerIds[key]) { state.careerPlayerIds[key]=makeCareerId(); changed=true; }
-        player.careerId=state.careerPlayerIds[key];
+        if (player.careerId) {
+          if (state.careerPlayerIds[key]!==player.careerId) { state.careerPlayerIds[key]=player.careerId; changed=true; }
+        } else {
+          if (!state.careerPlayerIds[key]) { state.careerPlayerIds[key]=makeCareerId(); changed=true; }
+          player.careerId=state.careerPlayerIds[key];
+        }
       });
     });
   }
