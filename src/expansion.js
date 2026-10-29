@@ -50,8 +50,8 @@ function freeYardPage(){
   actions.append(B("Познакомиться (+10%)",()=>{const current=Math.max(0,Math.min(100,Number(state.relationships[relationKey]||0)));state.relationships[relationKey]=Math.min(100,current+10);saveState();openPage("freeyard")},"secondary"));
   const invite=B("Пригласить в команду",()=>{
    if(team.players.length>=10){alert("В команде не может быть больше 10 футболистов.");return}
-   const newPlayer={...player,skills:{...(relation>=60?player.skills:{ВР:0,ЗЩ:0,ПЗ:0,НП:0})},potential:relation>=60?player.potential:null,portraitIndex:player.portraitIndex};
-   team.players.push(newPlayer);state.userRoster=team.players;player.invited=true;state.freeYardPlayers=state.freeYardPlayers||[];saveState();openPage("freeyard");
+   const newPlayer={...player,skills:{...(player.skills||{})},potential:player.potential,portraitIndex:player.portraitIndex};
+   team.players.push(newPlayer);state.relationships[playerRelationKey(team,newPlayer)]=relation;state.userRoster=team.players;player.invited=true;state.freeYardPlayers=state.freeYardPlayers||[];saveState();openPage("freeyard");
   },"primary");invite.disabled=team.players.length>=10;
   actions.append(invite);panel.append(actions);w.append(panel);
  });
