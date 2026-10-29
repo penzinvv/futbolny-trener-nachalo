@@ -16,15 +16,23 @@ function install(){
  saveState()
 }
 function match3(t,p){
- let board=[],sel=-1,score=0,lock=false,done=false;
- const ov=document.createElement("div");ov.className="feature-game-overlay";const m=document.createElement("section");m.className="feature-game-modal";const stat=safeText("p","Очки: 0 / 1000","feature-game-stats"),grid=document.createElement("div");grid.className="relation-match3-board";const msg=safeText("p","Собирай 3 и более одинаковых фишки.","feature-game-message"),actions=document.createElement("div");actions.className="feature-actions";ov.append(m);m.append(safeText("h2","🧩 ТРИ В РЯД"),T(p.name+" · "+t.name),stat,grid,msg,actions);document.body.append(ov);
- const close=()=>{clearTimeout(timer);ov.remove()};
- const rand=()=>Math.floor(Math.random()*6);
- function draw(){grid.replaceChildren();board.forEach((v,i)=>{const b=B(icons[v]||" ",()=>pick(i),"relation-match3-cell"+(sel===i?" selected":""));b.disabled=lock||done;grid.append(b)});stat.textContent="Очки: "+score+" / 1000"}
+ let board=[],sel=-1,score=0,lock=false,done=false,closed=false;
+ const ov=document.createElement("div");ov.className="feature-game-overlay";
+ const m=document.createElement("section");m.className="feature-game-modal";
+ const stat=safeText("p","Очки: 0","feature-game-stats"),grid=document.createElement("div");grid.className="relation-match3-board";
+ const msg=safeText("p","Собирай три и более одинаковых футбольных предмета. Каждая клетка комбинации приносит 5 очков.","feature-game-message");
+ const actions=document.createElement("div");actions.className="feature-actions";
+ ov.append(m);m.append(safeText("h2","⚽ ФУТБОЛЬНЫЕ ТРИ В РЯД"),T(p.name+" · "+t.name),stat,grid,msg,actions);document.body.append(ov);
+ const close=()=>{if(closed)return;closed=true;clearTimeout(timer);ov.remove()};
+ const icons=["⚽","🧤","👟","👕","©️","🏆","🦵","🥅"];
+ const rand=()=>Math.floor(Math.random()*icons.length);
+ function draw(){grid.replaceChildren();board.forEach((v,i)=>{const b=B(icons[v]||"⚽",()=>pick(i),"relation-match3-cell"+(sel===i?" selected":""));b.setAttribute("aria-label","Футбольный предмет");b.disabled=lock||done;grid.append(b)});stat.textContent="Очки: "+score}
  function matches(){let f=new Set();for(let r=0;r<8;r++)for(let c=0;c<8;c++){let i=r*8+c,v=board[i];if(c<6&&v===board[i+1]&&v===board[i+2])for(let x=c;x<8&&board[r*8+x]===v;x++)f.add(r*8+x);if(r<6&&v===board[i+8]&&v===board[i+16])for(let y=r;y<8&&board[y*8+c]===v;y++)f.add(y*8+c)}return f}
- function clear(){if(done)return;let f=matches();if(!f.size){lock=false;draw();return}f.forEach(i=>board[i]=-1);score=Math.min(1000,score+f.size*10);draw();if(score>=1000){done=true;const before=Number(state.relationships[playerRelationKey(t,p)]||0),after=rel(t,p,score),delta=after-before;state.xp=Math.max(0,Number(state.xp)||0)+score;state.trainingHistory.push({type:"match3-relations",team:t.id,player:p.name,score,delta,at:Date.now()});saveState();msg.textContent="Готово! +" + score + " XP, отношения +" + F(delta)+".";actions.replaceChildren(B("Вернуться в профиль",()=>{close();openPlayerProfile(t,p,0)},"primary"),B("Закрыть",close));return}timer=setTimeout(()=>{for(let c=0;c<8;c++){let s=[];for(let r=7;r>=0;r--)if(board[r*8+c]>=0)s.push(board[r*8+c]);while(s.length<8)s.push(rand());for(let r=7;r>=0;r--)board[r*8+c]=s[7-r]}draw();timer=setTimeout(clear,90)},120)}
- function pick(i){if(lock||done)return;if(sel<0){sel=i;draw();return}if(Math.abs(Math.floor(sel/8)-Math.floor(i/8))+Math.abs(sel%8-i%8)!==1){sel=i;draw();return}let a=sel,b=i;sel=-1;[board[a],board[b]]=[board[b],board[a]];if(!matches().size){[board[a],board[b]]=[board[b],board[a]];draw();return}lock=true;draw();clear()}
- board=Array.from({length:64},rand);for(let i=0;i<64;i++)while((i%8>1&&board[i]===board[i-1]&&board[i]===board[i-2])||(i>15&&board[i]===board[i-8]&&board[i]===board[i-16]))board[i]=rand();actions.append(B("Выйти без награды",close));draw()
+ function settle(){if(done||closed)return;let f=matches();if(!f.size){lock=false;draw();return}f.forEach(i=>board[i]=-1);score+=f.size*5;draw();timer=setTimeout(()=>{for(let c=0;c<8;c++){let s=[];for(let r=7;r>=0;r--)if(board[r*8+c]>=0)s.push(board[r*8+c]);while(s.length<8)s.push(rand());for(let r=7;r>=0;r--)board[r*8+c]=s[7-r]}draw();timer=setTimeout(settle,90)},120)}
+ function saveAndExit(){if(done||closed)return;done=true;clearTimeout(timer);const before=Number(state.relationships[playerRelationKey(t,p)]||0),after=rel(t,p,score),delta=after-before;state.xp=Math.max(0,Number(state.xp)||0)+score;state.trainingHistory=Array.isArray(state.trainingHistory)?state.trainingHistory:[];state.trainingHistory.push({type:"match3-relations",team:t.id,player:p.name,score,delta,at:Date.now()});saveState();msg.textContent="Результат сохранён. Очки: "+score+". Отношения с игроком: +"+F(delta)+". Общие отношения: "+F(after)+".";grid.replaceChildren();actions.replaceChildren(B("Вернуться в профиль",()=>{close();openPlayerProfile(t,p,0)},"primary"),B("Закрыть",close))}
+ function pick(i){if(lock||done||closed)return;if(sel<0){sel=i;draw();return}if(Math.abs(Math.floor(sel/8)-Math.floor(i/8))+Math.abs(sel%8-i%8)!==1){sel=i;draw();return}let a=sel,b=i;sel=-1;[board[a],board[b]]=[board[b],board[a]];if(!matches().size){[board[a],board[b]]=[board[b],board[a]];draw();return}lock=true;draw();settle()}
+ actions.append(B("СОХРАНИТЬ РЕЗУЛЬТАТ И ВЫЙТИ",saveAndExit,"primary"),B("Выйти без сохранения",close));
+ board=Array.from({length:64},rand);for(let i=0;i<64;i++)while((i%8>1&&board[i]===board[i-1]&&board[i]===board[i-2])||(i>15&&board[i]===board[i-8]&&board[i]===board[i-16]))board[i]=rand();draw()
 }
 function training(){
  const w=document.createElement("div"),t=getUserTeam();
@@ -62,15 +70,46 @@ function runTeamTraining(t){
  const close=()=>{ov.remove();openPage("training")};m.append(safeText("h2","⚽ Командная тренировка завершена"),T("Каждый футболист получил одну случайно распределённую попытку развития. Начислено +10 XP тренеру."),body,B("Готово",close,"primary"));ov.append(m);document.body.append(ov)
 }
 function playTraining(t,p,id){
- const ov=document.createElement("div");ov.className="feature-game-overlay";const m=document.createElement("section");m.className="feature-game-modal";const scoreLine=safeText("p","Очки: 0","feature-game-stats"),field=document.createElement("div");field.className="training-playfield";const actions=document.createElement("div");actions.className="feature-actions";ov.append(m);m.append(safeText("h2",p.position==="ВР"?"🧤 ПОЙМАЙ МЯЧ":p.position==="ЗЩ"?"🛡️ УСПЕЙ ВЫБИТЬ МЯЧ":"🐍 ФУТБОЛЬНАЯ ЗМЕЙКА"),T(p.name),scoreLine,field,actions);document.body.append(ov);
- let score=0,miss=0,ended=false,snake=[{x:4,y:4},{x:3,y:4}],dir={x:1,y:0},food={x:7,y:4};const close=()=>{clearInterval(timer);clearTimeout(timer);ov.remove()};
- function finish(details){if(ended)return;ended=true;clearInterval(timer);clearTimeout(timer);let net=Math.max(0,score),before=Number(p.skills?.[p.position]||0),growth=Math.min(Math.floor(net/200),100-before),beforeRel=Number(state.relationships[playerRelationKey(t,p)]||0),after=rel(t,p,score);p.skills[p.position]=Math.min(100,before+growth);state.xp=Math.max(0,Number(state.xp)||0)+net;state.trainingCooldowns[id]=Date.now();state.trainingHistory.push({type:"individual",team:t.id,player:p.name,score,delta:after-beforeRel,growth,at:Date.now()});saveState();scoreLine.textContent="Итог "+score+" · Отношения "+F(after-beforeRel)+" · "+p.position+" +"+growth;field.replaceChildren(T(details));actions.replaceChildren(B("Готово",()=>{close();openPage("training")},"primary"))}
- actions.append(B("Выйти без награды",close));
- if(p.position==="ВР"){function next(){if(miss>=10){finish("Поймано: "+score/5+" · Пропущено: "+miss);return}scoreLine.textContent="Очки "+score+" · Пропущено "+miss+"/10";field.replaceChildren(B("⚽ Поймать (+5)",()=>{score+=5;next()},"training-target"),B("Пропустить",()=>{miss++;next()}))}next()}
- else if(p.position==="ЗЩ"){function next(){if(miss>=3){finish("Ошибок: "+miss);return}field.replaceChildren(B("⚽",()=>{clearTimeout(timer);score+=5;next()},"training-target"));scoreLine.textContent="Очки "+score+" · Ошибки "+miss+"/3";timer=setTimeout(()=>{score-=3;miss++;next()},1000)}next()}
- else {const grid=document.createElement("div");grid.className="snake-grid";field.append(grid);function draw(){grid.replaceChildren();for(let y=0;y<10;y++)for(let x=0;x<10;x++){const c=document.createElement("span");c.className="snake-cell"+(snake.some(s=>s.x===x&&s.y===y)?" snake-body":"")+(food.x===x&&food.y===y?" snake-food":"");c.textContent=food.x===x&&food.y===y?"⚽":"";grid.append(c)}scoreLine.textContent="Очки "+score}
- document.addEventListener("keydown",key);function key(e){const map={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]},v=map[e.key];if(v&&!(v[0]===-dir.x&&v[1]===-dir.y)){dir={x:v[0],y:v[1]};e.preventDefault()}}
- function tick(){const h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};if(h.x<0||h.y<0||h.x>=10||h.y>=10||snake.slice(0,-1).some(s=>s.x===h.x&&s.y===h.y)){document.removeEventListener("keydown",key);finish("Мячей собрано: "+score/10);return}snake.unshift(h);if(h.x===food.x&&h.y===food.y){score+=10;do{food={x:Math.floor(Math.random()*10),y:Math.floor(Math.random()*10)}}while(snake.some(s=>s.x===food.x&&s.y===food.y))}else snake.pop();draw()}draw();timer=setInterval(tick,280)}
+ const ov=document.createElement("div");ov.className="feature-game-overlay";
+ const m=document.createElement("section");m.className="feature-game-modal";
+ const title=p.position==="ВР"?"🧤 ВРАТАРЬ: ПОЙМАЙ МЯЧ":p.position==="ЗЩ"?"🛡️ ЗАЩИТНИК: ПЕРЕХВАТ":"🐍 ФУТБОЛЬНАЯ ЗМЕЙКА";
+ const scoreLine=safeText("p","Очки: 0","feature-game-stats"),field=document.createElement("div");field.className="training-playfield football-training-field";
+ const hint=safeText("p",p.position==="ВР"?"Двигай вратаря влево-вправо и лови мячи. 10 пропущенных мячей — игра окончена.":p.position==="ЗЩ"?"Лови мяч, пока он виден. Каждый мяч появляется примерно на секунду.":"Собирай мячи и избегай футболистов.","feature-game-message");
+ const actions=document.createElement("div");actions.className="feature-actions";ov.append(m);m.append(safeText("h2",title),T(p.name),scoreLine,field,hint,actions);document.body.append(ov);
+ let score=0,miss=0,ended=false,closed=false,timer=null,raf=0,keys=new Set();
+ const close=()=>{if(closed)return;closed=true;clearInterval(timer);clearTimeout(timer);cancelAnimationFrame(raf);document.removeEventListener("keydown",key);document.removeEventListener("keyup",key);ov.remove()};
+ function finish(details){if(ended||closed)return;ended=true;clearInterval(timer);clearTimeout(timer);cancelAnimationFrame(raf);document.removeEventListener("keydown",key);document.removeEventListener("keyup",key);let net=Math.max(0,score),before=Number(p.skills?.[p.position]||0),growth=Math.min(Math.floor(net/200),100-before),beforeRel=Number(state.relationships[playerRelationKey(t,p)]||0),after=rel(t,p,score);p.skills=p.skills||{};p.skills[p.position]=Math.min(100,before+growth);state.xp=Math.max(0,Number(state.xp)||0)+net;state.trainingCooldowns[id]=Date.now();state.trainingHistory=Array.isArray(state.trainingHistory)?state.trainingHistory:[];state.trainingHistory.push({type:"individual",team:t.id,player:p.name,score,delta:after-beforeRel,growth,at:Date.now()});saveState();scoreLine.textContent="Итог: "+score+" очков · Отношения +"+F(after-beforeRel)+" · "+p.position+" +"+growth;field.replaceChildren(T(details));actions.replaceChildren(B("Готово",()=>{close();openPage("training")},"primary"))}
+ function key(ev){const k=ev.key.toLowerCase();if(["arrowleft","arrowright","arrowup","arrowdown","a","d","w","s"].includes(k)){keys.add(k);ev.preventDefault()}}
+ function keyup(ev){keys.delete(ev.key.toLowerCase())}
+ document.addEventListener("keydown",key);document.addEventListener("keyup",keyup);
+ const controls=document.createElement("div");controls.className="football-touch-controls";
+ [["◀","ArrowLeft"],["▲","ArrowUp"],["▼","ArrowDown"],["▶","ArrowRight"]].forEach(([label,k])=>{const b=B(label,()=>{if(p.position==="ВР"){if(k==="ArrowLeft")goalkeeper.x-=55;if(k==="ArrowRight")goalkeeper.x+=55;drawKeeper()}else if(p.position!=="ЗЩ"){const v=({ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0},ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1}})[k];if(v&&!(v.x===-dir.x&&v.y===-dir.y))dir=v}},"secondary");b.addEventListener("pointerdown",()=>{keys.add(k.toLowerCase())});b.addEventListener("pointerup",()=>keys.delete(k.toLowerCase()));b.addEventListener("pointerleave",()=>keys.delete(k.toLowerCase()));controls.append(b)});
+ if(p.position==="ВР"){
+   field.classList.add("goalkeeper-field");const goal=document.createElement("div");goal.className="football-goal";goal.textContent="🥅";const keeper=document.createElement("div");keeper.className="goalkeeper-sprite";keeper.textContent="🧤";const ballLayer=document.createElement("div");ballLayer.className="football-ball-layer";field.append(goal,ballLayer,keeper,controls);
+   const W=100,H=100;let goalkeeper={x:50,y:87},balls=[],lastSpawn=0,last=performance.now(),ballId=0;
+   function drawKeeper(){goalkeeper.x=Math.max(7,Math.min(93,goalkeeper.x));keeper.style.left=goalkeeper.x+"%"}
+   function spawnBall(){const b={id:++ballId,x:8+Math.random()*84,y:8,speed:.16+Math.random()*.12};balls.push(b);const el=document.createElement("span");el.className="training-ball";el.textContent="⚽";el.dataset.ball=String(b.id);el.style.left=b.x+"%";el.style.top=b.y+"%";ballLayer.append(el)}
+   function frame(now){if(ended||closed)return;const dt=Math.min(40,now-last);last=now;if(keys.has("arrowleft")||keys.has("a"))goalkeeper.x-=dt*.035;if(keys.has("arrowright")||keys.has("d"))goalkeeper.x+=dt*.035;drawKeeper();if(now-lastSpawn>850){spawnBall();lastSpawn=now}balls=balls.filter(b=>{b.y+=b.speed*dt;const el=ballLayer.querySelector('[data-ball="'+b.id+'"]');if(el){el.style.top=b.y+"%";el.style.left=b.x+"%"}if(b.y>=82){if(el)el.remove();if(Math.abs(b.x-goalkeeper.x)<=11){score+=5;scoreLine.textContent="Очки: "+score+" · Голы: "+miss+"/10"}else{miss++;scoreLine.textContent="Очки: "+score+" · Пропущено: "+miss+"/10"}if(miss>=10){finish("10 голов пропущено. Поймано мячей: "+score/5+".");return false}return false}return true});raf=requestAnimationFrame(frame)}
+   field.addEventListener("pointermove",ev=>{const r=field.getBoundingClientRect();goalkeeper.x=((ev.clientX-r.left)/r.width)*100;drawKeeper()});drawKeeper();raf=requestAnimationFrame(frame);
+ }else if(p.position==="ЗЩ"){
+   field.classList.add("defender-field");field.append(controls);let round=0,active=false,target=null,missed=0;
+   const status=safeText("p","Приготовься…","defender-round");field.append(status);
+   function spawn(){if(ended||closed)return;if(round>=20){finish("Тренировка завершена: "+score/5+" мячей перехвачено, "+missed+" промахов.");return}round++;active=true;target=B("⚽",()=>{if(!active||ended)return;active=false;clearTimeout(timer);target?.remove();target=null;score+=5;scoreLine.textContent="Очки: "+score+" · Попытка "+round+"/20";status.textContent="Отличный перехват!";timer=setTimeout(spawn,550)},"defender-ball-target");target.style.left=(8+Math.random()*78)+"%";target.style.top=(12+Math.random()*58)+"%";field.append(target);status.textContent="Мяч "+round+"/20 — нажми на него, пока он виден!";timer=setTimeout(()=>{if(!active||ended)return;active=false;missed++;target?.remove();target=null;scoreLine.textContent="Очки: "+score+" · Промахи: "+missed;status.textContent="Не успел! Следующий мяч…";timer=setTimeout(spawn,450)},1000)}
+   timer=setTimeout(spawn,500);
+ }else{
+   field.classList.add("snake-training-field");const grid=document.createElement("div");grid.className="snake-grid";field.append(grid,controls);
+   let snake=[{x:4,y:4},{x:3,y:4}],dir={x:1,y:0},food={x:7,y:4},obstacles=[];
+   function placeFood(){let tries=0;do{food={x:Math.floor(Math.random()*10),y:Math.floor(Math.random()*10)};tries++}while(tries<200&&(snake.some(s=>s.x===food.x&&s.y===food.y)||obstacles.some(s=>s.x===food.x&&s.y===food.y)))}
+   function draw(){grid.replaceChildren();for(let y=0;y<10;y++)for(let x=0;x<10;x++){const c=document.createElement("span");c.className="snake-cell"+(snake.some(s=>s.x===x&&s.y===y)?" snake-body":"")+(food.x===x&&food.y===y?" snake-food":"")+(obstacles.some(s=>s.x===x&&s.y===y)?" snake-obstacle":"");c.textContent=food.x===x&&food.y===y?"⚽":obstacles.some(s=>s.x===x&&s.y===y)?"🧍":"";grid.append(c)}scoreLine.textContent="Очки: "+score+" · Мячей: "+score/10}
+   function tick(){if(ended||closed)return;const h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};if(h.x<0||h.y<0||h.x>=10||h.y>=10||snake.slice(0,-1).some(s=>s.x===h.x&&s.y===h.y)||obstacles.some(s=>s.x===h.x&&s.y===h.y)){finish("Змейка столкнулась с футболистом или границей. Собрано мячей: "+score/10+".");return}snake.unshift(h);if(h.x===food.x&&h.y===food.y){score+=10;placeFood();if(score%50===0&&obstacles.length<8){let o;do{o={x:Math.floor(Math.random()*10),y:Math.floor(Math.random()*10)}}while((snake.some(s=>s.x===o.x&&s.y===o.y)||(food.x===o.x&&food.y===o.y)||obstacles.some(s=>s.x===o.x&&s.y===o.y)));obstacles.push(o)}}else snake.pop();draw()}
+   function keySnake(ev){const map={arrowup:[0,-1],arrowdown:[0,1],arrowleft:[-1,0],arrowright:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]},v=map[ev.key.toLowerCase()];if(v&&!(v[0]===-dir.x&&v[1]===-dir.y)){dir={x:v[0],y:v[1]};ev.preventDefault()}}
+   document.addEventListener("keydown",keySnake);const oldClose=close; // key listener is removed by close below
+   const removeSnakeKeys=()=>document.removeEventListener("keydown",keySnake);
+   const priorFinish=finish;
+   timer=setInterval(tick,280);draw();
+   actions.append(B("Выйти без награды",()=>{removeSnakeKeys();oldClose()}));
+ }
+ if(p.position!=="ЗЩ"&&p.position!=="ВР") actions.append(B("Выйти без награды",close));
 }
 function transfersPage(){
  const w=document.createElement("div");if(!leagueData){w.append(placeholder("Загружаю команды…"));return w} Object.entries(state.externalRosters||{}).forEach(([id,players])=>{const t=leagueData.teams.find(x=>x.id===id);if(t&&Array.isArray(players))t.players=players});
@@ -80,3 +119,5 @@ function transfersPage(){
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
 })();
+
+/* Футбольная тема для индивидуальных мини-игр */
