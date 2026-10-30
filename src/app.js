@@ -745,19 +745,32 @@ function awardOfficialMatchRating(result,fixture){
  if(Number(result.round)%5===0)awardMonthlyBestPlayer(Number(result.season),Number(result.round));
 }
 function awardMonthlyBestPlayer(season,round){
- const ownId=getUserTeam()?.id;if(!ownId)return;
+ const own=getUserTeam();if(!own)return;
  const key="monthly-player:"+season+":"+round;if(state.ratingAwardsApplied?.[key])return;
- const stats=new Map();
- Object.values(state.leagueResults||{}).filter(m=>Number(m.season)===season&&Number(m.round)<=round).forEach(m=>{
+ const stats=new Map(),teamLeague=own.league;
+ const matches=Object.values(state.leagueResults||{}).filter(m=>Number(m.season)===season&&Number(m.round)<=round&&leagueData?.teams.find(t=>t.id===m.homeId)?.league===teamLeague);
+ matches.forEach(m=>{
+  const matchCounts={home:new Map(),away:new Map()};
   (m.events||[]).filter(ev=>ev.type==="goal").forEach(ev=>{
-   const side=ev.side,teamId=side==="home"?m.homeId:m.awayId;
-   const add=(name,kind)=>{if(!name)return;const id=teamId+"::"+name;const x=stats.get(id)||{teamId,name,goals:0,assists:0};x[kind]++;stats.set(id,x)};
-   add(ev.scorer,"goals");add(ev.assist,"assists");
+   const side=ev.side;if(!matchCounts[side])return;
+   if(ev.scorer)matchCounts[side].set(ev.scorer,(matchCounts[side].get(ev.scorer)||0)+1);
+   if(ev.assist)matchCounts[side].set(ev.assist,(matchCounts[side].get(ev.assist)||0)+1);
+  });
+  ["home","away"].forEach(side=>{
+   const teamId=side==="home"?m.homeId:m.awayId;
+   const lineup=m[side+"Lineup"]||[];
+   lineup.forEach(entry=>{
+    const p=entry.player||entry,name=p?.name;if(!name)return;
+    const goals=(m.events||[]).filter(ev=>ev.type==="goal"&&ev.side===side&&ev.scorer===name).length;
+    const assists=(m.events||[]).filter(ev=>ev.type==="goal"&&ev.side===side&&ev.assist===name).length;
+    const id=teamId+"::"+name,x=stats.get(id)||{teamId,name,goals:0,assists:0,ratingTotal:0,played:0};
+    x.goals+=goals;x.assists+=assists;x.ratingTotal+=Math.min(10,6+goals+assists);x.played++;stats.set(id,x);
+   });
   });
  });
- const best=[...stats.values()].sort((x,y)=>(y.goals+y.assists)-(x.goals+x.assists)||y.goals-x.goals||y.assists-x.assists||x.name.localeCompare(y.name,"ru"))[0];
+ const best=[...stats.values()].sort((x,y)=>(y.ratingTotal/y.played)-(x.ratingTotal/x.played)||y.played-x.played||y.goals-x.goals||y.assists-x.assists||x.name.localeCompare(y.name,"ru"))[0];
  ratingAwardKey(key);
- if(best&&best.teamId===ownId)addCoachRatingPoints(10,"monthly-best-player");
+ if(best&&best.teamId===own.id)addCoachRatingPoints(10,"monthly-best-player");
 }
 function awardSeasonRatingBonuses(season){
  const doneKey="season-finalized:"+season;if(state.ratingAwardsApplied?.[doneKey])return;
@@ -767,7 +780,7 @@ function awardSeasonRatingBonuses(season){
  if(placeBonus)addCoachRatingPoints(placeBonus,"season-place-"+rank);
  if(rank===1)addCoachRatingPoints(15,"best-coach-season");
  const playerStats=new Map();
- Object.values(state.leagueResults||{}).filter(m=>Number(m.season)===Number(season)).forEach(m=>{
+ Object.values(state.leagueResults||{}).filter(m=>Number(m.season)===Number(season)&&leagueData?.teams.find(t=>t.id===m.homeId)?.league===own.league).forEach(m=>{
   (m.events||[]).filter(ev=>ev.type==="goal").forEach(ev=>{
    const teamId=ev.side==="home"?m.homeId:m.awayId;
    const add=(name,kind)=>{if(!name)return;const key=teamId+"::"+name;const p=playerStats.get(key)||{teamId,name,goals:0,assists:0};p[kind]++;playerStats.set(key,p)};
