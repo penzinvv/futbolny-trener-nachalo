@@ -289,6 +289,99 @@ $("setupForm").addEventListener("submit", async (event) => {
   void initializeCloudCareer();
 });
 
+
+function onlineRatingEntry(item, place, type) {
+  const row=document.createElement("article");row.className="online-rating-entry";
+  const rank=safeText("span",String(place),"online-rating-place");row.append(rank);
+  const identity=document.createElement("div");identity.className="online-rating-identity";
+  const coachLine=document.createElement("div");coachLine.className="online-rating-coach-line";
+  const avatar=document.createElement("img");avatar.className="online-rating-avatar";avatar.src=avatarPath(item.avatar_index||1);avatar.alt="Аватар тренера";avatar.loading="lazy";
+  coachLine.append(avatar,safeText("b",item.coach_name||"Тренер","online-rating-coach-name"));
+  const teamLine=document.createElement("div");teamLine.className="online-rating-team-line";
+  const logo=document.createElement("img");logo.className="online-rating-team-logo";logo.src=teamLogoPath(item.team_logo_index||1);logo.alt="Эмблема команды";logo.loading="lazy";
+  teamLine.append(logo,safeText("span",item.team_name||"Команда"));
+  identity.append(coachLine,teamLine);
+  if(type==="general")identity.append(safeText("small","Сезон "+Math.max(1,Number(item.season_number)||1),"online-rating-season"));
+  const awards=Array.isArray(item.awards)?item.awards:[];
+  if(awards.length){
+    const shelf=document.createElement("div");shelf.className="online-rating-awards";shelf.setAttribute("aria-label","Награды тренера");
+    awards.slice(0,80).forEach(award=>{if(!award||!award.icon)return;const icon=awardIconPath(award.icon);icon.className="online-rating-award-icon";icon.alt=award.label||"Награда";icon.title=award.label||"Награда";shelf.append(icon)});
+    if(shelf.childElementCount)identity.append(shelf);
+  }
+  const scoreBox=document.createElement("div");scoreBox.className="online-rating-score";
+  const score=type==="xp"?Number(item.xp)||0:Number(item.general_rating)||0;
+  scoreBox.append(safeText("b",score.toLocaleString("ru-RU")),safeText("small",type==="xp"?"XP":"ОЧКОВ"));
+  row.append(identity,scoreBox);return row;
+}
+async function fetchOnlineRatings() {
+  return await cloudRequest("POST",{action:"get-online-ratings"});
+}
+function renderOnlineRatings() {
+  const wrap=document.createElement("div");wrap.className="online-ratings-page";
+  const intro=document.createElement("p");intro.className="muted";intro.textContent="Отправляй результаты вручную. В онлайн-таблице сохраняется последний отправленный показатель каждой карьеры.";
+  const grid=document.createElement("div");grid.className="online-ratings-grid";
+  const lists={};const statuses={};
+  const configs=[
+    {type:"xp",title:"ОПЫТ ТРЕНЕРА",description:"Сравнение накопленного опыта аккаунта."},
+    {type:"general",title:"ОБЩИЙ РЕЙТИНГ ТРЕНЕРА",description:"Накопленные очки за всю карьеру. Сезон указывается отдельно."}
+  ];
+  configs.forEach(config=>{
+    const panel=document.createElement("section");panel.className="online-rating-panel";
+    const heading=document.createElement("div");heading.className="online-rating-heading";
+    heading.append(safeText("h2",config.title),safeText("p",config.description,"muted"));
+    const list=document.createElement("div");list.className="online-rating-list";
+    list.append(placeholder("Загружаю онлайн-таблицу…"));
+    const status=safeText("p","","online-rating-status");status.setAttribute("role","status");status.setAttribute("aria-live","polite");
+    const button=document.createElement("button");button.type="button";button.className="online-submit-button";button.textContent="ОТПРАВИТЬ В ОНЛАЙН";
+    button.addEventListener("click",()=>submitOnlineRating(config.type,button,status,lists));
+    panel.append(heading,list,status,button);grid.append(panel);lists[config.type]=list;statuses[config.type]=status;
+  });
+  wrap.append(intro,grid);
+  void loadOnlineRatings(lists,statuses);
+  return wrap;
+}
+async function loadOnlineRatings(lists,statuses={}) {
+  try {
+    const result=await fetchOnlineRatings();
+    [["xp",result.xpRatings||[]],["general",result.generalRatings||[]]].forEach(([type,rows])=>{
+      const list=lists[type];if(!list)return;list.replaceChildren();
+      if(!rows.length){list.append(placeholder("Пока никто не отправил результат. Будь первым!"));return;}
+      rows.forEach((item,index)=>list.append(onlineRatingEntry(item,index+1,type)));
+    });
+  } catch(error) {
+    Object.values(lists).forEach(list=>{list.replaceChildren(placeholder("Не удалось загрузить онлайн-рейтинг. Попробуй обновить страницу."))});
+    Object.values(statuses).forEach(status=>status.textContent="Ошибка загрузки: "+(error?.message||"неизвестная ошибка"));
+  }
+}
+async function submitOnlineRating(type,button,status,lists) {
+  if(button.disabled)return;
+  if(!state.coachName||!state.teamName){status.textContent="Сначала создай тренера и команду.";return;}
+  const team=getUserTeam();
+  if(!team){status.textContent="Не удалось определить команду тренера.";return;}
+  button.disabled=true;button.textContent="ОТПРАВКА…";status.textContent="";
+  try {
+    ensureCareerIdentity();
+    const awards=careerAwardsFor("coach",team.id).map(item=>({icon:item.icon,label:item.label||"Награда",caption:item.caption||"",season:Number(item.season)||Number(state.seasonNumber)||1,round:Number(item.round)||0})).filter(item=>/^[a-z0-9_-]{1,80}$/i.test(String(item.icon||""))).slice(0,80);
+    const payload={
+      action:"submit-online-rating",ratingType:type,
+      coachName:state.coachName,teamName:state.teamName,
+      seasonNumber:Math.max(1,Math.floor(Number(state.seasonNumber)||1)),
+      avatarIndex:Math.max(1,Math.min(6,Math.floor(Number(state.avatarIndex)||1))),
+      teamLogoIndex:Math.max(1,Math.min(6,Math.floor(Number(state.teamLogoIndex)||1))),
+      awards
+    };
+    if(type==="xp")payload.xp=Math.max(0,Math.floor(Number(state.xp)||0));
+    else payload.generalRating=Math.max(0,Math.floor(Number(state.permanentRating)||0));
+    const result=await cloudRequest("POST",payload);
+    await loadOnlineRatings(lists,{});
+    status.textContent=result.updated?"Результат отправлен в онлайн-рейтинг!":"Результат успешно отправлен.";
+  } catch(error) {
+    status.textContent="Не удалось отправить результат: "+(error?.message||"проверь подключение и попробуй снова.");
+  } finally {
+    button.disabled=false;button.textContent="ОТПРАВИТЬ В ОНЛАЙН";
+  }
+}
+
 const pages = {
   cabinet: {title:"Кабинет тренера", eyebrow:"УПРАВЛЕНИЕ КОМАНДОЙ", render: renderCabinet},
   players: {title:"Футболисты", eyebrow:"СОСТАВ", render: renderPlayers},
@@ -301,7 +394,7 @@ const pages = {
   match: {title:"Матч", eyebrow:"ОФИЦИАЛЬНЫЙ ТУР", render: renderMatchPage},
   matchSummary: {title:"Итоги встречи", eyebrow:"ПОСЛЕ МАТЧА", render: renderMatchSummaryPage},
   goals: {title:"Цели тренера", eyebrow:"ПРОГРЕСС", render: () => placeholder("Система уникальных и периодических целей будет добавлена после согласования чисел и списка целей.")},
-  ratings: {title:"Онлайн рейтинги", eyebrow:"РЕЙТИНГИ ТРЕНЕРОВ", render: () => placeholder("Раздел онлайн-рейтингов подготовлен. Правила постоянного и сезонного рейтинга будут проработаны отдельно.")}
+  ratings: {title:"Онлайн рейтинги", eyebrow:"РЕЙТИНГИ ТРЕНЕРОВ", render: renderOnlineRatings}
 };
 
 function renderCabinet() {
