@@ -533,3 +533,31 @@
 .halftime-panel{margin:0 0 14px}
 .match-event-club-logo{width:20px;height:20px;object-fit:contain;flex:0 0 20px;border-radius:4px;vertical-align:middle}
 .match-event,.match-summary-event,.match-summary-goal{align-items:center}
+
+/* Online coach leaderboards — synchronized with game bible 2.5.1 */
+.online-ratings-page{display:grid;gap:14px}
+.online-ratings-page>.muted{margin:0}
+.online-ratings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.online-rating-panel{min-width:0;padding:16px;border:1px solid var(--line,#285443);border-radius:14px;background:rgba(12,35,27,.42);display:flex;flex-direction:column;gap:12px}
+.online-rating-heading h2{margin:0 0 5px;font-size:1.08rem;line-height:1.3}
+.online-rating-heading p{margin:0;font-size:.86rem}
+.online-rating-list{display:grid;gap:8px}
+.online-rating-entry{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:9px;align-items:center;min-width:0;padding:10px;border:1px solid var(--line,#285443);border-radius:10px;background:rgba(0,0,0,.12)}
+.online-rating-place{display:grid;place-items:center;width:28px;height:30px;border-radius:7px;background:rgba(99,220,160,.12);font-weight:900;color:var(--accent,#65dca0)}
+.online-rating-identity{display:grid;gap:5px;min-width:0}
+.online-rating-coach-line,.online-rating-team-line{display:flex;align-items:center;gap:7px;min-width:0}
+.online-rating-avatar{width:34px;height:34px;object-fit:cover;border-radius:50%;border:1px solid var(--line,#285443);flex:0 0 34px}
+.online-rating-coach-name{overflow-wrap:anywhere;font-size:.91rem}
+.online-rating-team-line{font-size:.8rem;color:var(--muted,#a8c8bb);overflow-wrap:anywhere}
+.online-rating-team-logo{width:24px;height:24px;object-fit:contain;flex:0 0 24px}
+.online-rating-season{font-size:.72rem;color:var(--muted,#a8c8bb)}
+.online-rating-awards{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.online-rating-award-icon{width:28px;height:32px;object-fit:contain;border-radius:3px}
+.online-rating-score{display:grid;justify-items:end;align-content:center;gap:2px;white-space:nowrap}
+.online-rating-score b{font-size:1.05rem;color:var(--accent,#65dca0);font-variant-numeric:tabular-nums}
+.online-rating-score small{font-size:.68rem;color:var(--muted,#a8c8bb)}
+.online-rating-status{min-height:1.2em;margin:0;font-size:.82rem;color:var(--accent,#65dca0);overflow-wrap:anywhere}
+.online-submit-button{width:100%;min-height:42px;padding:10px 14px;border:1px solid #4dc68b;border-radius:9px;background:#65dca0;color:#06271b;font-weight:900;cursor:pointer}
+.online-submit-button:hover{filter:brightness(1.06)}
+.online-submit-button:disabled{opacity:.7;cursor:wait}
+@media(max-width:780px){.online-ratings-grid{grid-template-columns:1fr}.online-rating-panel{padding:12px}.online-rating-entry{grid-template-columns:28px minmax(0,1fr) auto;padding:8px;gap:7px}}
