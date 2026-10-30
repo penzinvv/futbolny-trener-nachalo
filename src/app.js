@@ -857,7 +857,9 @@ function advanceCoachDay(){
  if(state.gameDay===71)note="Начался перерыв между кругами. Следующий тур состоится в день 108.";
  if(state.gameDay===101)note="Перерыв завершён скоро: второй круг начнётся в день 108.";
  if(state.gameDay===182)note="Сезон завершён. Завтра начнётся новый сезон.";
- state.lastCalendarEvent=note;if(note)publishCoachEventOnce("calendar:"+state.seasonNumber+":"+state.gameDay,"news","Событие календаря",note);saveState();render();
+ state.lastCalendarEvent=note;if(note)publishCoachEventOnce("calendar:"+state.seasonNumber+":"+state.gameDay,"news","Событие календаря",note);
+ if(Number(state.gameDay)%3===0){ensureCoachCommunicationState();const recent=state.coachChronicle.filter(x=>Number(x.season)===Number(state.seasonNumber)&&Number(x.day)>=Number(state.gameDay)-2&&Number(x.day)<=Number(state.gameDay)&&!String(x.key||"").startsWith("digest:"));if(recent.length)publishCoachEventOnce("digest:"+state.seasonNumber+":"+state.gameDay,"news","Сводка за последние 3 игровых дня","За последние игровые дни произошло событий: "+recent.length+". Последние события: "+recent.slice(0,3).map(x=>x.title).join("; ")+".",{priority:"normal"})}
+ saveState();render();
  if(note)alert(note);
 }
 function matchTeamLabel(team){return team?.isUserTeam?(state.teamName||team.name):team?.name||"Команда"}
