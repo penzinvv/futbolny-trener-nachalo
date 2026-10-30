@@ -55,6 +55,69 @@ Deno.serve(async (req: Request) => {
 
     let payload: any;
     try { payload = await req.json(); } catch { return respond({ ok: false, error: "Request body must be JSON" }, 400); }
+
+    if (payload?.action === "get-online-ratings") {
+      const [xpResult, generalResult] = await Promise.all([
+        admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,awards,xp,general_rating,updated_at").order("xp", { ascending: false }).order("updated_at", { ascending: true }).limit(50),
+        admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,awards,xp,general_rating,updated_at").order("general_rating", { ascending: false }).order("updated_at", { ascending: true }).limit(50)
+      ]);
+      if (xpResult.error) throw xpResult.error;
+      if (generalResult.error) throw generalResult.error;
+      return respond({ ok: true, xpRatings: xpResult.data || [], generalRatings: generalResult.data || [] });
+    }
+
+    if (payload?.action === "submit-online-rating") {
+      const ratingType = payload.ratingType === "xp" || payload.ratingType === "general" ? payload.ratingType : null;
+      const coachName = String(payload.coachName || "").trim().slice(0, 40);
+      const teamName = String(payload.teamName || "").trim().slice(0, 60);
+      const seasonNumber = Number(payload.seasonNumber);
+      const avatarIndex = Number(payload.avatarIndex);
+      const teamLogoIndex = Number(payload.teamLogoIndex);
+      const xp = payload.xp === undefined ? null : Number(payload.xp);
+      const generalRating = payload.generalRating === undefined ? null : Number(payload.generalRating);
+      const validScore = (value: number | null) => value === null || (Number.isSafeInteger(value) && value >= 0 && value <= 1000000000);
+      if (!ratingType || !coachName || !teamName ||
+          !Number.isSafeInteger(seasonNumber) || seasonNumber < 1 || seasonNumber > 10000 ||
+          !Number.isInteger(avatarIndex) || avatarIndex < 1 || avatarIndex > 6 ||
+          !Number.isInteger(teamLogoIndex) || teamLogoIndex < 1 || teamLogoIndex > 6 ||
+          !validScore(xp) || !validScore(generalRating) ||
+          (ratingType === "xp" && xp === null) || (ratingType === "general" && generalRating === null)) {
+        return respond({ ok: false, error: "Некорректные данные рейтинга. Обнови игру и попробуй снова." }, 400);
+      }
+      const incomingAwards = Array.isArray(payload.awards) ? payload.awards.slice(0, 80) : [];
+      const awards = incomingAwards.filter((item: any) =>
+        item && typeof item.icon === "string" && /^[a-z0-9_-]{1,80}$/i.test(item.icon)
+      ).map((item: any) => ({
+        icon: item.icon,
+        label: String(item.label || "Награда").slice(0, 100),
+        caption: String(item.caption || "").slice(0, 120),
+        season: Math.max(1, Math.min(10000, Math.floor(Number(item.season) || seasonNumber))),
+        round: Math.max(0, Math.min(10000, Math.floor(Number(item.round) || 0)))
+      }));
+      const { data: existing, error: existingError } = await admin.from("online_coach_ratings")
+        .select("xp,general_rating,xp_submitted_at,general_rating_submitted_at")
+        .eq("owner_user_id", userId).maybeSingle();
+      if (existingError) throw existingError;
+      const now = new Date().toISOString();
+      const row = {
+        owner_user_id: userId,
+        coach_name: coachName,
+        team_name: teamName,
+        season_number: seasonNumber,
+        avatar_index: avatarIndex,
+        team_logo_index: teamLogoIndex,
+        awards,
+        xp: ratingType === "xp" ? xp : Number(existing?.xp || 0),
+        general_rating: ratingType === "general" ? generalRating : Number(existing?.general_rating || 0),
+        xp_submitted_at: ratingType === "xp" ? now : (existing?.xp_submitted_at || null),
+        general_rating_submitted_at: ratingType === "general" ? now : (existing?.general_rating_submitted_at || null),
+        updated_at: now
+      };
+      const { error: saveError } = await admin.from("online_coach_ratings").upsert(row, { onConflict: "owner_user_id" });
+      if (saveError) throw saveError;
+      return respond({ ok: true, updated: true, ratingType, updatedAt: now });
+    }
+
     if (payload?.action !== "bootstrap") return respond({ ok: false, error: "Unsupported action" }, 400);
     const coachName = String(payload.coachName || "").trim().slice(0, 40);
     const teamName = String(payload.teamName || "").trim().slice(0, 60);
