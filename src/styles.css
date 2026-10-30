@@ -592,3 +592,26 @@
 }
 @media(min-width:901px){.pitch .hero-content{padding-right:18px}.pitch .hero-manager-actions{padding-right:24px;gap:12px}.hero-action-button{min-height:62px}}
 @media(max-width:700px){.pitch .hero-manager-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.hero-action-button{min-height:42px}}
+
+
+/* Version 2.5.6 — stable coach controls, fullscreen and home online chat */
+.topbar-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.fullscreen-toggle{border:1px solid #4d8b70;border-radius:10px;background:#103b2b;color:#d6ffe5;font-weight:900;font-size:12px;letter-spacing:.03em;padding:10px 12px;min-height:40px;cursor:pointer;white-space:nowrap}
+.fullscreen-toggle:hover{background:#17533b}
+.pitch .hero-manager-actions{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(54px,auto);width:min(46%,480px);right:16px;gap:10px;align-items:stretch}
+.pitch .hero-action-button{width:100%;min-width:0;min-height:54px;padding:12px 10px;font-size:clamp(11px,1vw,14px);line-height:1.2;white-space:normal;overflow-wrap:anywhere}
+.home-chat-panel{display:flex;flex-direction:column;min-width:0;min-height:340px;gap:12px}
+.home-chat-panel .section-title{align-items:flex-start;gap:8px}
+.chat-status{font-size:10px;color:var(--muted);text-align:right;max-width:45%;line-height:1.3}
+.coach-chat-messages{display:flex;flex-direction:column;gap:8px;min-height:180px;max-height:340px;overflow-y:auto;padding:10px;border:1px solid var(--line);border-radius:12px;background:#071d16aa;overscroll-behavior:contain}
+.coach-chat-message{padding:8px 10px;border-radius:9px;background:#153b2d;border:1px solid #2a5945;overflow-wrap:anywhere}
+.coach-chat-message-head{display:flex;justify-content:space-between;gap:8px;align-items:baseline;font-size:11px;color:#a8e5c0}
+.coach-chat-message-head strong{color:#e8fff0}
+.coach-chat-message p{margin:5px 0 0;font-size:13px;line-height:1.4;white-space:pre-wrap}
+.coach-chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:stretch}
+.coach-chat-form textarea{width:100%;min-width:0;resize:vertical;min-height:44px;max-height:120px;background:#081e17;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
+.coach-chat-form button{align-self:stretch;padding:10px 12px;font-size:11px}
+.chat-disclaimer{margin:0;font-size:10px;color:var(--muted)}
+@media(min-width:1000px){.pitch .hero-manager-actions{width:47%;right:16px;gap:12px}.pitch .hero-action-button{min-height:60px;font-size:13px}}
+@media(max-width:850px){.pitch .hero-manager-actions{width:46%;right:12px;gap:7px}.pitch .hero-action-button{min-height:46px;padding:8px 6px;font-size:10px}.fullscreen-toggle{padding:8px 10px;font-size:11px}}
+@media(max-width:600px){.topbar-actions{gap:6px}.fullscreen-toggle{font-size:10px;min-height:34px;padding:7px 8px}.pitch .hero-manager-actions{width:100%;position:relative;top:auto;right:auto;transform:none;padding:0 14px 14px;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.pitch .hero-content{padding-right:16px}.pitch .hero-action-button{min-height:42px;font-size:10px}.coach-chat-messages{min-height:140px;max-height:42dvh}.coach-chat-form{grid-template-columns:1fr}.coach-chat-form button{min-height:40px}}
