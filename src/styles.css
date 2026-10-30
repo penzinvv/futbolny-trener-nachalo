@@ -498,3 +498,7 @@
 /* Интерфейс официального матча 1.3.9 */
 .match-control-row-top{margin:0;justify-content:flex-start}
 .match-control-row-top button{min-height:42px;padding:10px 18px;font-weight:800}
+
+/* League selector for the shared tournament view. */
+.tournament-league-toggle{display:flex;gap:8px;flex-wrap:wrap}
+.tournament-league-toggle button.active{background:var(--accent,#65dca0);color:#06271b;border-color:var(--accent,#65dca0)}
