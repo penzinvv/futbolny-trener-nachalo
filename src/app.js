@@ -801,11 +801,12 @@ function careerAwardsFor(type,id,name){
  return ensureCareerAwards().filter(x=>x.recipientType===type&&String(x.recipientId)===String(id)&&(name==null||x.recipientName===name));
 }
 function getSeasonCupTeams(season){
- const teams=(leagueData?.teams||[]).slice().sort((x,y)=>String(x.id).localeCompare(String(y.id),"ru"));
+ const teams=(leagueData?.teams||[]).slice().sort((x,y)=>Number(String(x.id).replace(/\\D/g,""))-Number(String(y.id).replace(/\\D/g,"")));
  if(teams.length!==12)return {entrants:teams.slice(0,8),excluded:teams.slice(8),mode:"fallback"};
- const start=((Math.max(1,Number(season)||1)-1)%teams.length);
+ const start=(((Math.max(1,Number(season)||1)-1)*4)%teams.length);
  const rotated=teams.map((_,i)=>teams[(start+i)%teams.length]);
- return {entrants:rotated.slice(0,8),excluded:rotated.slice(8),mode:"balanced-40-season-cycle"};
+ const excluded=rotated.slice(0,4),entrants=teams.filter(t=>!excluded.some(x=>x.id===t.id));
+ return {entrants,excluded,mode:"balanced-40-season-cycle"};
 }
 function seededCupRandom(seed){
  let x=2166136261;for(const ch of String(seed)){x^=ch.charCodeAt(0);x=Math.imul(x,16777619)}
