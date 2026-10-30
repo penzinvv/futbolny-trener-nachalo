@@ -168,7 +168,34 @@ function playTraining(t,p,id){
  const actions=document.createElement("div");actions.className="feature-actions";ov.append(m);m.append(safeText("h2",title),T(p.name),scoreLine,field,hint,actions);document.body.append(ov);
  let score=0,miss=0,ended=false,closed=false,timer=null,raf=0,keys=new Set(),extraCleanup=()=>{};
  const close=()=>{if(closed)return;closed=true;clearInterval(timer);clearTimeout(timer);cancelAnimationFrame(raf);document.removeEventListener("keydown",key);document.removeEventListener("keyup",keyup);extraCleanup();ov.remove()};
- function finish(details){if(ended||closed)return;ended=true;clearInterval(timer);clearTimeout(timer);cancelAnimationFrame(raf);document.removeEventListener("keydown",key);document.removeEventListener("keyup",keyup);extraCleanup();let net=Math.max(0,score),before=Number(p.skills?.[p.position]||0),growth=Math.min(Math.floor(net/200),100-before),beforeRel=Number(state.relationships[playerRelationKey(t,p)]||0),after=rel(t,p,score);p.skills=p.skills||{};p.skills[p.position]=Math.min(100,before+growth);state.xp=Math.max(0,Number(state.xp)||0)+net;state.trainingCooldowns[id]=Date.now();state.trainingHistory=Array.isArray(state.trainingHistory)?state.trainingHistory:[];state.trainingHistory.push({type:"individual",team:t.id,player:p.name,playerId:p.careerId||p.id||p.name,score,delta:after-beforeRel,growth,at:Date.now()});if(typeof publishCoachEventOnce==="function")publishCoachEventOnce("individual-training:"+state.seasonNumber+":"+state.gameDay+":"+(p.careerId||p.id||p.name)+":"+Date.now(),"player","Индивидуальная тренировка","Тренировка с "+p.name+" завершена. Изменение отношений: "+(delta>=0?"+":"")+delta.toFixed(2)+" п.п.");if(typeof addCoachRatingPoints==="function")addCoachRatingPoints(1,"individual-training");if(typeof updateCoachRespect==="function")updateCoachRespect();saveState();scoreLine.textContent="Итог: "+score+" очков · Отношения +"+F(after-beforeRel)+" · "+p.position+" +"+growth;field.replaceChildren(T(details));actions.replaceChildren(B("Готово",()=>{close();openPage("training")},"primary"))}
+ function finish(details){
+  if(ended||closed)return;
+  ended=true;
+  clearInterval(timer);clearTimeout(timer);cancelAnimationFrame(raf);
+  document.removeEventListener("keydown",key);document.removeEventListener("keyup",keyup);
+  try{extraCleanup()}catch(error){console.warn("Training cleanup error:",error)}
+  const net=Math.max(0,Number(score)||0);
+  const before=Number(p.skills?.[p.position]||0);
+  const growth=Math.max(0,Math.min(Math.floor(net/200),100-before));
+  const beforeRel=Number(state.relationships[playerRelationKey(t,p)]||0);
+  const after=rel(t,p,net);
+  const delta=after-beforeRel;
+  p.skills=p.skills||{};
+  p.skills[p.position]=Math.min(100,before+growth);
+  state.xp=Math.max(0,Number(state.xp)||0)+net;
+  state.trainingCooldowns=state.trainingCooldowns||{};
+  state.trainingCooldowns[id]=Date.now();
+  state.trainingHistory=Array.isArray(state.trainingHistory)?state.trainingHistory:[];
+  state.trainingHistory.push({type:"individual",team:t.id,player:p.name,playerId:p.careerId||p.id||p.name,score:net,delta,growth,at:Date.now()});
+  try{if(typeof publishCoachEventOnce==="function")publishCoachEventOnce("individual-training:"+state.seasonNumber+":"+state.gameDay+":"+(p.careerId||p.id||p.name)+":"+Date.now(),"player","Индивидуальная тренировка","Тренировка с "+p.name+" завершена. Изменение отношений: "+(delta>=0?"+":"")+delta.toFixed(2)+" п.п.")}catch(error){console.warn("Training event publish error:",error)}
+  try{if(typeof addCoachRatingPoints==="function")addCoachRatingPoints(1,"individual-training")}catch(error){console.warn("Training rating update error:",error)}
+  try{if(typeof updateCoachRespect==="function")updateCoachRespect()}catch(error){console.warn("Training respect update error:",error)}
+  let saved=true;
+  try{saveState()}catch(error){saved=false;console.error("Could not save training result:",error)}
+  scoreLine.textContent="Итог: "+net+" очков · Отношения "+(delta>=0?"+":"")+F(delta)+" · "+p.position+" +"+growth;
+  field.replaceChildren(T(details+(saved?"":" Результат посчитан, но локальное сохранение не удалось. Не закрывай вкладку и сообщи об ошибке.")));
+  actions.replaceChildren(B("Готово",()=>{close();openPage("training")},"primary"));
+ }
  function key(ev){const k=ev.key.toLowerCase();if(["arrowleft","arrowright","arrowup","arrowdown","a","d","w","s"].includes(k)){keys.add(k);ev.preventDefault()}}
  function keyup(ev){keys.delete(ev.key.toLowerCase())}
  document.addEventListener("keydown",key);document.addEventListener("keyup",keyup);
@@ -179,7 +206,7 @@ function playTraining(t,p,id){
    function drawKeeper(){goalkeeper.x=Math.max(7,Math.min(93,goalkeeper.x));keeper.style.left=goalkeeper.x+"%"}
    function spawnBall(){const b={id:++ballId,x:8+Math.random()*84,y:8,speed:.022+Math.random()*.012};balls.push(b);const el=document.createElement("span");el.className="training-ball";el.textContent="⚽";el.dataset.ball=String(b.id);el.style.left=b.x+"%";el.style.top=b.y+"%";ballLayer.append(el)}
    function frame(now){if(ended||closed)return;const dt=Math.min(40,now-last);last=now;if(keys.has("arrowleft")||keys.has("a"))goalkeeper.x-=dt*.035;if(keys.has("arrowright")||keys.has("d"))goalkeeper.x+=dt*.035;drawKeeper();if(now-lastSpawn>850){spawnBall();lastSpawn=now}balls=balls.filter(b=>{b.y+=b.speed*dt;const el=ballLayer.querySelector('[data-ball="'+b.id+'"]');if(el){el.style.top=b.y+"%";el.style.left=b.x+"%"}if(b.y>=82){if(el)el.remove();if(Math.abs(b.x-goalkeeper.x)<=11){score+=5;scoreLine.textContent="Очки: "+score+" · Голы: "+miss+"/10"}else{miss++;scoreLine.textContent="Очки: "+score+" · Пропущено: "+miss+"/10"}if(miss>=10){finish("10 голов пропущено. Поймано мячей: "+score/5+".");return false}return false}return true});raf=requestAnimationFrame(frame)}
-   field.addEventListener("pointermove",ev=>{const r=field.getBoundingClientRect();goalkeeper.x=((ev.clientX-r.left)/r.width)*100;drawKeeper()});drawKeeper();raf=requestAnimationFrame(frame);
+   field.addEventListener("pointermove",ev=>{const r=field.getBoundingClientRect();if(r.width>0)goalkeeper.x=((ev.clientX-r.left)/r.width)*100;drawKeeper()});actions.append(B("ЗАВЕРШИТЬ И СОХРАНИТЬ",()=>finish("Результат сохранён по решению тренера. Поймано мячей: "+score/5+"."),"primary"));drawKeeper();raf=requestAnimationFrame(frame);
  }else if(p.position==="ЗЩ"){
    field.classList.add("defender-field");let round=0,active=false,target=null,missed=0;
    const status=safeText("p","Приготовься…","defender-round");field.append(status);
