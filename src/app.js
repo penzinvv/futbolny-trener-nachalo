@@ -628,21 +628,17 @@ document.addEventListener("click", event => {
   const target = event.target instanceof Element ? event.target : event.target?.parentElement;
   if (!target) return;
   const homeButton = target.closest("#backHome, [data-home]");
-  if (homeButton) {
-    event.preventDefault();
-    returnToDashboard();
-    return;
-  }
+  if (homeButton) { event.preventDefault(); returnToDashboard(); return; }
+  const skipButton = target.closest("#skipDayButton");
+  if (skipButton) { event.preventDefault(); advanceCoachDay(); return; }
+  const calendarButton = target.closest("#seasonCalendarButton");
+  if (calendarButton) { event.preventDefault(); openPage("seasonCalendar"); return; }
+  const startMatchButton = target.closest("#startMatchButton");
+  if (startMatchButton && !startMatchButton.classList.contains("hidden")) { event.preventDefault(); openPage("match"); return; }
   const pageButton = target.closest("[data-page]");
-  if (pageButton) {
-    event.preventDefault();
-    openPage(pageButton.dataset.page);
-  }
+  if (pageButton) { event.preventDefault(); openPage(pageButton.dataset.page); }
 }, true);
-$("openCabinet").addEventListener("click", () => openPage("cabinet"));
-$("skipDayButton")?.addEventListener("click", advanceCoachDay);
-$("seasonCalendarButton")?.addEventListener("click",()=>openPage("seasonCalendar"));
-$("startMatchButton")?.addEventListener("click",()=>openPage("match"));
+$("openCabinet")?.addEventListener("click", () => openPage("cabinet"));
 
 function makeCareerId() {
   if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") return globalThis.crypto.randomUUID();
