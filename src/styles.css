@@ -578,3 +578,7 @@
 @media(max-width:900px){.pitch{grid-template-columns:minmax(0,1fr) minmax(270px,40%)}.pitch .hero-content{padding:20px 12px 20px 18px}.pitch .hero-manager-actions{padding:16px 14px 16px 4px;gap:7px}.hero-action-button{min-height:40px;font-size:11px}.team-heading{gap:9px;margin:12px 0 18px}.team-emblem{width:60px;height:60px}.hero-stats{gap:12px 18px}}
 @media(max-width:700px){.pitch{display:flex;flex-direction:column}.pitch .hero-content{padding:18px 16px 12px}.pitch .hero-manager-actions{position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:auto;padding:4px 16px 16px;gap:7px}.hero-action-button{min-height:42px;font-size:12px;padding:9px 7px}.pitch:after{width:100px;height:100px;left:calc(50% - 50px);top:80px}.pitch-lines{display:none}.menu-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.menu-grid button{padding:8px}.menu-grid button b{font-size:11px}.menu-grid button small{font-size:10px}.menu-button-image{max-height:56px}}
 @media(max-width:380px){.pitch .hero-content{padding:16px 12px 10px}.pitch .hero-manager-actions{padding:4px 12px 12px}.hero-action-button{min-height:40px;font-size:10px}.team-emblem{width:52px;height:52px}.hero-stats{gap:10px 14px}.hero-stats small{font-size:9px}.menu-grid{gap:6px}.menu-grid button{padding:6px}.menu-button-image{aspect-ratio:3.5/1;max-height:48px}}
+
+
+/* Версия 2.5.4 — надёжная навигация между страницами */
+#backHome{position:relative;z-index:20;display:inline-flex;align-items:center;gap:6px;min-height:40px;pointer-events:auto;touch-action:manipulation;cursor:pointer}
