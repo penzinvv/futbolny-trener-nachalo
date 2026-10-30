@@ -745,23 +745,38 @@ function openCoachProfile(team,returnView) {
   details.append(safeText("p","ПРОФИЛЬ ТРЕНЕРА","eyebrow"),safeText("h2",team.coach||"Тренер"),safeText("p",team.name,"coach-profile-team"),safeText("p",team.league+" · Сезон "+(state.seasonNumber||1),"muted"));
   head.append(details);
   const isUserTeam=Boolean(team.isUserTeam||team.id===getUserTeam()?.id||team.name===state.teamName);
-  const history=state.careerHistory||{};
-  const officialMatches=isUserTeam&&Array.isArray(history.officialMatches)?history.officialMatches:[];
-  const totals=officialMatches.reduce((acc,match)=>{acc.played++;acc.wins+=match.result==="W"?1:0;acc.draws+=match.result==="D"?1:0;acc.losses+=match.result==="L"?1:0;acc.gf+=Number(match.goalsFor||0);acc.ga+=Number(match.goalsAgainst||0);return acc;},{played:0,wins:0,draws:0,losses:0,gf:0,ga:0});
+  const seasonNumber=Number(state.seasonNumber)||1;
+  const teamMatches=Object.values(state.leagueResults||{}).filter(match=>match&&(match.homeId===team.id||match.awayId===team.id));
+  const currentMatches=teamMatches.filter(match=>Number(match.season||seasonNumber)===seasonNumber);
+  const summarizeMatches=matches=>matches.reduce((acc,match)=>{
+    const home=match.homeId===team.id;
+    const forGoals=Number(home?match.homeScore:match.awayScore)||0;
+    const againstGoals=Number(home?match.awayScore:match.homeScore)||0;
+    acc.played++;acc.wins+=forGoals>againstGoals?1:0;acc.draws+=forGoals===againstGoals?1:0;acc.losses+=forGoals<againstGoals?1:0;
+    acc.gf+=forGoals;acc.ga+=againstGoals;acc.points+=forGoals>againstGoals?3:forGoals===againstGoals?1:0;
+    return acc;
+  },{played:0,wins:0,draws:0,losses:0,gf:0,ga:0,points:0});
+  const careerTotals=summarizeMatches(teamMatches),seasonTotals=summarizeMatches(currentMatches);
+  const leagueRank=(team.league&&typeof getStandingsForLeague==="function"?getStandingsForLeague(team.league,seasonNumber):[]).findIndex(row=>row.team.id===team.id)+1;
   const grid=document.createElement("div");grid.className="cabinet-metrics coach-profile-metrics";
   const metrics=[
     ["Команда",team.name],
     ["Лига",team.league||"—"],
     ["Футболистов",String((team.players||[]).length)+" / 10"],
-    ["Сезон","Сезон "+(state.seasonNumber||1)],
-    ["Матчи",isUserTeam?String(totals.played):"—"],
-    ["Победы / ничьи / поражения",isUserTeam?totals.wins+" / "+totals.draws+" / "+totals.losses:"—"],
-    ["Забито / пропущено",isUserTeam?totals.gf+" / "+totals.ga:"—"],
+    ["Сезон","Сезон "+seasonNumber],
+    ["Матчи в сезоне",String(seasonTotals.played)],
+    ["Победы / ничьи / поражения",seasonTotals.wins+" / "+seasonTotals.draws+" / "+seasonTotals.losses],
+    ["Забито / пропущено",seasonTotals.gf+" / "+seasonTotals.ga],
+    ["Очки тренера в лиге",String(seasonTotals.points)],
+    ["Место в лиге",leagueRank>0?String(leagueRank):"—"],
+    ["Матчи за всю карьеру",String(careerTotals.played)],
+    ["Победы / ничьи / поражения за карьеру",careerTotals.wins+" / "+careerTotals.draws+" / "+careerTotals.losses],
+    ["Забито / пропущено за карьеру",careerTotals.gf+" / "+careerTotals.ga],
     ["Опыт тренера",isUserTeam?(state.xp||0)+" XP":"—"],
     ["Постоянный рейтинг",isUserTeam?String(state.permanentRating||0):"—"]
   ];
-  metrics.forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));grid.append(card);});
-  const note=safeText("p",isUserTeam?"Показатели взяты из текущего сохранения тренера. Официальные результаты будут отражаться после подключения сохранения матчей.":"Профиль тренера команды доступен. Индивидуальная статистика будет отображаться после появления общей официальной истории матчей лиги.","muted");
+  metrics.forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",String(value)));grid.append(card);});
+  const note=safeText("p","Результаты берутся из сохранённых официальных матчей, включая симуляции тура. История доступна в текущем сохранении игры; отдельный серверный архив карьеры пока не подключён.","muted");
   wrap.append(back,head,grid,makeCareerAwardShelf(careerAwardsFor("coach",team.id),"Награды тренера"),note);
   const container=document.querySelector(".team-roster-container");
   if(container)container.replaceChildren(wrap);
@@ -1529,14 +1544,7 @@ function renderLeague() {
  const leagueNames=["Нижняя лига","Верхняя лига"];
  const viewedLeague=leagueNames.includes(state.tournamentViewLeague)?state.tournamentViewLeague:"Нижняя лига";
  const allResults=Object.values(state.leagueResults||{}).filter(r=>Number(r.season||season)===season&&leagueData.teams.find(t=>t.id===r.homeId)?.league===viewedLeague);
- const resultsSection=document.createElement("section");resultsSection.className="panel tournament-results-panel";
- const resultsTitle=document.createElement("div");resultsTitle.className="section-title";resultsTitle.append(safeText("h2","Результаты встреч · "+viewedLeague));
- const otherToggle=matchButton("ДРУГИЕ ВСТРЕЧИ",()=>openPage("otherRoundMatches"),"secondary");otherToggle.classList.add("tournament-inline-link");resultsTitle.append(otherToggle);resultsSection.append(resultsTitle);
- const leaguePlayed=allResults.slice().sort((a,b)=>b.round-a.round||b.day-a.day);
- if(!leaguePlayed.length)resultsSection.append(safeText("p","В этой лиге пока нет завершённых матчей.","muted"));
- leaguePlayed.forEach(r=>{const homeTeam=getTeamForMatch(r.homeId),awayTeam=getTeamForMatch(r.awayId);resultsSection.append(tournamentMatchRow(r.round,{home:homeTeam,away:awayTeam},r,r.homeId===ownId||r.awayId===ownId))});
- if(round&&fixture&&!already){const action=matchButton("ПОДГОТОВИТЬСЯ И ИГРАТЬ СЕГОДНЯ",()=>openPage("match"),"primary");action.classList.add("tournament-play-button");resultsSection.append(action)}
- wrap.append(resultsSection);
+
 
  const standings=document.createElement("section");standings.className="panel standings-panel";
  const standingsHeader=document.createElement("div");standingsHeader.className="section-title";standingsHeader.append(safeText("h2",viewedLeague+" · таблица сезона"));
@@ -1573,7 +1581,17 @@ function renderLeague() {
    const keeperEntry=line.find(x=>x.role==="ВР"),keeper=keeperEntry?.player||keeperEntry;
    if(keeper?.name){const rec=ensurePlayer(data.keepers,keeper.name,team,keeper);rec.played++;rec.extra+=against;if(!against)rec.stat++}
   });
-  (m.playerRatings||m.ratings||[]).forEach(r=>{const name=r.playerName||r.name;const team=r.teamId===home?.id?home:r.teamId===away?.id?away:null;if(name&&team){const rec=ensurePlayer(data.ratings,name,team,{name});rec.stat+=Number(r.rating||0);rec.played++}});
+  (m.playerRatings||m.ratings||[]).forEach(r=>{
+   const name=r.playerName||r.name;
+   const side=r.side==="home"||r.side==="away"?r.side:null;
+   const team=r.teamId===home?.id?home:r.teamId===away?.id?away:side==="home"?home:side==="away"?away:null;
+   if(!name||!team||!Number.isFinite(Number(r.rating)))return;
+   const lineup=team.id===home?.id?lineups.home:lineups.away;
+   const entry=lineup.find(x=>(x.player||x).name===name);
+   const player=entry?.player||entry||{name};
+   const rec=ensurePlayer(data.ratings,name,team,player);
+   rec.stat+=Number(r.rating);rec.played++;
+  });
   [[home,Number(m.homeScore||0),Number(m.awayScore||0)],[away,Number(m.awayScore||0),Number(m.homeScore||0)]].forEach(([team,forG,against])=>{if(!team?.coach)return;const key=team.id+"::"+team.coach;if(!data.coaches.has(key))data.coaches.set(key,{name:team.coach,team,stat:0,played:0});const c=data.coaches.get(key);c.played++;c.stat+=forG>against?3:forG===against?1:0});
  });
  const sorted=map=>[...map.values()].sort((a,b)=>b.stat-a.stat||a.name.localeCompare(b.name,"ru"));
@@ -1590,7 +1608,7 @@ function renderLeague() {
   else{const img=document.createElement("img");img.className="tournament-stat-portrait";img.src=getPortrait(item.player?.portraitIndex||teamsPlayerIndex(item.team,item.player||{name:item.name}));img.alt="";img.loading="lazy";img.onerror=()=>img.remove();row.append(img,makeTournamentPlayerLink(item.name,item.team?.id));const logo=teamLogoSource(item.team);if(logo){const teamLogo=document.createElement("img");teamLogo.className="tournament-team-logo";teamLogo.src=logo;teamLogo.alt="";teamLogo.onerror=()=>teamLogo.remove();row.append(teamLogo)}row.append(safeText("span",displayTeamName(item.team),"tournament-stat-team"))}
   row.append(safeText("b",item.description||String(item.stat)));return row;
  };
- const showStats=i=>{body.replaceChildren();tabs.querySelectorAll("button").forEach((b,j)=>b.classList.toggle("active",i===j));const items=statDefs[i][1]();if(!items.length){body.append(safeText("p",i===2?"Оценки игроков пока не записываются в результаты матчей. Когда система оценок будет сохранять оценки после каждого матча, здесь появится рейтинг лучших игроков.":"Статистика появится после завершённых матчей.","muted"));return}items.slice(0,15).forEach(item=>body.append(renderStatRow(item,i===4?"coach":"player")))};
+ const showStats=i=>{body.replaceChildren();tabs.querySelectorAll("button").forEach((b,j)=>b.classList.toggle("active",i===j));const items=statDefs[i][1]();if(!items.length){body.append(safeText("p",i===2?"После завершённых матчей с сохранёнными оценками здесь появится рейтинг лучших игроков.":"Статистика появится после завершённых матчей.","muted"));return}items.slice(0,15).forEach(item=>body.append(renderStatRow(item,i===4?"coach":"player")))};
  statDefs.forEach((d,i)=>tabs.append(matchButton(d[0],()=>showStats(i),"secondary")));stats.append(tabs,body);wrap.append(stats);showStats(0);
 
  return wrap
