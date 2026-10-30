@@ -296,6 +296,7 @@ const pages = {
   training: {title:"Тренировка", eyebrow:"РАЗВИТИЕ", render: renderTraining},
   upbringing: {title:"Воспитание", eyebrow:"ОТНОШЕНИЯ", render: renderUpbringing},
   league: {title:"Календарь и матчи", eyebrow:"СЕЗОН · ОФИЦИАЛЬНЫЕ МАТЧИ", render: renderLeague},
+  seasonCalendar: {title:"Календарь сезона", eyebrow:"КАЛЕНДАРЬ · ВСЕ 182 ДНЯ", render: renderSeasonCalendar},
   match: {title:"Матч", eyebrow:"ОФИЦИАЛЬНЫЙ ТУР", render: renderMatchPage},
   matchSummary: {title:"Итоги встречи", eyebrow:"ПОСЛЕ МАТЧА", render: renderMatchSummaryPage},
   goals: {title:"Цели тренера", eyebrow:"ПРОГРЕСС", render: () => placeholder("Система уникальных и периодических целей будет добавлена после согласования чисел и списка целей.")},
@@ -525,6 +526,7 @@ document.querySelectorAll("[data-page]").forEach(button => button.addEventListen
 $("openCabinet").addEventListener("click", () => openPage("cabinet"));
 $("backHome").addEventListener("click", () => { $("pageView").classList.add("hidden"); $("dashboard").classList.remove("hidden"); });
 $("skipDayButton")?.addEventListener("click", advanceCoachDay);
+$("seasonCalendarButton")?.addEventListener("click",()=>openPage("seasonCalendar"));
 $("startMatchButton")?.addEventListener("click",()=>openPage("match"));
 
 function makeCareerId() {
@@ -1227,6 +1229,30 @@ function tournamentMatchRow(round,fixture,result,own=false){
  const status=safeText("span",result?(result.simulated?"Симуляция":"Завершён"):"Предстоит","tournament-match-status"+(result?" is-played":""));
  row.append(meta,matchup,status);return row;
 }
+function renderSeasonCalendar(){
+ const wrap=document.createElement("div");wrap.className="season-calendar-page";
+ const season=Number(state.seasonNumber||1),round=officialRoundForDay(Number(state.gameDay)||1);
+ const leagueNames=["Нижняя лига","Верхняя лига"];
+ const ownId=getUserTeam()?.id;
+ const viewedLeague=leagueNames.includes(state.seasonCalendarLeague)?state.seasonCalendarLeague:(getUserTeam()?.league||"Нижняя лига");
+ const header=document.createElement("section");header.className="panel calendar-panel";
+ const heading=document.createElement("div");heading.className="section-title";heading.append(safeText("p",calendarDateText(),"eyebrow"),safeText("h2","Календарь сезона "+season));
+ const leagueToggle=document.createElement("div");leagueToggle.className="tournament-league-toggle";
+ leagueNames.forEach(name=>{const b=matchButton(name.toUpperCase(),()=>{state.seasonCalendarLeague=name;saveState();openPage("seasonCalendar")},"secondary");b.classList.toggle("active",name===viewedLeague);leagueToggle.append(b)});
+ heading.append(leagueToggle);
+ header.append(heading,safeText("p","Нажми на день тура, чтобы посмотреть все матчи этого тура. Дни матчей отмечены зелёным.","muted"));
+ const roundPanel=document.createElement("div");roundPanel.className="tournament-selected-round";const days=document.createElement("div");days.className="season-calendar-grid";
+ let selectedRound=round||1;
+ const showRound=r=>{selectedRound=r;roundPanel.replaceChildren();if(!r){roundPanel.append(safeText("p","В этот день нет официального тура.","muted"));return}roundPanel.append(safeText("h3","Тур "+r+" · День "+officialRoundDay(r)));getOfficialRoundFixtures(r,viewedLeague).forEach(f=>roundPanel.append(tournamentMatchRow(r,f,state.leagueResults?.[roundFixtureKey(r,f)]||null,f.home.id===ownId||f.away.id===ownId)));};
+ for(let day=1;day<=182;day++){
+  const r=officialRoundForDay(day),b=document.createElement("button");b.type="button";b.className="season-calendar-day"+(day===Number(state.gameDay)?" current":"")+(r?" match-day":"")+(day>=71&&day<=101?" break-day":"")+(r&&r===selectedRound?" selected-round-day":"");
+  b.append(safeText("b",String(day)));if(r)b.append(safeText("small","Тур "+r));else if(day>=71&&day<=101)b.append(safeText("small","Перерыв"));else if(day===182)b.append(safeText("small","Финиш"));
+  b.addEventListener("click",()=>{days.querySelectorAll(".season-calendar-day").forEach(el=>el.classList.remove("selected-round-day"));b.classList.add("selected-round-day");showRound(r)});days.append(b)
+ }
+ header.append(days,roundPanel);wrap.append(header);showRound(selectedRound);
+ const back=matchButton("← К ТУРНИРАМ",()=>openPage("league"),"secondary");back.classList.add("calendar-back-button");wrap.append(back);
+ return wrap
+}
 function renderLeague() {
  const wrap=document.createElement("div");wrap.className="league-calendar-view";
  if(!leagueData){wrap.append(placeholder("Загружаю данные лиг…"));return wrap}
@@ -1306,17 +1332,7 @@ function renderLeague() {
   table.append(row);
  });
  standings.append(table);wrap.append(standings);
- const cal=document.createElement("section");cal.className="calendar-panel panel";
- cal.append(safeText("p",calendarDateText(),"eyebrow"),safeText("h2","Календарь сезона "+season),safeText("p","Нажми на день тура, чтобы посмотреть все матчи этого тура. Дни матчей отмечены зелёным.","muted"));
- const roundPanel=document.createElement("div");roundPanel.className="tournament-selected-round";const days=document.createElement("div");days.className="season-calendar-grid";
- let selectedRound=round||1;
- const showRound=r=>{selectedRound=r;roundPanel.replaceChildren();if(!r){roundPanel.append(safeText("p","В этот день нет официального тура.","muted"));return}roundPanel.append(safeText("h3","Тур "+r+" · День "+officialRoundDay(r)));getOfficialRoundFixtures(r,viewedLeague).forEach(f=>roundPanel.append(tournamentMatchRow(r,f,state.leagueResults?.[roundFixtureKey(r,f)]||null,f.home.id===ownId||f.away.id===ownId)));};
- for(let d=1;d<=182;d++){
-  const r=officialRoundForDay(d),b=document.createElement("button");b.type="button";b.className="season-calendar-day"+(d===Number(state.gameDay)?" current":"")+(r?" match-day":"")+(d>=71&&d<=101?" break-day":"")+(r&&r===selectedRound?" selected-round-day":"");
-  b.append(safeText("b",String(d)));if(r)b.append(safeText("small","Тур "+r));else if(d>=71&&d<=101)b.append(safeText("small","Перерыв"));else if(d===182)b.append(safeText("small","Финиш"));
-  b.addEventListener("click",()=>{days.querySelectorAll(".season-calendar-day").forEach(el=>el.classList.remove("selected-round-day"));b.classList.add("selected-round-day");showRound(r)});days.append(b)
- }
- cal.append(days,roundPanel);wrap.append(cal);showRound(selectedRound);
+
  return wrap
 }
 function openPlayerProfile(team,p,index) {
