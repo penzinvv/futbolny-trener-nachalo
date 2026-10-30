@@ -1052,6 +1052,7 @@ function chooseAttackingSide(session){
  const homeP=power(home),awayP=power(away);
  return Math.random()<(homeP/(homeP+awayP||1))?"home":"away";
 }
+function appendMatchEventClubIcon(row,event,home,away){const side=getEventTeamSide(event);const team=side==="home"?home:side==="away"?away:null;const src=teamLogoSource(team);if(!src)return;const img=document.createElement("img");img.src=src;img.alt=team?displayTeamName(team):"";img.title=team?displayTeamName(team):"";img.className="match-event-club-logo";img.onerror=()=>img.remove();row.append(img)}
 function isImportantMatchEvent(event){return Boolean(event&&(event.type==="goal"||event.card==="yellow"||event.card==="red"||event.type==="injury"||event.injury));}
 function getEventTeamSide(event){return event?.type==="goal"?(event.scoringSide||event.side):event?.side||null;}
 function deriveMatchStats(session){const events=session.events||[],stats={home:{shots:0,onTarget:0,possessionMinutes:0},away:{shots:0,onTarget:0,possessionMinutes:0}};const minutes=Math.max(1,Math.min(40,Number(session.minute)||40)),hp=Number(session.matchStats?.home?.possessionMinutes)||0,ap=Number(session.matchStats?.away?.possessionMinutes)||0,total=hp+ap||1;stats.home.possessionMinutes=Math.round(minutes*hp/total);stats.away.possessionMinutes=minutes-stats.home.possessionMinutes;events.forEach(e=>{const side=getEventTeamSide(e);if(!stats[side])return;if(e.shot===true||["goal","save","chance","penalty"].includes(e.type))stats[side].shots++;if(e.onTarget===true||["goal","save"].includes(e.type))stats[side].onTarget++;});["home","away"].forEach(side=>{const goals=events.filter(e=>e.type==="goal"&&getEventTeamSide(e)===side).length;stats[side].shots=Math.max(stats[side].shots,goals);stats[side].onTarget=Math.max(stats[side].onTarget,goals);});return stats;}
@@ -1206,7 +1207,7 @@ function renderMatchSummaryPage(){
  const goals=(result.events||[]).filter(e=>e.type==="goal");
  const goalsPanel=document.createElement("section");goalsPanel.className="panel match-summary-panel";goalsPanel.append(safeText("h2","Голы и ключевые моменты"));
  if(!goals.length)goalsPanel.append(safeText("p","Встреча завершилась без голов.","muted"));
- goals.forEach(e=>{const row=document.createElement("div");row.className="match-summary-goal";row.append(safeText("b",e.minute+"'"),safeText("span","⚽ "+(e.scorer||"Автор гола не указан")+(e.assist?" · пас: "+e.assist:"")));goalsPanel.append(row)});
+ goals.forEach(e=>{const row=document.createElement("div");row.className="match-summary-goal";row.append(safeText("b",e.minute+"'"));appendMatchEventClubIcon(row,e,home,away);row.append(safeText("span","⚽ "+(e.scorer||"Автор гола не указан")+(e.assist?" · пас: "+e.assist:"")));goalsPanel.append(row)});
  const stats=result.stats||{home:{shots:0,onTarget:0,possessionMinutes:0},away:{shots:0,onTarget:0,possessionMinutes:0}};
  const h=stats.home||{},a=stats.away||{},total=(Number(h.possessionMinutes)||0)+(Number(a.possessionMinutes)||0)||1;
  const statsPanel=document.createElement("section");statsPanel.className="panel match-summary-panel";statsPanel.append(safeText("h2","Статистика матча"));
@@ -1232,7 +1233,7 @@ function renderMatchSummaryPage(){
  const spectators=document.createElement("section");spectators.className="panel match-summary-panel";spectators.append(safeText("h2","Что обсуждали на трибунах"));
  (result.spectatorNotes||[]).forEach(note=>spectators.append(safeText("p","💬 "+note,"spectator-note")));
  const eventsPanel=document.createElement("section");eventsPanel.className="panel match-summary-panel";eventsPanel.append(safeText("h2","Важные события матча"));
- (result.events||[]).filter(isImportantMatchEvent).slice().reverse().forEach(e=>{const row=document.createElement("div");row.className="match-summary-event";row.append(safeText("b",e.minute+"'"),safeText("span",e.text));eventsPanel.append(row)});if(!eventsPanel.querySelector(".match-summary-event"))eventsPanel.append(safeText("p","Голов, карточек и травм в матче не было.","muted"));
+ (result.events||[]).filter(isImportantMatchEvent).slice().reverse().forEach(e=>{const row=document.createElement("div");row.className="match-summary-event";row.append(safeText("b",e.minute+"'"));appendMatchEventClubIcon(row,e,home,away);row.append(safeText("span",e.text));eventsPanel.append(row)});if(!eventsPanel.querySelector(".match-summary-event"))eventsPanel.append(safeText("p","Голов, карточек и травм в матче не было.","muted"));
  const growthPanel=document.createElement("section");growthPanel.className="panel match-summary-panel";growthPanel.append(safeText("h2","Развитие футболистов после матча"));if(result.skillGrowth?.length){result.skillGrowth.forEach(change=>{const row=document.createElement("div");row.className="match-summary-event";row.append(safeText("b","+1 "+change.skill),safeText("span",change.playerName+" · "+change.before+" → "+change.after+" · "+change.reason));growthPanel.append(row)})}else growthPanel.append(safeText("p","Показатели не изменились.","muted"));
  const relationPanel=document.createElement("section");relationPanel.className="panel match-summary-panel";relationPanel.append(safeText("h2","Изменения отношений"));
  if(result.relationshipChanges?.length){result.relationshipChanges.forEach(change=>{const row=document.createElement("div");row.className="match-summary-event";row.append(safeText("b",change.delta>0?"+"+change.delta.toFixed(2).replace(".",",")+" п.п.":"0 п.п."),safeText("span",change.playerName+" · "+change.before.toFixed(2).replace(".",",")+"% → "+change.after.toFixed(2).replace(".",",")+"%"+(change.played?" · играл":" · командный бонус")));relationPanel.append(row)})}
@@ -1241,7 +1242,7 @@ function renderMatchSummaryPage(){
  const roundPanel=document.createElement("section");roundPanel.className="panel match-summary-panel";roundPanel.append(safeText("h2","Другие результаты тура"));
  getOfficialRoundFixtures(result.round).forEach(f=>{const key=roundFixtureKey(result.round,f),r=state.leagueResults?.[key];roundPanel.append(tournamentMatchRow(result.round,f,r,f.home.id===ownId||f.away.id===ownId))});
  const actions=document.createElement("div");actions.className="match-summary-actions";actions.append(matchButton("К ТУРНИРНОЙ ТАБЛИЦЕ",()=>openPage("league"),"primary"),matchButton("ВЕРНУТЬСЯ НА ГЛАВНУЮ",()=>{$("pageView").classList.add("hidden");$("dashboard").classList.remove("hidden")},"secondary"));
- wrap.append(actions,roundPanel,header,goalsPanel,statsPanel,lineups,spectators,eventsPanel,relationPanel,growthPanel);return wrap;
+ wrap.append(actions,roundPanel,header,goalsPanel,statsPanel,lineups,spectators,eventsPanel,growthPanel);return wrap;
 }
 function renderMatchPage(){
  const wrap=document.createElement("div");wrap.className="official-match-view";
@@ -1267,14 +1268,14 @@ function renderMatchPage(){
  const eventPanel=document.createElement("section");eventPanel.className="match-events-panel panel";
  eventPanel.append(safeText("h3","ВАЖНЫЕ МОМЕНТЫ"));
  const eventList=document.createElement("div");eventList.className="match-event-list";
- session.events.filter(isImportantMatchEvent).slice().reverse().forEach(ev=>{const row=document.createElement("article");row.className="match-event "+(ev.type||"play");row.append(safeText("b",ev.minute+"'"),safeText("span",ev.text));eventList.append(row)});
+ session.events.filter(isImportantMatchEvent).slice().reverse().forEach(ev=>{const row=document.createElement("article");row.className="match-event "+(ev.type||"play");row.append(safeText("b",ev.minute+"'"));appendMatchEventClubIcon(row,ev,home,away);row.append(safeText("span",ev.text));eventList.append(row)});
  if(!session.events.length)eventList.append(safeText("p","Матч ещё не начался. Нажми «НАЧАТЬ МАТЧ».","muted"));
  eventPanel.append(eventList);
  const spectators=createSpectatorPanel(session,home,away);
  body.append(spectators);
  const pitch=renderTacticalPitch(session,home,away);
  const actions=document.createElement("div");actions.className="match-control-row match-control-row-top";
- if(!session.finished&&!session.halfTime)actions.append(matchButton("▶ НАЧАТЬ МАТЧ",()=>autoAdvanceOfficialMatch(session,home,away),"primary"));
+ if(!session.finished){const label=session.halfTime?"ПЕРЕРЫВ":session.autoPlaying?(session.half===2?"ВТОРОЙ ТАЙМ НАЧАЛСЯ":"ПЕРВЫЙ ТАЙМ НАЧАЛСЯ"):session.half===2?"ВТОРОЙ ТАЙМ НАЧАЛСЯ":"НАЧАТЬ МАТЧ";const statusButton=matchButton(session.autoPlaying||session.halfTime?label:"▶ "+label,()=>{if(!session.autoPlaying&&!session.halfTime)autoAdvanceOfficialMatch(session,home,away)},"primary");statusButton.classList.add("match-status-button");statusButton.disabled=Boolean(session.autoPlaying||session.halfTime);actions.append(statusButton)}
  wrap.append(actions,header,eventPanel,pitch,body);
  if(session.halfTime&&!session.finished){
   const ht=document.createElement("section");ht.className="halftime-panel panel";ht.append(safeText("h2","ПЕРЕРЫВ — ВАЖНЫЕ МОМЕНТЫ ТАЙМА"));
@@ -1300,7 +1301,7 @@ function renderMatchPage(){
     },"secondary");go.disabled=session.substitutions>=3||bench.length===0;row.append(select,go);choices.append(row)
    });
   });
-  ht.append(choices,matchButton("НАЧАТЬ ВТОРОЙ ТАЙМ",()=>{session.halfTime=false;session.half=2;state.officialMatchSession=session;saveState();openPage("match")},"primary"),matchButton("АВТОМАТИЧЕСКИ СЫГРАТЬ ВТОРОЙ ТАЙМ",()=>{session.halfTime=false;session.half=2;session.autoPlaying=false;state.officialMatchSession=session;saveState();autoAdvanceOfficialMatch(session,home,away)},"secondary"));wrap.append(ht)
+  ht.append(choices,matchButton("НАЧАТЬ ВТОРОЙ ТАЙМ",()=>{session.halfTime=false;session.half=2;session.autoPlaying=false;state.officialMatchSession=session;saveState();autoAdvanceOfficialMatch(session,home,away)},"primary"));wrap.insertBefore(ht,header)
  }else if(!session.finished){/* Кнопка запуска находится над табло. */
  }else{
   wrap.append(safeText("h2","Матч завершён"),matchButton("К календарю",()=>openPage("league"),"primary"))
