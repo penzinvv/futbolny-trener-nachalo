@@ -502,3 +502,12 @@
 /* League selector for the shared tournament view. */
 .tournament-league-toggle{display:flex;gap:8px;flex-wrap:wrap}
 .tournament-league-toggle button.active{background:var(--accent,#65dca0);color:#06271b;border-color:var(--accent,#65dca0)}
+
+/* Separate season calendar page and yellow dashboard shortcut. */
+.season-calendar-button{display:block;margin-top:8px;background:#f2c94c!important;color:#29220b!important;border:1px solid #ffe58a!important;font-weight:800}
+.season-calendar-button:hover{filter:brightness(1.06)}
+.season-calendar-page{display:grid;gap:14px}
+.season-calendar-page .calendar-panel{width:100%;min-width:0}
+.season-calendar-page .section-title{align-items:center;gap:12px;flex-wrap:wrap}
+.season-calendar-page .tournament-league-toggle{margin-left:auto}
+.calendar-back-button{justify-self:start}
