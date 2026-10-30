@@ -384,7 +384,7 @@ async function submitOnlineRating(type,button,status,lists) {
 
 const pages = {
   cabinet: {title:"Кабинет тренера", eyebrow:"УПРАВЛЕНИЕ КОМАНДОЙ", render: renderCabinet},
-  players: {title:"Футболисты", eyebrow:"СОСТАВ", render: renderPlayers},
+  players: {title:"Футболисты во дворе", eyebrow:"СОСТАВ КОМАНДЫ", render: renderPlayers},
   mail: {title:"Почта тренера", eyebrow:"СООБЩЕНИЯ И УВЕДОМЛЕНИЯ", render: renderCoachMail},
   training: {title:"Тренировка", eyebrow:"РАЗВИТИЕ", render: renderTraining},
   upbringing: {title:"Воспитание", eyebrow:"ОТНОШЕНИЯ", render: renderUpbringing},
@@ -401,7 +401,7 @@ function renderCabinet() {
   const wrap=document.createElement("div");wrap.className="cabinet-view";
   const tabs=document.createElement("div");tabs.className="cabinet-tabs";tabs.setAttribute("role","tablist");
   const body=document.createElement("div");body.className="cabinet-tab-content";
-  const options=[["overview","Обзор"],["team","Футболисты"],["relations","Отношения"],["stats","Статистика команды"],["table","Турнирная таблица"],["matches","Матчи"],["career","Карьера тренера"]];
+  const options=[["overview","Обзор"],["team","Футболисты"],["stats","Статистика команды"],["table","Турнирная таблица"],["matches","Матчи"],["career","Карьера тренера"]];
   const panel=(title,subtitle)=>{const el=document.createElement("section");el.className="cabinet-panel";el.append(safeText("h2",title),safeText("p",subtitle,"muted"));return el;};
   const renderTab=(key)=>{
     body.replaceChildren();const team=getUserTeam();const roster=team?.players||[];let p;
