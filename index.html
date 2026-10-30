@@ -10,8 +10,9 @@
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <div class="brand"><span class="brand-mark">ФТ</span><div><strong>Футбольный тренер</strong><small>НАЧАЛО · ВЕРСИЯ 2.5.5</small></div></div>
+      <div class="brand"><span class="brand-mark">ФТ</span><div><strong>Футбольный тренер</strong><small>НАЧАЛО · ВЕРСИЯ 2.5.6</small></div></div>
       <div class="topbar-actions">
+        <button id="fullscreenToggle" class="fullscreen-toggle" type="button" aria-pressed="false" title="Развернуть игру на весь экран">⛶ НА ВЕСЬ ЭКРАН</button>
         <button id="musicToggle" class="music-toggle" type="button" aria-pressed="false">♫ Включить радио</button>
         <div class="coach-chip"><img id="coachAvatar" class="avatar avatar-image" src="/images/avatarteam/avatarteam1.jpg" alt="Аватар тренера"><div class="coach-chip-info"><b id="coachNameLabel">Тренер</b><small>Уровень <span id="coachLevel">1</span></small><button id="changeAvatarButton" class="text-button hidden" type="button">Сменить аватар</button></div></div>
       </div>
@@ -47,8 +48,12 @@
           <button id="startMatchButton" class="start-match-button hidden" type="button">НАЧАТЬ МАТЧ</button>
         </div>
         <nav class="hero-manager-actions" aria-label="Быстрые действия тренера">
+          <button data-page="mail" class="hero-action-button" type="button">ПОЧТА</button>
           <button data-page="ratings" class="hero-action-button" type="button">ОНЛАЙН РЕЙТИНГИ</button>
-          <button data-page="players" class="hero-action-button" type="button">ОТНОШЕНИЯ ИГРОКОВ</button>
+          <button data-page="cabinet" class="hero-action-button" type="button">КАБИНЕТ ТРЕНЕРА</button>
+          <button data-page="goals" class="hero-action-button" type="button">ЦЕЛИ ТРЕНЕРА</button>
+          <button data-page="training" class="hero-action-button" type="button">ТРЕНИРОВКИ</button>
+          <button data-page="league" class="hero-action-button" type="button">ТУРНИРЫ</button>
         </nav>
       </div>
 
@@ -70,13 +75,18 @@
             <button data-page="league" aria-label="Турниры"><img class="menu-button-image" src="/images/key/turniry.jpg" alt="Турниры"><b>ТУРНИРЫ</b><small>Турнирная таблица и результаты</small></button>
           </nav>
         </section>
-        <section class="panel">
-          <div class="section-title"><div><p class="eyebrow">ХРОНИКА</p><h2>Последние события</h2></div></div>
-          <div id="eventFeed" class="empty-state"><span>📋</span><b>Пока тихо</b><p>Здесь будут появляться важные события команды.</p></div>
-          <div class="mini-metrics"><div><small>ФОРМА</small><b>—</b></div><div><small>МОРАЛЬ</small><b>—</b></div><div><small>МЕСТО В ЛИГЕ</small><b>—</b></div></div>
+        <section class="panel home-chat-panel" aria-label="Онлайн-чат тренеров">
+          <div class="section-title"><div><p class="eyebrow">СООБЩЕСТВО</p><h2>Онлайн-чат тренеров</h2></div><span id="coachChatStatus" class="chat-status">Подключаемся…</span></div>
+          <div id="coachChatMessages" class="coach-chat-messages" aria-live="polite"><p class="muted">Загружаем сообщения…</p></div>
+          <form id="coachChatForm" class="coach-chat-form">
+            <textarea id="coachChatInput" maxlength="300" rows="2" placeholder="Напиши сообщение…" aria-label="Сообщение в онлайн-чате" required></textarea>
+            <button id="coachChatSend" class="primary" type="submit">ОТПРАВИТЬ</button>
+          </form>
+          <p class="chat-disclaimer">Общайся уважительно. Не публикуй личные данные.</p>
+          <div id="eventFeed" hidden aria-hidden="true"></div>
         </section>
       </div>
-      <footer>Футбольный тренер · Версия 2.5.5</footer>
+      <footer>Футбольный тренер · Версия 2.5.6</footer>
     </section>
 
     <section id="pageView" class="panel page-view hidden">
@@ -88,6 +98,7 @@
   <audio id="backgroundMusic" preload="none"></audio>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/src/app.js"></script>
+  <script src="/src/online-chat.js"></script>
   <script src="/src/cloud-bootstrap.js"></script>
   <script src="/src/expansion.js"></script>
 </body>
