@@ -106,7 +106,7 @@
       setStatus("Не загрузилась библиотека чата");
       return;
     }
-    client = window.supabase.createClient(URL, KEY);
+    client = window.supabase.createClient(URL, KEY, { auth: { storageKey: "football-coach-chat-auth-token" } });
     try {
       await ensureSession();
       await loadMessages();
