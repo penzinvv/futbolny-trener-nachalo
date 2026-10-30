@@ -884,7 +884,6 @@ function finalizeSeasonCareerAwards(season){
   const standings=getStandingsForLeague(league,season);
   standings.slice(0,3).forEach((row,i)=>{
    const rank=i+1,icon="award"+(league==="Верхняя лига"?"liga1":"liga2")+"medal"+rank,caption=rank+" место · "+league+" · сезон "+season;
-   addCareerAward({key:"league-medal:team:"+season+":"+league+":"+rank,recipientType:"team",recipientId:row.team.id,icon,label:rank+" место",caption,season});
    (row.team.players||[]).forEach(p=>addCareerAward({key:"league-medal:player:"+season+":"+league+":"+rank+":"+row.team.id+":"+p.name,recipientType:"player",recipientId:row.team.id,recipientName:p.name,icon,label:rank+" место",caption,season}));
   });
   const winner=standings[0]?.team;
