@@ -620,6 +620,7 @@ function makeTeamRoster(team) {
     const stats=makePlayerSkillSummary(team,p);
     card.append(img,info,makeRelationBadge(team,p),stats); grid.append(card);
   });
+  wrap.append(makeCareerAwardShelf(careerAwardsFor("team",team.id),"Награды команды"));
   wrap.append(grid); return wrap;
 }
 function openCoachProfile(team,returnView) {
@@ -647,7 +648,7 @@ function openCoachProfile(team,returnView) {
   ];
   metrics.forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));grid.append(card);});
   const note=safeText("p",isUserTeam?"Показатели взяты из текущего сохранения тренера. Официальные результаты будут отражаться после подключения сохранения матчей.":"Профиль тренера команды доступен. Индивидуальная статистика будет отображаться после появления общей официальной истории матчей лиги.","muted");
-  wrap.append(back,head,grid,note);
+  wrap.append(back,head,grid,makeCareerAwardShelf(careerAwardsFor("coach",team.id),"Награды тренера"),note);
   const container=document.querySelector(".team-roster-container");
   if(container)container.replaceChildren(wrap);
 }
@@ -716,7 +717,7 @@ function ensureRoundBackgroundResults(round,userFixture,userResult,leagueName="�
   const homeScore=scoreRandomTeam(f.home),awayScore=scoreRandomTeam(f.away),homeLineup=buildOfficialLineup(f.home,"2–2–1"),awayLineup=buildOfficialLineup(f.away,"2–2–1"),events=[];
   const addGoals=(side,team,lineup,count)=>{const forwards=lineup.filter(x=>x.role==="НП"||x.role==="ПЗ"),pool=forwards.length?forwards:lineup;for(let i=0;i<count;i++){const scorer=pool[Math.floor(Math.random()*pool.length)],helpers=lineup.filter(x=>x.player!==scorer?.player),helper=helpers.length?helpers[Math.floor(Math.random()*helpers.length)]:null;events.push({minute:Math.floor(Math.random()*20)+1,type:"goal",side,scorer:scorer?.player.name||"Игрок",assist:helper?.player.name||null,text:"Гол команды "+matchTeamLabel(team)+": "+(scorer?.player.name||"Игрок")+(helper?" (ассист: "+helper.player.name+")":"")})}};
   addGoals("home",f.home,homeLineup,homeScore);addGoals("away",f.away,awayLineup,awayScore);
-  state.leagueResults[key]={season:Number(state.seasonNumber)||1,round,day:officialRoundDay(round),homeId:f.home.id,awayId:f.away.id,homeScore,awayScore,homeLineup,awayLineup,events,simulated:true};
+  const playerRatings=["home","away"].flatMap(side=>(side==="home"?homeLineup:awayLineup).map(entry=>{const p=entry.player||entry,goals=events.filter(ev=>ev.type==="goal"&&ev.side===side&&ev.scorer===p.name).length,assists=events.filter(ev=>ev.type==="goal"&&ev.side===side&&ev.assist===p.name).length;return {playerName:p.name,side,played:true,goals,assists,rating:Math.min(10,6+goals+assists)}}));state.leagueResults[key]={season:Number(state.seasonNumber)||1,round,day:officialRoundDay(round),homeId:f.home.id,awayId:f.away.id,homeScore,awayScore,homeLineup,awayLineup,events,playerRatings,simulated:true};
  });
 }
 function ensureAllLeagueRoundResults(round,userFixture,userResult){
@@ -749,35 +750,7 @@ function awardOfficialMatchRating(result,fixture){
  const key="match:"+String(result.season)+":"+String(result.round)+":"+String(ownId);
  if(!ratingAwardKey(key))return;
  addCoachRatingPoints(ownScore>oppScore?5:ownScore===oppScore?2:0,"official-match");
- if(Number(result.round)%5===0)awardMonthlyBestPlayer(Number(result.season),Number(result.round));
-}
-function awardMonthlyBestPlayer(season,round){
- const own=getUserTeam();if(!own)return;
- const key="monthly-player:"+season+":"+round;if(state.ratingAwardsApplied?.[key])return;
- const stats=new Map(),teamLeague=own.league;
- const matches=Object.values(state.leagueResults||{}).filter(m=>Number(m.season)===season&&Number(m.round)<=round&&leagueData?.teams.find(t=>t.id===m.homeId)?.league===teamLeague);
- matches.forEach(m=>{
-  const matchCounts={home:new Map(),away:new Map()};
-  (m.events||[]).filter(ev=>ev.type==="goal").forEach(ev=>{
-   const side=ev.side;if(!matchCounts[side])return;
-   if(ev.scorer)matchCounts[side].set(ev.scorer,(matchCounts[side].get(ev.scorer)||0)+1);
-   if(ev.assist)matchCounts[side].set(ev.assist,(matchCounts[side].get(ev.assist)||0)+1);
-  });
-  ["home","away"].forEach(side=>{
-   const teamId=side==="home"?m.homeId:m.awayId;
-   const lineup=m[side+"Lineup"]||[];
-   lineup.forEach(entry=>{
-    const p=entry.player||entry,name=p?.name;if(!name)return;
-    const goals=(m.events||[]).filter(ev=>ev.type==="goal"&&ev.side===side&&ev.scorer===name).length;
-    const assists=(m.events||[]).filter(ev=>ev.type==="goal"&&ev.side===side&&ev.assist===name).length;
-    const id=teamId+"::"+name,x=stats.get(id)||{teamId,name,goals:0,assists:0,ratingTotal:0,played:0};
-    x.goals+=goals;x.assists+=assists;x.ratingTotal+=Math.min(10,6+goals+assists);x.played++;stats.set(id,x);
-   });
-  });
- });
- const best=[...stats.values()].sort((x,y)=>(y.ratingTotal/y.played)-(x.ratingTotal/x.played)||y.played-x.played||y.goals-x.goals||y.assists-x.assists||x.name.localeCompare(y.name,"ru"))[0];
- ratingAwardKey(key);
- if(best&&best.teamId===own.id)addCoachRatingPoints(10,"monthly-best-player");
+ if(Number(result.round)%5===0)announceMonthlyAwards(Number(result.season),Number(result.round));
 }
 function awardSeasonRatingBonuses(season){
  const doneKey="season-finalized:"+season;if(state.ratingAwardsApplied?.[doneKey])return;
@@ -803,6 +776,159 @@ function awardSeasonRatingBonuses(season){
  state.careerHistory.seasons=state.careerHistory.seasons||{};
  state.careerHistory.seasons[String(season)]={...(state.careerHistory.seasons[String(season)]||{}),finalRank:rank,placeBonus,seasonRatingBeforeReset:Number(state.seasonRating)||0,finalizedAt:Date.now()};
 }
+
+function ensureCareerAwards(){state.careerAwards=Array.isArray(state.careerAwards)?state.careerAwards:[];return state.careerAwards}
+function addCareerAward(record){
+ const all=ensureCareerAwards();if(!record?.key||all.some(x=>x.key===record.key))return false;
+ all.push({...record,season:Number(record.season)||Number(state.seasonNumber)||1,awardedAt:Date.now()});return true;
+}
+function awardIconPath(icon){
+ const img=document.createElement("img");img.className="career-award-icon";img.alt="";img.loading="lazy";
+ const tries=["/images/awards/"+icon+".png","/images/awards/"+icon+".jpg","/images/awards/"+icon+".webp","/images/rewards/"+icon+".png","/images/"+icon+".png"];let ix=0;
+ img.onerror=()=>{ix++;if(ix<tries.length)img.src=tries[ix];else img.remove()};img.src=tries[0];return img;
+}
+function makeCareerAwardShelf(records,title){
+ const section=document.createElement("section");section.className="career-awards-section";
+ section.append(safeText("h3",title));
+ if(!records.length){section.append(safeText("p","Наград пока нет.","muted"));return section}
+ const grid=document.createElement("div");grid.className="career-awards-grid";
+ records.slice().sort((x,y)=>Number(y.season)-Number(x.season)||Number(y.round||0)-Number(x.round||0)).forEach(item=>{
+  const card=document.createElement("article");card.className="career-award-card";card.append(awardIconPath(item.icon),safeText("b",item.label||"Награда"),safeText("small",item.caption||("Сезон "+item.season)));
+  if(item.result)card.append(safeText("small",item.result));grid.append(card);
+ });section.append(grid);return section;
+}
+function careerAwardsFor(type,id,name){
+ return ensureCareerAwards().filter(x=>x.recipientType===type&&String(x.recipientId)===String(id)&&(name==null||x.recipientName===name));
+}
+function getSeasonCupTeams(season){
+ const teams=(leagueData?.teams||[]).slice().sort((x,y)=>String(x.id).localeCompare(String(y.id),"ru"));
+ if(teams.length!==12)return {entrants:teams.slice(0,8),excluded:teams.slice(8),mode:"fallback"};
+ const start=((Math.max(1,Number(season)||1)-1)%teams.length);
+ const rotated=teams.map((_,i)=>teams[(start+i)%teams.length]);
+ return {entrants:rotated.slice(0,8),excluded:rotated.slice(8),mode:"balanced-40-season-cycle"};
+}
+function seededCupRandom(seed){
+ let x=2166136261;for(const ch of String(seed)){x^=ch.charCodeAt(0);x=Math.imul(x,16777619)}
+ return ()=>{x+=0x6D2B79F5;let t=x;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296}
+}
+function cupTeamPower(team){
+ const roster=team?.players||[];if(!roster.length)return 25;
+ return roster.reduce((n,p)=>n+(["ВР","ЗЩ","ПЗ","НП"].reduce((m,k)=>m+Number(p.skills?.[k]||25),0)/4),0)/roster.length;
+}
+function simulateCupFixture(season,stage,home,away,index){
+ const rand=seededCupRandom("cup:"+season+":"+stage+":"+home.id+":"+away.id+":"+index);
+ const score=team=>{const power=cupTeamPower(team);return Math.max(0,Math.min(6,Math.floor(rand()*3)+Math.floor(power/35)+(rand()<.28?1:0)))};
+ let homeScore=score(home),awayScore=score(away),extraTime=null,penalties=null,winner;
+ if(homeScore===awayScore){
+  const eh=rand()<.45?1:0,ea=rand()<.45?1:0;extraTime={home:eh,away:ea};homeScore+=eh;awayScore+=ea;
+  if(homeScore===awayScore){const ph=3+Math.floor(rand()*3),pa=3+Math.floor(rand()*3);penalties={home:ph,away:pa};if(ph===pa)penalties.home++;winner=penalties.home>penalties.away?home:away;}
+ }
+ winner=winner||(homeScore>awayScore?home:away);
+ return {season,stage,homeId:home.id,awayId:away.id,homeName:matchTeamLabel(home),awayName:matchTeamLabel(away),homeScore,awayScore,extraTime,penalties,winnerId:winner.id,winnerName:matchTeamLabel(winner),day:Number(state.gameDay)||1};
+}
+function cupBracketTeam(id){return (leagueData?.teams||[]).find(t=>t.id===id)||null}
+function simulateCupFriendlyRound(season,stage,excluded){
+ state.cupFriendlyResults=Array.isArray(state.cupFriendlyResults)?state.cupFriendlyResults:[];
+ for(let i=0;i<excluded.length;i+=2){const home=excluded[i],away=excluded[i+1];if(!home||!away)continue;const key=season+":"+stage+":"+home.id+":"+away.id;if(state.cupFriendlyResults.some(x=>x.key===key))continue;const rand=seededCupRandom("friendly:"+key);state.cupFriendlyResults.push({key,season,stage,day:Number(state.gameDay)||1,homeId:home.id,awayId:away.id,homeScore:Math.floor(rand()*4),awayScore:Math.floor(rand()*4),friendly:true})}
+}
+function announceCupDraw(season){
+ state.cupDraws=state.cupDraws&&typeof state.cupDraws==="object"?state.cupDraws:{};
+ if(state.cupDraws[season])return;
+ const draw=getSeasonCupTeams(season),own=getUserTeam(),selected=draw.entrants.some(t=>t.id===own?.id);
+ state.cupDraws[season]={entrants:draw.entrants.map(t=>t.id),excluded:draw.excluded.map(t=>t.id),selected};
+ const names=draw.entrants.map(t=>matchTeamLabel(t)).join(", ");
+ const message="Уважаемые коллеги! Сегодня по утверждённому календарю определены участники кубка «ДОСТАТОК» сезона "+season+". "+(selected?"Ваша команда участвует в розыгрыше.":"Ваша команда в этом сезоне не попала в заявку и сыграет товарищеские матчи с другими командами, не прошедшими отбор.")+" Участники: "+names+". Четвертьфиналы, полуфиналы и финал пройдут в период перерыва между кругами.";
+ publishCoachEventOnce("cup-draw:"+season,"news","Жеребьёвка кубка «ДОСТАТОК»",message,{priority:"high",important:true});
+ saveState();
+}
+function runCupRound(stage){
+ const season=Number(state.seasonNumber)||1;state.cupResults=state.cupResults&&typeof state.cupResults==="object"?state.cupResults:{};
+ const cup=state.cupResults[season]||(state.cupResults[season]={matches:[],championId:null,championName:null});
+ if(cup.matches.some(x=>x.stage===stage))return;
+ const draw=getSeasonCupTeams(season),entrants=draw.entrants,excluded=draw.excluded;
+ let fixtures=[];
+ if(stage==="quarterfinals"){
+  for(let i=0;i<4;i++)fixtures.push([entrants[i],entrants[7-i]]);
+ }else{
+  const prior=stage==="semifinals"?"quarterfinals":"semifinals";
+  const prev=cup.matches.filter(x=>x.stage===prior);
+  const winners=prev.map(x=>cupBracketTeam(x.winnerId)).filter(Boolean);
+  for(let i=0;i<winners.length;i+=2)if(winners[i+1])fixtures.push([winners[i],winners[i+1]]);
+ }
+ const roundMatches=fixtures.map((pair,i)=>simulateCupFixture(season,stage,pair[0],pair[1],i));
+ cup.matches.push(...roundMatches);simulateCupFriendlyRound(season,stage,excluded);
+ const stageName=stage==="quarterfinals"?"Четвертьфиналы":stage==="semifinals"?"Полуфиналы":"Финал";
+ const ownId=getUserTeam()?.id,ownMatch=roundMatches.find(x=>x.homeId===ownId||x.awayId===ownId);
+ if(ownMatch)publishCoachEventOnce("cup-result:"+season+":"+stage+":"+ownId,"news","Кубок «ДОСТАТОК»: "+stageName,ownMatch.homeName+" "+ownMatch.homeScore+":"+ownMatch.awayScore+" "+ownMatch.awayName+(ownMatch.extraTime?" (с учётом дополнительного времени)":"")+(ownMatch.penalties?"; пенальти "+ownMatch.penalties.home+":"+ownMatch.penalties.away:"")+".",{priority:"high",important:true});
+ if(stage==="finals"){
+  const final=roundMatches[0];if(final){cup.championId=final.winnerId;cup.championName=final.winnerName;
+   const winner=cupBracketTeam(final.winnerId),caption="КУБОК «ДОСТАТОК» · СЕЗОН "+season,score=final.homeName+" "+final.homeScore+":"+final.awayScore+" "+final.awayName+(final.extraTime?" · доп. время":"")+(final.penalties?" · пенальти "+final.penalties.home+":"+final.penalties.away:"");
+   addCareerAward({key:"cup-dostatoch:team:"+season,recipientType:"team",recipientId:winner.id,icon:"awardcupdostatok",label:"Кубок «Достаток»",caption,result:score,season});
+   addCareerAward({key:"cup-dostatoch:coach:"+season,recipientType:"coach",recipientId:winner.id,icon:"awardcupdostatok",label:"Кубок «Достаток»",caption,result:score,season});
+   (winner.players||[]).forEach(p=>addCareerAward({key:"cup-dostatoch:player:"+season+":"+winner.id+":"+p.name,recipientType:"player",recipientId:winner.id,recipientName:p.name,icon:"awardcupdostatok",label:"Кубок «Достаток»",caption,result:score,season}));
+   publishCoachEventOnce("cup-champion:"+season,"news","Обладатель кубка «ДОСТАТОК»", "Кубок «ДОСТАТОК» сезона "+season+" выиграла команда "+final.winnerName+". Финальный результат: "+score+". Награда закреплена в профилях команды, тренера и футболистов.",{priority:"high",important:true});
+  }
+ }
+ saveState();
+}
+function getStandingsForLeague(leagueName,season){
+ const teams=allCurrentLeagueTeams(leagueName).map(team=>({team,played:0,w:0,d:0,l:0,gf:0,ga:0,pts:0})),byId=Object.fromEntries(teams.map(x=>[x.team.id,x]));
+ Object.values(state.leagueResults||{}).filter(r=>Number(r.season||state.seasonNumber)===Number(season)).forEach(r=>{const h=byId[r.homeId],a=byId[r.awayId];if(!h||!a)return;h.played++;a.played++;h.gf+=Number(r.homeScore)||0;h.ga+=Number(r.awayScore)||0;a.gf+=Number(r.awayScore)||0;a.ga+=Number(r.homeScore)||0;if(r.homeScore>r.awayScore){h.w++;a.l++;h.pts+=3}else if(r.homeScore<r.awayScore){a.w++;h.l++;a.pts+=3}else{h.d++;a.d++;h.pts++;a.pts++}});
+ return teams.sort((x,y)=>y.pts-x.pts||(y.gf-y.ga)-(x.gf-x.ga)||y.gf-x.gf||x.team.name.localeCompare(y.team.name,"ru"));
+}
+function finalizeSeasonCareerAwards(season){
+ const key="career-season-awards:"+season;if(state.ratingAwardsApplied?.[key])return;
+ const teams=leagueData?.teams||[];if(!teams.length)return;
+ ["Верхняя лига","Нижняя лига"].forEach(league=>{
+  const standings=getStandingsForLeague(league,season);
+  standings.slice(0,3).forEach((row,i)=>{
+   const rank=i+1,icon="award"+(league==="Верхняя лига"?"liga1":"liga2")+"medal"+rank,caption=rank+" место · "+league+" · сезон "+season;
+   addCareerAward({key:"league-medal:team:"+season+":"+league+":"+rank,recipientType:"team",recipientId:row.team.id,icon,label:rank+" место",caption,season});
+   (row.team.players||[]).forEach(p=>addCareerAward({key:"league-medal:player:"+season+":"+league+":"+rank+":"+row.team.id+":"+p.name,recipientType:"player",recipientId:row.team.id,recipientName:p.name,icon,label:rank+" место",caption,season}));
+  });
+  const winner=standings[0]?.team;
+  if(winner){
+   addCareerAward({key:"league-cup:team:"+season+":"+league,recipientType:"team",recipientId:winner.id,icon:league==="Верхняя лига"?"awardliga1cup":"awardliga2cup",label:"Кубок лиги",caption:league+" · сезон "+season,season});
+   addCareerAward({key:"league-cup:coach:"+season+":"+league,recipientType:"coach",recipientId:winner.id,icon:league==="Верхняя лига"?"awardliga1cup":"awardliga2cup",label:"Кубок лиги",caption:league+" · сезон "+season,season});
+  }
+  const stats=new Map();
+  Object.values(state.leagueResults||{}).filter(m=>Number(m.season)===Number(season)&&teams.find(t=>t.id===m.homeId)?.league===league).forEach(m=>{
+   (m.events||[]).filter(ev=>ev.type==="goal").forEach(ev=>{const id=(ev.side==="home"?m.homeId:m.awayId)+"::"+(ev.side==="home"?ev.scorer:ev.scorer);if(!ev.scorer)return;const x=stats.get(id)||{teamId:ev.side==="home"?m.homeId:m.awayId,name:ev.scorer,goals:0,assists:0};x.goals++;stats.set(id,x);if(ev.assist){const aid=x.teamId+"::"+ev.assist,as=stats.get(aid)||{teamId:x.teamId,name:ev.assist,goals:0,assists:0};as.assists++;stats.set(aid,as)}});
+  });
+  const topGoal= [...stats.values()].filter(x=>x.goals>0).sort((x,y)=>y.goals-x.goals||y.assists-x.assists||x.name.localeCompare(y.name,"ru"))[0];
+  const topAssist=[...stats.values()].filter(x=>x.assists>0).sort((x,y)=>y.assists-x.assists||y.goals-x.goals||x.name.localeCompare(y.name,"ru"))[0];
+  [[topGoal,"awardbestgoal"+(league==="Верхняя лига"?"liga1":"liga2"),"Лучший бомбардир"],[topAssist,"awardbestassist"+(league==="Верхняя лига"?"liga1":"liga2"),"Лучший ассистент"]].forEach(([p,icon,label])=>{if(!p)return;addCareerAward({key:"season-individual:"+season+":"+league+":"+label,recipientType:"player",recipientId:p.teamId,recipientName:p.name,icon,label,caption:league+" · сезон "+season,season})});
+ });
+ const own=getUserTeam(),ownRank=own?getStandingsForLeague(own.league,season).findIndex(x=>x.team.id===own.id)+1:0;
+ if(own&&ownRank===1)addCareerAward({key:"best-coach:"+season+":"+own.id,recipientType:"coach",recipientId:own.id,icon:"awardbesttrainerseason",label:"Лучший тренер сезона",caption:"Сезон "+season,season});
+ state.ratingAwardsApplied=state.ratingAwardsApplied||{};state.ratingAwardsApplied[key]=true;saveState();
+}
+function announceMonthlyAwards(season,round){
+ const key="monthly-player:"+season+":"+round;if(state.ratingAwardsApplied?.[key])return;
+ const leagueWinners=[];
+ ["Верхняя лига","Нижняя лига"].forEach(league=>{
+  const eligible=Object.values(state.leagueResults||{}).filter(m=>Number(m.season)===Number(season)&&Number(m.round)>=round-4&&Number(m.round)<=round&&teamsLeagueForMatch(m)===league);
+  const stats=new Map();
+  eligible.forEach(m=>["home","away"].forEach(side=>{
+   const teamId=side==="home"?m.homeId:m.awayId,team=cupBracketTeam(teamId),lineup=m[side+"Lineup"]||[];
+   lineup.forEach(entry=>{const p=entry.player||entry,name=p?.name;if(!name)return;const evs=(m.events||[]).filter(e=>e.type==="goal"&&getEventTeamSide(e)===side),goals=evs.filter(e=>e.scorer===name).length,assists=evs.filter(e=>e.assist===name).length;
+    const stored=(m.playerRatings||[]).find(x=>x.side===side&&x.playerName===name),rating=Number(stored?.rating);const actual=Number.isFinite(rating)&&rating>0?rating:Math.min(10,6+goals+assists);
+    const id=teamId+"::"+name,x=stats.get(id)||{teamId,name,teamName:matchTeamLabel(team),ratingTotal:0,played:0,goals:0,assists:0};x.ratingTotal+=actual;x.played++;x.goals+=goals;x.assists+=assists;stats.set(id,x);
+   });
+  }));
+  const best=[...stats.values()].filter(x=>x.played>0).sort((x,y)=>(y.ratingTotal/y.played)-(x.ratingTotal/x.played)||y.played-x.played||y.goals-x.goals||y.assists-x.assists||x.name.localeCompare(y.name,"ru"))[0];
+  if(best){const team=cupBracketTeam(best.teamId);leagueWinners.push({...best,league,average:Math.round(best.ratingTotal/best.played*100)/100});
+   addCareerAward({key:"monthly-best-player:"+season+":"+round+":"+league,recipientType:"player",recipientId:best.teamId,recipientName:best.name,icon:"awardbestplayermonth",label:"Лучший игрок месяца",caption:"Сезон "+season+" · "+Math.ceil(round/5)+" круговой отрезок",result:"Средняя оценка "+(Math.round(best.ratingTotal/best.played*100)/100).toFixed(2),season,round});
+  }
+ });
+ const own=getUserTeam();if(own&&leagueWinners.some(x=>x.teamId===own.id))addCoachRatingPoints(10,"monthly-best-player");
+ state.ratingAwardsApplied=state.ratingAwardsApplied||{};state.ratingAwardsApplied[key]=true;
+ const msg="Уважаемые коллеги! Награды лучшему футболисту месяца вручены. "+leagueWinners.map(x=>x.league+": "+x.name+" ("+x.teamName+"), средняя оценка за последние пять туров — "+x.average.toFixed(2)+".").join(" ");
+ publishCoachEventOnce("monthly-award-mail:"+season+":"+round,"news","Лучший игрок месяца — туры "+(round-4)+"–"+round,msg,{priority:"high",important:true});
+ saveState();
+}
+function teamsLeagueForMatch(match){return cupBracketTeam(match.homeId)?.league||cupBracketTeam(match.awayId)?.league||""}
+
 function ensureCoachCommunicationState(){state.coachMail=Array.isArray(state.coachMail)?state.coachMail:[];state.coachChronicle=Array.isArray(state.coachChronicle)?state.coachChronicle:[];state.coachMailKeys=state.coachMailKeys&&typeof state.coachMailKeys==="object"?state.coachMailKeys:{}}
 function publishCoachEvent({key,type="news",title,message,priority="normal",day=state.gameDay,season=state.seasonNumber,important=false}){
  ensureCoachCommunicationState();if(!key||state.coachMailKeys[key])return false;state.coachMailKeys[key]=true;
@@ -851,6 +977,7 @@ function advanceCoachDay(){
  if(Number(state.gameDay)>=182){
   const completedSeason=Number(state.seasonNumber)||1;
   awardSeasonRatingBonuses(completedSeason);
+  finalizeSeasonCareerAwards(completedSeason);
   state.careerHistory=state.careerHistory||{officialMatches:[],seasons:{}};
   state.careerHistory.seasons=state.careerHistory.seasons||{};
   state.careerHistory.seasons[String(completedSeason)]={...(state.careerHistory.seasons[String(completedSeason)]||{}),finalRating:Number(state.seasonRating)||0};
@@ -859,6 +986,11 @@ function advanceCoachDay(){
   updateCoachRespect();saveState();render();alert(state.lastCalendarEvent);return
 }
  state.gameDay=Number(state.gameDay||1)+1;
+ const currentSeason=Number(state.seasonNumber)||1;
+ if(state.gameDay===63)announceCupDraw(currentSeason);
+ if(state.gameDay===78)runCupRound("quarterfinals");
+ if(state.gameDay===85)runCupRound("semifinals");
+ if(state.gameDay===92)runCupRound("finals");
  let note="";
  if(state.gameDay===71)note="Начался перерыв между кругами. Следующий тур состоится в день 108.";
  if(state.gameDay===101)note="Перерыв завершён скоро: второй круг начнётся в день 108.";
@@ -1393,7 +1525,7 @@ function openPlayerProfile(team,p,index) {
       });
       body.append(thresholds);
     } else {
-      body.append(safeText("h3","Официальная статистика футболиста"));let played=0,goals=0,assists=0,cleanSheets=0;Object.values(state.leagueResults||{}).filter(m=>Number(m.season||state.seasonNumber)===Number(state.seasonNumber||1)).forEach(m=>{const isHome=m.homeId===team.id,isAway=m.awayId===team.id;if(!isHome&&!isAway)return;const lineup=isHome?(m.homeLineup||[]):(m.awayLineup||[]);if(!lineup.some(x=>(x.player||x).name===p.name))return;played++;(m.events||[]).forEach(ev=>{if(ev.type==="goal"&&ev.scorer===p.name)goals++;if(ev.type==="goal"&&ev.assist===p.name)assists++});if(p.position==="ВР"&&((isHome&&m.awayScore===0)||(isAway&&m.homeScore===0)))cleanSheets++});const grid=document.createElement("div");grid.className="cabinet-metrics";[["Матчи",played],["Голы",goals],["Ассисты",assists],["Матчи на ноль",cleanSheets]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",String(value)));grid.append(card)});body.append(grid);if(!played)body.append(safeText("p","Официальной статистики пока нет. Она появится после сохранения официальных матчей; тестовые матчи не учитываются.","muted"));
+      body.append(makeCareerAwardShelf(careerAwardsFor("player",team.id,p.name),"Награды футболиста"));body.append(safeText("h3","Официальная статистика футболиста"));let played=0,goals=0,assists=0,cleanSheets=0;Object.values(state.leagueResults||{}).filter(m=>Number(m.season||state.seasonNumber)===Number(state.seasonNumber||1)).forEach(m=>{const isHome=m.homeId===team.id,isAway=m.awayId===team.id;if(!isHome&&!isAway)return;const lineup=isHome?(m.homeLineup||[]):(m.awayLineup||[]);if(!lineup.some(x=>(x.player||x).name===p.name))return;played++;(m.events||[]).forEach(ev=>{if(ev.type==="goal"&&ev.scorer===p.name)goals++;if(ev.type==="goal"&&ev.assist===p.name)assists++});if(p.position==="ВР"&&((isHome&&m.awayScore===0)||(isAway&&m.homeScore===0)))cleanSheets++});const grid=document.createElement("div");grid.className="cabinet-metrics";[["Матчи",played],["Голы",goals],["Ассисты",assists],["Матчи на ноль",cleanSheets]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",String(value)));grid.append(card)});body.append(grid);if(!played)body.append(safeText("p","Официальной статистики пока нет. Она появится после сохранения официальных матчей; тестовые матчи не учитываются.","muted"));
     }
   };
   tabItems.forEach(([key,label])=>{const b=document.createElement("button");b.type="button";b.className="player-profile-tab";b.dataset.tab=key;b.setAttribute("role","tab");b.textContent=label;b.addEventListener("click",()=>renderTab(key));tabs.append(b);});
