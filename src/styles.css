@@ -511,3 +511,9 @@
 .season-calendar-page .section-title{align-items:center;gap:12px;flex-wrap:wrap}
 .season-calendar-page .tournament-league-toggle{margin-left:auto}
 .calendar-back-button{justify-self:start}
+
+/* Tournament subpage for fixtures of all teams. */
+.tournament-other-matches-page{display:grid;gap:14px}
+.tournament-other-matches-page .section-title{align-items:center;gap:12px;flex-wrap:wrap}
+.tournament-other-matches-page .tournament-league-toggle{margin-left:auto}
+.tournament-inline-link{white-space:nowrap}
