@@ -297,6 +297,7 @@ const pages = {
   upbringing: {title:"Воспитание", eyebrow:"ОТНОШЕНИЯ", render: renderUpbringing},
   league: {title:"Календарь и матчи", eyebrow:"СЕЗОН · ОФИЦИАЛЬНЫЕ МАТЧИ", render: renderLeague},
   seasonCalendar: {title:"Календарь сезона", eyebrow:"КАЛЕНДАРЬ · ВСЕ 182 ДНЯ", render: renderSeasonCalendar},
+  otherRoundMatches: {title:"Другие встречи", eyebrow:"СЕЗОН · РЕЗУЛЬТАТЫ ВСЕХ КОМАНД", render: renderOtherRoundMatches},
   match: {title:"Матч", eyebrow:"ОФИЦИАЛЬНЫЙ ТУР", render: renderMatchPage},
   matchSummary: {title:"Итоги встречи", eyebrow:"ПОСЛЕ МАТЧА", render: renderMatchSummaryPage},
   goals: {title:"Цели тренера", eyebrow:"ПРОГРЕСС", render: () => placeholder("Система уникальных и периодических целей будет добавлена после согласования чисел и списка целей.")},
@@ -1253,6 +1254,26 @@ function renderSeasonCalendar(){
  const back=matchButton("← К ТУРНИРАМ",()=>openPage("league"),"secondary");back.classList.add("calendar-back-button");wrap.append(back);
  return wrap
 }
+function renderOtherRoundMatches(){
+ const wrap=document.createElement("div");wrap.className="tournament-other-matches-page";
+ const viewedLeague=["Нижняя лига","Верхняя лига"].includes(state.tournamentViewLeague)?state.tournamentViewLeague:"Нижняя лига";
+ const round=officialRoundForDay(Number(state.gameDay)||1);
+ const section=document.createElement("section");section.className="panel tournament-other-matches";
+ const header=document.createElement("div");header.className="section-title";header.append(safeText("h2","Другие встречи · "+viewedLeague));
+ const leagueToggle=document.createElement("div");leagueToggle.className="tournament-league-toggle";
+ ["Нижняя лига","Верхняя лига"].forEach(name=>{const b=matchButton(name.toUpperCase(),()=>{state.tournamentViewLeague=name;saveState();openPage("otherRoundMatches")},"secondary");b.classList.toggle("active",name===viewedLeague);leagueToggle.append(b)});
+ header.append(leagueToggle);section.append(header);
+ for(let r=1;r<=20;r++){
+  const details=document.createElement("details");details.className="tournament-round-details";details.open=r===round;
+  const summary=document.createElement("summary");summary.textContent="Тур "+r+" · День "+officialRoundDay(r);details.append(summary);
+  const list=document.createElement("div");list.className="tournament-round-list";
+  getOfficialRoundFixtures(r,viewedLeague).forEach(f=>{const result=state.leagueResults?.[roundFixtureKey(r,f)]||null;list.append(tournamentMatchRow(r,f,result,f.home.id===getUserTeam()?.id||f.away.id===getUserTeam()?.id))});
+  details.append(list);section.append(details)
+ }
+ wrap.append(section);
+ wrap.append(matchButton("← К ТУРНИРАМ",()=>openPage("league"),"secondary"));
+ return wrap
+}
 function renderLeague() {
  const wrap=document.createElement("div");wrap.className="league-calendar-view";
  if(!leagueData){wrap.append(placeholder("Загружаю данные лиг…"));return wrap}
@@ -1263,21 +1284,29 @@ function renderLeague() {
  const allResults=Object.values(state.leagueResults||{}).filter(r=>Number(r.season||season)===season&&leagueData.teams.find(t=>t.id===r.homeId)?.league===viewedLeague);
  const resultsSection=document.createElement("section");resultsSection.className="panel tournament-results-panel";
  const resultsTitle=document.createElement("div");resultsTitle.className="section-title";resultsTitle.append(safeText("h2","Результаты встреч · "+viewedLeague));
- const otherToggle=document.createElement("a");otherToggle.href="#otherRoundMatches";otherToggle.className="tournament-inline-link";otherToggle.textContent="ДРУГИЕ ВСТРЕЧИ";resultsTitle.append(otherToggle);resultsSection.append(resultsTitle);
+ const otherToggle=matchButton("ДРУГИЕ ВСТРЕЧИ",()=>openPage("otherRoundMatches"),"secondary");otherToggle.classList.add("tournament-inline-link");resultsTitle.append(otherToggle);resultsSection.append(resultsTitle);
  const leaguePlayed=allResults.slice().sort((a,b)=>b.round-a.round||b.day-a.day);
  if(!leaguePlayed.length)resultsSection.append(safeText("p","В этой лиге пока нет завершённых матчей.","muted"));
  leaguePlayed.forEach(r=>{const homeTeam=getTeamForMatch(r.homeId),awayTeam=getTeamForMatch(r.awayId);resultsSection.append(tournamentMatchRow(r.round,{home:homeTeam,away:awayTeam},r,r.homeId===ownId||r.awayId===ownId))});
  if(round&&fixture&&!already){const action=matchButton("ПОДГОТОВИТЬСЯ И ИГРАТЬ СЕГОДНЯ",()=>openPage("match"),"primary");action.classList.add("tournament-play-button");resultsSection.append(action)}
  wrap.append(resultsSection);
- const otherSection=document.createElement("section");otherSection.className="panel tournament-other-matches";otherSection.id="otherRoundMatches";otherSection.append(safeText("h2","Другие встречи"));
- for(let r=1;r<=20;r++){
-  const details=document.createElement("details");details.className="tournament-round-details";if(r===round)details.open=false;
-  const summary=document.createElement("summary");summary.textContent="Тур "+r+" · День "+officialRoundDay(r);details.append(summary);
-  const list=document.createElement("div");list.className="tournament-round-list";
-  getOfficialRoundFixtures(r,viewedLeague).forEach(f=>{const result=state.leagueResults?.[roundFixtureKey(r,f)]||null;list.append(tournamentMatchRow(r,f,result,f.home.id===ownId||f.away.id===ownId))});
-  details.append(list);otherSection.append(details);
- }
- wrap.append(otherSection);
+
+ const standings=document.createElement("section");standings.className="panel standings-panel";
+ const standingsHeader=document.createElement("div");standingsHeader.className="section-title";standingsHeader.append(safeText("h2",viewedLeague+" · таблица сезона"));
+ const leagueToggle=document.createElement("div");leagueToggle.className="tournament-league-toggle";
+ leagueNames.forEach(name=>{const button=matchButton(name.toUpperCase(),()=>{state.tournamentViewLeague=name;saveState();openPage("league")},"secondary");button.classList.toggle("active",name===viewedLeague);button.setAttribute("aria-pressed",String(name===viewedLeague));leagueToggle.append(button)});
+ standingsHeader.append(leagueToggle);standings.append(standingsHeader);
+ const table=document.createElement("div");table.className="league-table";
+ const head=document.createElement("div");head.className="league-table-row league-table-head";
+ ["#","Команда","И","В","Н","П","Мячи","О"].forEach(v=>head.append(safeText("span",v)));table.append(head);
+ getCurrentStandings(viewedLeague).forEach((x,i)=>{
+  const row=document.createElement("div");row.className="league-table-row"+(x.team.isUserTeam?" user-team-row":"");
+  row.append(safeText("span",String(i+1)));
+  const nameCell=document.createElement("div");nameCell.className="league-standing-team";nameCell.append(makeTournamentTeamLink(x.team));row.append(nameCell);
+  [String(x.played),String(x.w),String(x.d),String(x.l),x.gf+":"+x.ga,String(x.pts)].forEach((value,j)=>row.append(safeText(j===5?"b":"span",value)));
+  table.append(row);
+ });
+ standings.append(table);wrap.append(standings);
  const stats=document.createElement("section");stats.className="panel tournament-statistics-panel";stats.append(safeText("h2","Статистика турнира"));
  const tabs=document.createElement("div");tabs.className="tournament-stat-tabs";const body=document.createElement("div");body.className="tournament-stat-body";
  const data={goals:new Map(),assists:new Map(),keepers:new Map(),coaches:new Map(),ratings:new Map()};
@@ -1316,22 +1345,6 @@ function renderLeague() {
  };
  const showStats=i=>{body.replaceChildren();tabs.querySelectorAll("button").forEach((b,j)=>b.classList.toggle("active",i===j));const items=statDefs[i][1]();if(!items.length){body.append(safeText("p",i===2?"Оценки игроков пока не записываются в результаты матчей. Когда система оценок будет сохранять оценки после каждого матча, здесь появится рейтинг лучших игроков.":"Статистика появится после завершённых матчей.","muted"));return}items.slice(0,15).forEach(item=>body.append(renderStatRow(item,i===4?"coach":"player")))};
  statDefs.forEach((d,i)=>tabs.append(matchButton(d[0],()=>showStats(i),"secondary")));stats.append(tabs,body);wrap.append(stats);showStats(0);
- const standings=document.createElement("section");standings.className="panel standings-panel";
- const standingsHeader=document.createElement("div");standingsHeader.className="section-title";standingsHeader.append(safeText("h2",viewedLeague+" · таблица сезона"));
- const leagueToggle=document.createElement("div");leagueToggle.className="tournament-league-toggle";
- leagueNames.forEach(name=>{const button=matchButton(name.toUpperCase(),()=>{state.tournamentViewLeague=name;saveState();openPage("league")},"secondary");button.classList.toggle("active",name===viewedLeague);button.setAttribute("aria-pressed",String(name===viewedLeague));leagueToggle.append(button)});
- standingsHeader.append(leagueToggle);standings.append(standingsHeader);
- const table=document.createElement("div");table.className="league-table";
- const head=document.createElement("div");head.className="league-table-row league-table-head";
- ["#","Команда","И","В","Н","П","Мячи","О"].forEach(v=>head.append(safeText("span",v)));table.append(head);
- getCurrentStandings(viewedLeague).forEach((x,i)=>{
-  const row=document.createElement("div");row.className="league-table-row"+(x.team.isUserTeam?" user-team-row":"");
-  row.append(safeText("span",String(i+1)));
-  const nameCell=document.createElement("div");nameCell.className="league-standing-team";nameCell.append(makeTournamentTeamLink(x.team));row.append(nameCell);
-  [String(x.played),String(x.w),String(x.d),String(x.l),x.gf+":"+x.ga,String(x.pts)].forEach((value,j)=>row.append(safeText(j===5?"b":"span",value)));
-  table.append(row);
- });
- standings.append(table);wrap.append(standings);
 
  return wrap
 }
