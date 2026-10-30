@@ -10,7 +10,7 @@
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <div class="brand"><span class="brand-mark">ФТ</span><div><strong>Футбольный тренер</strong><small>НАЧАЛО · ВЕРСИЯ 2.5.2</small></div></div>
+      <div class="brand"><span class="brand-mark">ФТ</span><div><strong>Футбольный тренер</strong><small>НАЧАЛО · ВЕРСИЯ 2.5.3</small></div></div>
       <div class="topbar-actions">
         <button id="musicToggle" class="music-toggle" type="button" aria-pressed="false">♫ Включить радио</button>
         <div class="coach-chip"><img id="coachAvatar" class="avatar avatar-image" src="/images/avatarteam/avatarteam1.jpg" alt="Аватар тренера"><div class="coach-chip-info"><b id="coachNameLabel">Тренер</b><small>Уровень <span id="coachLevel">1</span></small><button id="changeAvatarButton" class="text-button hidden" type="button">Сменить аватар</button></div></div>
@@ -46,7 +46,14 @@
           <button id="seasonCalendarButton" class="season-calendar-button" type="button">КАЛЕНДАРЬ СЕЗОНА</button>
           <button id="startMatchButton" class="start-match-button hidden" type="button">НАЧАТЬ МАТЧ</button>
         </div>
-        <div class="hero-manager-actions"><button data-page="mail" class="cabinet-button" type="button" aria-label="Почта"><img class="cabinet-button-image" src="/images/key/mailtrener.jpg" alt="Почта"><b>ПОЧТА</b></button><button id="openCabinet" class="cabinet-button" type="button" aria-label="Кабинет тренера"><img class="cabinet-button-image" src="/images/key/kabinettrenera.jpg" alt="Кабинет тренера"><b>КАБИНЕТ</b></button><button data-page="goals" class="cabinet-button" type="button" aria-label="Цели тренера"><img class="cabinet-button-image" src="/images/key/celitrenera.jpg" alt="Цели тренера"><b>ЦЕЛИ ТРЕНЕРА</b></button><button data-page="training" class="cabinet-button" type="button" aria-label="Тренировка игроков"><img class="cabinet-button-image" src="/images/key/trenirovkateam.jpg" alt="Тренировка игроков"><b>ТРЕНИРОВКИ</b></button></div>
+        <nav class="hero-manager-actions" aria-label="Быстрые действия тренера">
+          <button data-page="mail" class="hero-action-button" type="button">ПОЧТА</button>
+          <button data-page="ratings" class="hero-action-button" type="button">ОНЛАЙН РЕЙТИНГИ</button>
+          <button data-page="cabinet" class="hero-action-button" type="button">КАБИНЕТ ТРЕНЕРА</button>
+          <button data-page="goals" class="hero-action-button" type="button">ЦЕЛИ ТРЕНЕРА</button>
+          <button data-page="training" class="hero-action-button" type="button">ТРЕНИРОВКИ</button>
+          <button data-page="players" class="hero-action-button" type="button">ОТНОШЕНИЯ ИГРОКОВ</button>
+        </nav>
       </div>
 
       <div class="stat-grid">
@@ -60,12 +67,15 @@
         <section class="panel">
           <div class="section-title"><div><p class="eyebrow">ДВОР ГОРОДА</p><h2>Управление командой</h2></div><span class="pill">БЕТА</span></div>
           <nav class="menu-grid" aria-label="Главное меню">
+            <button data-page="mail" aria-label="Почта тренера"><img class="menu-button-image" src="/images/key/mailtrener.jpg" alt="Почта"><b>ПОЧТА</b><small>Сообщения и новости</small></button>
+            <button data-page="ratings" aria-label="Онлайн рейтинги"><img class="menu-button-image" src="/images/key/onlainreyting.jpg" alt="Онлайн рейтинги"><b>ОНЛАЙН РЕЙТИНГИ</b><small>Рейтинг тренеров</small></button>
+            <button data-page="cabinet" aria-label="Кабинет тренера"><img class="menu-button-image" src="/images/key/kabinettrenera.jpg" alt="Кабинет тренера"><b>КАБИНЕТ ТРЕНЕРА</b><small>Состав и настройки</small></button>
+            <button data-page="goals" aria-label="Цели тренера"><img class="menu-button-image" src="/images/key/celitrenera.jpg" alt="Цели тренера"><b>ЦЕЛИ ТРЕНЕРА</b><small>Цели и достижения</small></button>
+            <button data-page="training" aria-label="Тренировки"><img class="menu-button-image" src="/images/key/trenirovkateam.jpg" alt="Тренировки"><b>ТРЕНИРОВКИ</b><small>Развитие футболистов</small></button>
+            <button data-page="players" aria-label="Отношения игроков"><img class="menu-button-image" src="/images/key/futbolisty.jpg" alt="Футболисты во дворе"><b>ОТНОШЕНИЯ</b><small>Футболисты во дворе</small></button>
+            <button data-page="freeyard" aria-label="Свободный двор"><img class="menu-button-image" src="/images/key/svobodnyidvor.jpg" alt="Свободный двор"><b>СВОБОДНЫЙ ДВОР</b><small>Свободные молодые футболисты</small></button>
+            <button data-page="transfers" aria-label="Трансферный обмен"><img class="menu-button-image" src="/images/key/transferobmen.jpg" alt="Трансферный обмен"><b>ТРАНСФЕРНЫЙ ОБМЕН</b><small>Обмен игроками между командами</small></button>
             <button data-page="league" aria-label="Турниры"><img class="menu-button-image" src="/images/key/turniry.jpg" alt="Турниры"><b>ТУРНИРЫ</b><small>Турнирная таблица и результаты</small></button>
-            <button data-page="ratings" aria-label="Онлайн рейтинги"><img class="menu-button-image" src="/images/key/onlainreyting.jpg" alt="Онлайн рейтинги"><b>ОНЛАЙН РЕЙТИНГИ</b><small>Общий и сезонный рейтинг тренеров</small></button>
-            <button data-page="upbringing" aria-label="Отношения"><img class="menu-button-image" src="/images/key/vospitanie.jpg" alt="Отношения"><b>ОТНОШЕНИЯ</b><small>Отношения с футболистами</small></button>
-            <button data-page="players" aria-label="Футболисты"><img class="menu-button-image" src="/images/key/futbolisty.jpg" alt="Футболисты"><b>ФУТБОЛИСТЫ</b><small>Состав и профили</small></button>
-            <button data-page="freeyard" aria-label="Свободный двор"><img class="menu-button-image" src="/images/key/svobodnyidvor.jpg" alt="Свободный двор"><b>СВОБОДНЫЙ ДВОР</b><small>Новые футболисты для команды</small></button>
-            <button data-page="transfers" aria-label="Трансферный обмен игроками"><img class="menu-button-image" src="/images/key/transferobmen.jpg" alt="Трансферный обмен игроками"><b>ТРАНСФЕРНЫЙ ОБМЕН ИГРОКАМИ</b><small>Обмен футболистами между командами</small></button>
           </nav>
         </section>
         <section class="panel">
@@ -74,7 +84,7 @@
           <div class="mini-metrics"><div><small>ФОРМА</small><b>—</b></div><div><small>МОРАЛЬ</small><b>—</b></div><div><small>МЕСТО В ЛИГЕ</small><b>—</b></div></div>
         </section>
       </div>
-      <footer>Футбольный тренер · Версия 2.5.2</footer>
+      <footer>Футбольный тренер · Версия 2.5.3</footer>
     </section>
 
     <section id="pageView" class="panel page-view hidden">
