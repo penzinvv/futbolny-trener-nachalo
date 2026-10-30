@@ -58,8 +58,8 @@ Deno.serve(async (req: Request) => {
 
     if (payload?.action === "get-online-ratings") {
       const [xpResult, generalResult] = await Promise.all([
-        admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,awards,xp,general_rating,updated_at").order("xp", { ascending: false }).order("updated_at", { ascending: true }).limit(50),
-        admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,awards,xp,general_rating,updated_at").order("general_rating", { ascending: false }).order("updated_at", { ascending: true }).limit(50)
+        admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,awards,xp,general_rating,updated_at").order("xp", { ascending: false }).order("xp_submitted_at", { ascending: true, nullsFirst: false }).limit(50),
+        admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,awards,xp,general_rating,updated_at").order("general_rating", { ascending: false }).order("general_rating_submitted_at", { ascending: true, nullsFirst: false }).limit(50)
       ]);
       if (xpResult.error) throw xpResult.error;
       if (generalResult.error) throw generalResult.error;
