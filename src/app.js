@@ -198,6 +198,7 @@ async function loadMusicTracksFromGitHub() {
   } catch (error) {
     console.warn("Не удалось обновить список музыки из GitHub; используется встроенный список.", error);
   }
+  renderCoachChronicle();
 }
 const musicPlayer = $("backgroundMusic");
 const musicToggle = $("musicToggle");
@@ -291,7 +292,7 @@ $("setupForm").addEventListener("submit", async (event) => {
 const pages = {
   cabinet: {title:"Кабинет тренера", eyebrow:"УПРАВЛЕНИЕ КОМАНДОЙ", render: renderCabinet},
   players: {title:"Футболисты", eyebrow:"СОСТАВ", render: renderPlayers},
-  mail: {title:"Почта", eyebrow:"СООБЩЕНИЯ", render: () => placeholder("Новых сообщений пока нет.")},
+  mail: {title:"Почта тренера", eyebrow:"СООБЩЕНИЯ И УВЕДОМЛЕНИЯ", render: renderCoachMail},
   training: {title:"Тренировка", eyebrow:"РАЗВИТИЕ", render: renderTraining},
   upbringing: {title:"Воспитание", eyebrow:"ОТНОШЕНИЯ", render: renderUpbringing},
   league: {title:"Календарь и матчи", eyebrow:"СЕЗОН · ОФИЦИАЛЬНЫЕ МАТЧИ", render: renderLeague},
@@ -796,6 +797,32 @@ function awardSeasonRatingBonuses(season){
  state.careerHistory.seasons=state.careerHistory.seasons||{};
  state.careerHistory.seasons[String(season)]={...(state.careerHistory.seasons[String(season)]||{}),finalRank:rank,placeBonus,seasonRatingBeforeReset:Number(state.seasonRating)||0,finalizedAt:Date.now()};
 }
+function ensureCoachCommunicationState(){state.coachMail=Array.isArray(state.coachMail)?state.coachMail:[];state.coachChronicle=Array.isArray(state.coachChronicle)?state.coachChronicle:[];state.coachMailKeys=state.coachMailKeys&&typeof state.coachMailKeys==="object"?state.coachMailKeys:{}}
+function publishCoachEvent({key,type="news",title,message,priority="normal",day=state.gameDay,season=state.seasonNumber,important=false}){
+ ensureCoachCommunicationState();if(!key||state.coachMailKeys[key])return false;state.coachMailKeys[key]=true;
+ const item={id:makeCareerId(),key,type,title,message,priority,important,season:Number(season)||1,day:Number(day)||1,at:Date.now(),read:false,archived:false};
+ state.coachMail.unshift(item);state.coachChronicle.unshift({...item});
+ const normal=state.coachMail.filter(x=>!x.important);if(normal.length>50){const remove=new Set(normal.slice(50).map(x=>x.id));state.coachMail=state.coachMail.filter(x=>!remove.has(x.id))}
+ state.coachChronicle=state.coachChronicle.slice(0,30);saveState();return true
+}
+function publishCoachEventOnce(key,type,title,message,options={}){return publishCoachEvent({key,type,title,message,...options})}
+function renderCoachMail(){
+ ensureCoachCommunicationState();const wrap=document.createElement("div");wrap.className="coach-mail-view";const tabs=document.createElement("div");tabs.className="cabinet-tabs";const body=document.createElement("div");body.className="cabinet-tab-content";let category="inbox";
+ const choices=[["inbox","Входящие"],["news","Новости"],["players","Футболисты"],["archive","Архив"]];
+ const draw=()=>{tabs.replaceChildren();body.replaceChildren();choices.forEach(([id,label])=>{const b=document.createElement("button");b.type="button";b.className="cabinet-tab"+(category===id?" active":"");b.textContent=label;b.addEventListener("click",()=>{category=id;draw()});tabs.append(b)});
+ const items=state.coachMail.filter(x=>category==="archive"?x.archived:!x.archived&&(category==="inbox"||category==="news"&&x.type==="news"||category==="players"&&x.type==="player"));
+ if(!items.length){body.append(placeholder(category==="archive"?"Архив пока пуст.":"Сообщений в этой категории пока нет."));return}
+ items.forEach(item=>{const card=document.createElement("article");card.className="panel";card.style.marginBottom="10px";card.style.padding="14px";if(!item.read)card.style.borderLeft="3px solid var(--accent,#65dca0)";
+ const top=document.createElement("div");top.className="section-title";top.append(safeText("b",item.title),safeText("small","Сезон "+item.season+" · День "+item.day,"muted"));const msg=safeText("p",item.message);msg.style.margin="10px 0";
+ const actions=document.createElement("div");actions.className="button-row";actions.append(B(item.read?"Прочитано":"Отметить прочитанным",()=>{item.read=true;saveState();draw()},"secondary"),B(item.archived?"Вернуть во входящие":"В архив",()=>{item.archived=!item.archived;saveState();draw()},"secondary"));card.append(top,msg,actions);body.append(card)})};
+ wrap.append(tabs,body);draw();return wrap
+}
+function renderCoachChronicle(){
+ ensureCoachCommunicationState();const feed=$("eventFeed");if(!feed)return;feed.replaceChildren();const entries=state.coachChronicle.slice(0,5);
+ if(!entries.length){feed.className="empty-state";feed.append(safeText("span","📋"),safeText("b","Пока тихо"),safeText("p","Здесь будут появляться важные события команды."));return}
+ feed.className="coach-chronicle-list";entries.forEach(item=>{const row=document.createElement("article");row.className="chronicle-item";row.append(safeText("small","С"+item.season+" · День "+item.day,"muted"),safeText("b",item.title),safeText("p",item.message));row.addEventListener("click",()=>openPage("mail"));row.style.cursor="pointer";feed.append(row)});
+ const footer=document.createElement("button");footer.type="button";footer.className="secondary";footer.textContent="Открыть почту тренера";footer.addEventListener("click",()=>openPage("mail"));feed.append(footer)
+}
 function getCurrentStandings(){
  const teams=allCurrentLeagueTeams().map(t=>({team:t,played:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}));
  const byId=Object.fromEntries(teams.map(x=>[x.team.id,x]));
@@ -822,7 +849,7 @@ function advanceCoachDay(){
   state.careerHistory.seasons=state.careerHistory.seasons||{};
   state.careerHistory.seasons[String(completedSeason)]={...(state.careerHistory.seasons[String(completedSeason)]||{}),finalRating:Number(state.seasonRating)||0};
   state.seasonNumber=completedSeason+1;state.gameDay=1;state.seasonRating=0;state.seasonMatchAwards=[];
-  state.lastCalendarEvent="Начался новый сезон "+state.seasonNumber+". Общий рейтинг сохранён; сезонный рейтинг нового сезона начинается с 0.";
+  state.lastCalendarEvent="Начался новый сезон "+state.seasonNumber+". Общий рейтинг сохранён; сезонный рейтинг нового сезона начинается с 0.";publishCoachEventOnce("season-start:"+state.seasonNumber,"news","Начался новый сезон",state.lastCalendarEvent,{priority:"high",important:true});
   updateCoachRespect();saveState();render();alert(state.lastCalendarEvent);return
 }
  state.gameDay=Number(state.gameDay||1)+1;
@@ -830,7 +857,7 @@ function advanceCoachDay(){
  if(state.gameDay===71)note="Начался перерыв между кругами. Следующий тур состоится в день 108.";
  if(state.gameDay===101)note="Перерыв завершён скоро: второй круг начнётся в день 108.";
  if(state.gameDay===182)note="Сезон завершён. Завтра начнётся новый сезон.";
- state.lastCalendarEvent=note;saveState();render();
+ state.lastCalendarEvent=note;if(note)publishCoachEventOnce("calendar:"+state.seasonNumber+":"+state.gameDay,"news","Событие календаря",note);saveState();render();
  if(note)alert(note);
 }
 function matchTeamLabel(team){return team?.isUserTeam?(state.teamName||team.name):team?.name||"Команда"}
@@ -1003,6 +1030,7 @@ function applyOfficialMatchResult(session,home,away){
  result.relationshipChanges=relationshipReport.changes;
  result.playerRatings=calculateMatchPlayerRatings(session);const ownSide=home.id===getUserTeam()?.id?"home":"away";result.skillGrowth=applyPostMatchSkillGrowth(session,ownSide,result);state.leagueResults=state.leagueResults||{};state.leagueResults[roundFixtureKey(session.round,fixture)]=result;
  state.lastMatchReport=result;
+ publishCoachEventOnce("match:"+result.season+":"+result.round+":"+getUserTeam()?.id,"news","Матч завершён",matchTeamLabel(getUserTeam())+" сыграли "+(getUserTeam()?.id===result.homeId?result.homeScore+" : "+result.awayScore:result.awayScore+" : "+result.homeScore)+". Отчёт матча сохранён.",{priority:"high",important:true});
  ensureRoundBackgroundResults(session.round,fixture,result);
  state.careerHistory=state.careerHistory||{officialMatches:[],seasons:{}};
  state.careerHistory.officialMatches=Array.isArray(state.careerHistory.officialMatches)?state.careerHistory.officialMatches:[];
