@@ -178,7 +178,7 @@ function render() {
   $("xpValue").textContent = `${state.xp} XP`;
   $("permanentRating").textContent = state.permanentRating;
   $("seasonRating").textContent = state.seasonRating;
-  $("respectValue").textContent = state.respect;
+  $("respectValue").textContent = updateCoachRespect();
 }
 
 /* Фоновая музыка: случайный порядок без повторов до конца текущего круга.
@@ -715,6 +715,74 @@ function ensureRoundBackgroundResults(round,userFixture,userResult){
   state.leagueResults[key]={season:Number(state.seasonNumber)||1,round,day:officialRoundDay(round),homeId:f.home.id,awayId:f.away.id,homeScore,awayScore,homeLineup,awayLineup,events,simulated:true};
  });
 }
+function addCoachRatingPoints(points,reason=""){
+ const value=Math.max(0,Math.floor(Number(points)||0));if(!value)return;
+ state.permanentRating=Math.max(0,Number(state.permanentRating)||0)+value;
+ state.seasonRating=Math.max(0,Number(state.seasonRating)||0)+value;
+ state.ratingLedger=Array.isArray(state.ratingLedger)?state.ratingLedger:[];
+ state.ratingLedger.push({season:Number(state.seasonNumber)||1,points:value,reason,at:Date.now()});
+}
+function updateCoachRespect(){
+ if(!leagueData?.teams?.length)return Number(state.respect)||0;
+ let total=0,count=0;
+ leagueData.teams.forEach(base=>{
+  let team=base;
+  if(base.isUserTeam)team=getUserTeam()||base;
+  else if(Array.isArray(state.externalRosters?.[base.id]))team={...base,players:state.externalRosters[base.id]};
+  (team.players||[]).forEach(player=>{total+=getPlayerRelation(team,player);count++});
+ });
+ state.respect=count?Math.round((total/count)*100)/100:0;
+ return state.respect;
+}
+function ratingAwardKey(key){state.ratingAwardsApplied=state.ratingAwardsApplied&&typeof state.ratingAwardsApplied==="object"?state.ratingAwardsApplied:{};if(state.ratingAwardsApplied[key])return false;state.ratingAwardsApplied[key]=true;return true}
+function awardOfficialMatchRating(result,fixture){
+ const ownId=getUserTeam()?.id;if(!ownId)return;
+ const ownHome=result.homeId===ownId,ownAway=result.awayId===ownId;if(!ownHome&&!ownAway)return;
+ const ownScore=ownHome?Number(result.homeScore):Number(result.awayScore),oppScore=ownHome?Number(result.awayScore):Number(result.homeScore);
+ const key="match:"+String(result.season)+":"+String(result.round)+":"+String(ownId);
+ if(!ratingAwardKey(key))return;
+ addCoachRatingPoints(ownScore>oppScore?5:ownScore===oppScore?2:0,"official-match");
+ if(Number(result.round)%5===0)awardMonthlyBestPlayer(Number(result.season),Number(result.round));
+}
+function awardMonthlyBestPlayer(season,round){
+ const ownId=getUserTeam()?.id;if(!ownId)return;
+ const key="monthly-player:"+season+":"+round;if(state.ratingAwardsApplied?.[key])return;
+ const stats=new Map();
+ Object.values(state.leagueResults||{}).filter(m=>Number(m.season)===season&&Number(m.round)<=round).forEach(m=>{
+  (m.events||[]).filter(ev=>ev.type==="goal").forEach(ev=>{
+   const side=ev.side,teamId=side==="home"?m.homeId:m.awayId;
+   const add=(name,kind)=>{if(!name)return;const id=teamId+"::"+name;const x=stats.get(id)||{teamId,name,goals:0,assists:0};x[kind]++;stats.set(id,x)};
+   add(ev.scorer,"goals");add(ev.assist,"assists");
+  });
+ });
+ const best=[...stats.values()].sort((x,y)=>(y.goals+y.assists)-(x.goals+x.assists)||y.goals-x.goals||y.assists-x.assists||x.name.localeCompare(y.name,"ru"))[0];
+ ratingAwardKey(key);
+ if(best&&best.teamId===ownId)addCoachRatingPoints(10,"monthly-best-player");
+}
+function awardSeasonRatingBonuses(season){
+ const doneKey="season-finalized:"+season;if(state.ratingAwardsApplied?.[doneKey])return;
+ const own=getUserTeam();if(!own)return;
+ const standings=getCurrentStandings(),rank=standings.findIndex(x=>x.team.id===own.id)+1;
+ const placeBonus=rank===1?30:rank===2?20:rank===3?10:0;
+ if(placeBonus)addCoachRatingPoints(placeBonus,"season-place-"+rank);
+ if(rank===1)addCoachRatingPoints(15,"best-coach-season");
+ const playerStats=new Map();
+ Object.values(state.leagueResults||{}).filter(m=>Number(m.season)===Number(season)).forEach(m=>{
+  (m.events||[]).filter(ev=>ev.type==="goal").forEach(ev=>{
+   const teamId=ev.side==="home"?m.homeId:m.awayId;
+   const add=(name,kind)=>{if(!name)return;const key=teamId+"::"+name;const p=playerStats.get(key)||{teamId,name,goals:0,assists:0};p[kind]++;playerStats.set(key,p)};
+   add(ev.scorer,"goals");add(ev.assist,"assists");
+  });
+ });
+ const scorers=[...playerStats.values()].filter(p=>p.goals>0).sort((x,y)=>y.goals-x.goals||y.assists-x.assists||x.name.localeCompare(y.name,"ru"));
+ const assistants=[...playerStats.values()].filter(p=>p.assists>0).sort((x,y)=>y.assists-x.assists||y.goals-x.goals||x.name.localeCompare(y.name,"ru"));
+ if(scorers[0]?.teamId===own.id)addCoachRatingPoints(15,"league-top-scorer");
+ if(assistants[0]?.teamId===own.id)addCoachRatingPoints(15,"league-top-assistant");
+ ratingAwardKey(doneKey);
+ state.careerHistory=state.careerHistory||{officialMatches:[],seasons:{}};
+ state.careerHistory.seasons=state.careerHistory.seasons||{};
+ state.careerHistory.seasons[String(season)]={...(state.careerHistory.seasons[String(season)]||{}),finalRank:rank,placeBonus,seasonRatingBeforeReset:Number(state.seasonRating)||0,finalizedAt:Date.now()};
+}
 function getCurrentStandings(){
  const teams=allCurrentLeagueTeams().map(t=>({team:t,played:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}));
  const byId=Object.fromEntries(teams.map(x=>[x.team.id,x]));
@@ -734,7 +802,16 @@ function canAdvanceCoachDay(){
 function advanceCoachDay(){
  if(!leagueData){alert("Календарь ещё загружается.");return}
  if(!canAdvanceCoachDay()){alert("Сегодня официальный матч тура. На главной странице появилась кнопка «НАЧАТЬ МАТЧ».");return}
- if(Number(state.gameDay)>=182){state.seasonNumber=(Number(state.seasonNumber)||1)+1;state.gameDay=1;state.seasonRating=0;state.seasonMatchAwards=[];state.lastCalendarEvent="Начался новый сезон "+state.seasonNumber+".";saveState();render();alert(state.lastCalendarEvent);return}
+ if(Number(state.gameDay)>=182){
+  const completedSeason=Number(state.seasonNumber)||1;
+  awardSeasonRatingBonuses(completedSeason);
+  state.careerHistory=state.careerHistory||{officialMatches:[],seasons:{}};
+  state.careerHistory.seasons=state.careerHistory.seasons||{};
+  state.careerHistory.seasons[String(completedSeason)]={...(state.careerHistory.seasons[String(completedSeason)]||{}),finalRating:Number(state.seasonRating)||0};
+  state.seasonNumber=completedSeason+1;state.gameDay=1;state.seasonRating=0;state.seasonMatchAwards=[];
+  state.lastCalendarEvent="Начался новый сезон "+state.seasonNumber+". Общий рейтинг сохранён; сезонный рейтинг нового сезона начинается с 0.";
+  updateCoachRespect();saveState();render();alert(state.lastCalendarEvent);return
+}
  state.gameDay=Number(state.gameDay||1)+1;
  let note="";
  if(state.gameDay===71)note="Начался перерыв между кругами. Следующий тур состоится в день 108.";
@@ -917,6 +994,8 @@ function applyOfficialMatchResult(session,home,away){
  state.careerHistory=state.careerHistory||{officialMatches:[],seasons:{}};
  state.careerHistory.officialMatches=Array.isArray(state.careerHistory.officialMatches)?state.careerHistory.officialMatches:[];
  state.careerHistory.officialMatches.push({season:result.season,round:result.round,day:result.day,at:Date.now(),homeId:home.id,awayId:away.id,homeScore:result.homeScore,awayScore:result.awayScore,goalsFor:home.id===getUserTeam()?.id?result.homeScore:result.awayScore,goalsAgainst:home.id===getUserTeam()?.id?result.awayScore:result.homeScore,result:((home.id===getUserTeam()?.id?result.homeScore-result.awayScore:result.awayScore-result.homeScore)>0)?"W":(result.homeScore===result.awayScore?"D":"L"),events:result.events,substitutions:result.substitutions});
+ awardOfficialMatchRating(result,fixture);
+ updateCoachRespect();
  state.officialMatchSession=null;saveState();render();openPage("matchSummary");
 }
 function buildPostMatchSpectatorNotes(session,home,away){
