@@ -15,7 +15,7 @@ const defaultState = {
 let state = loadState();
 let gameDayTimerInterval = null;
 let leagueData = null;
-fetch("/data/league.json").then(r => { if (!r.ok) throw new Error("Не удалось загрузить данные лиги"); return r.json(); }).then(data => { leagueData = data; simulateScheduledLeagueResultsForDay(Number(state.gameDay)||1); if(END_SEASON_FRIENDLIES[Number(state.gameDay)])simulateEndSeasonFriendlyDay(Number(state.gameDay)); saveState(); if (state.coachName && state.teamName) render(); if (!$("pageView")?.classList.contains("hidden") && $("pageTitle")?.textContent === "Тренировка") openPage("training"); }).catch(err => console.error(err));
+fetch("/data/league.json").then(r => { if (!r.ok) throw new Error("Не удалось загрузить данные лиги"); return r.json(); }).then(data => { leagueData = data; simulateScheduledLeagueResultsForDay(Number(state.gameDay)||1); if(END_SEASON_FRIENDLIES[Number(state.gameDay)])simulateEndSeasonFriendlyDay(Number(state.gameDay)); deliverScheduledCoachMail(Number(state.gameDay)||1); saveState(); if (state.coachName && state.teamName) render(); if (!$("pageView")?.classList.contains("hidden") && $("pageTitle")?.textContent === "Тренировка") openPage("training"); }).catch(err => console.error(err));
 
 const $ = (id) => document.getElementById(id);
 function loadState() {
@@ -1036,7 +1036,7 @@ function currentOfficialFixture(){
 function getTeamForMatch(id){const t=leagueData?.teams.find(x=>x.id===id);return t?.isUserTeam?getUserTeam():t||null}
 function matchPlayerScore(p,role){const s=p?.skills||{};const v=Number(s[role]||0);return Number.isFinite(v)?v:25}
 function buildOfficialLineup(team,formation){
- const roster=(team?.players||[]).slice();if(!roster.length)return [];
+ const roster=(team?.players||[]).filter(player=>!(team?.isUserTeam||team?.id===getUserTeam()?.id)||!isPlayerUnavailable(team,player)).slice();if(!roster.length)return [];
  const used=new Set(),take=(role)=>{let p=roster.find(x=>!used.has(x)&&x.position===role);if(!p)p=roster.find(x=>!used.has(x));if(p)used.add(p);return p};
  const keeper=take("ВР");const roles=MATCH_FORMATIONS[formation]||MATCH_FORMATIONS["2–2–1"];
  const lineup=[];if(keeper)lineup.push({player:keeper,role:"ВР",sentOff:false});
@@ -1045,7 +1045,7 @@ function buildOfficialLineup(team,formation){
 }
 function roundFixtureKey(round,fixture){return officialMatchKey(round,fixture.home,fixture.away)}
 function scoreRandomTeam(team){
- const roster=team?.players||[];const first=roster.find(p=>p.position==="ВР")||roster[0];
+ const roster=(team?.players||[]).filter(player=>!(team?.isUserTeam||team?.id===getUserTeam()?.id)||!isPlayerUnavailable(team,player));const first=roster.find(p=>p.position==="ВР")||roster[0];
  const out=roster.filter(p=>p!==first).slice(0,5);
  const attack=out.reduce((n,p)=>n+matchPlayerScore(p,"НП")*.4+matchPlayerScore(p,"ПЗ")*.35+matchPlayerScore(p,"ЗЩ")*.15,0)/Math.max(1,out.length);
  const defence=out.reduce((n,p)=>n+matchPlayerScore(p,"ЗЩ")*.5+matchPlayerScore(p,"ПЗ")*.2,0)/Math.max(1,out.length);
@@ -1303,9 +1303,9 @@ function announceMonthlyAwards(season,round){
 function teamsLeagueForMatch(match){return cupBracketTeam(match.homeId)?.league||cupBracketTeam(match.awayId)?.league||""}
 
 function ensureCoachCommunicationState(){state.coachMail=Array.isArray(state.coachMail)?state.coachMail:[];state.coachChronicle=Array.isArray(state.coachChronicle)?state.coachChronicle:[];state.coachMailKeys=state.coachMailKeys&&typeof state.coachMailKeys==="object"?state.coachMailKeys:{}}
-function publishCoachEvent({key,type="news",title,message,priority="normal",day=state.gameDay,season=state.seasonNumber,important=false}){
+function publishCoachEvent({key,type="news",title,message,priority="normal",day=state.gameDay,season=state.seasonNumber,important=false,responseType=null,playerKey=null,absenceStartAbsDay=null,absenceReturnAbsDay=null,actionPage=null,actionLabel=null}){
  ensureCoachCommunicationState();if(!key||state.coachMailKeys[key])return false;state.coachMailKeys[key]=true;
- const item={id:makeCareerId(),key,type,title,message,priority,important,season:Number(season)||1,day:Number(day)||1,at:Date.now(),read:false,archived:false};
+ const item={id:makeCareerId(),key,type,title,message,priority,important,season:Number(season)||1,day:Number(day)||1,at:Date.now(),read:false,archived:false,responseType,playerKey,absenceStartAbsDay,absenceReturnAbsDay,actionPage,actionLabel};
  state.coachMail.unshift(item);state.coachChronicle.unshift({...item});
  const normal=state.coachMail.filter(x=>!x.important);if(normal.length>50){const remove=new Set(normal.slice(50).map(x=>x.id));state.coachMail=state.coachMail.filter(x=>!remove.has(x.id))}
  state.coachChronicle=state.coachChronicle.slice(0,30);saveState();return true
@@ -1319,8 +1319,54 @@ function renderCoachMail(){
  if(!items.length){body.append(placeholder(category==="archive"?"Архив пока пуст.":"Сообщений в этой категории пока нет."));return}
  items.forEach(item=>{const card=document.createElement("article");card.className="panel";card.style.marginBottom="10px";card.style.padding="14px";if(!item.read)card.style.borderLeft="3px solid var(--accent,#65dca0)";
  const top=document.createElement("div");top.className="section-title";top.append(safeText("b",item.title),safeText("small","Сезон "+item.season+" · День "+item.day,"muted"));const msg=safeText("p",item.message);msg.style.margin="10px 0";
- const actions=document.createElement("div");actions.className="button-row";actions.append(B(item.read?"Прочитано":"Отметить прочитанным",()=>{item.read=true;saveState();draw()},"secondary"),B(item.archived?"Вернуть во входящие":"В архив",()=>{item.archived=!item.archived;saveState();draw()},"secondary"));card.append(top,msg,actions);body.append(card)})};
+ const actions=document.createElement("div");actions.className="button-row";actions.append(B(item.read?"Прочитано":"Отметить прочитанным",()=>{item.read=true;saveState();draw()},"secondary"),B(item.archived?"Вернуть во входящие":"В архив",()=>{item.archived=!item.archived;saveState();draw()},"secondary"));if(item.responseType==="player_absence_request"&&!item.responseStatus){actions.append(B("Разрешить пропустить матч",()=>{resolvePlayerMailRequest(item,"accept");draw()},"primary"),B("Отказать",()=>{resolvePlayerMailRequest(item,"refuse");draw()},"secondary"),B("Предложить компромисс",()=>{resolvePlayerMailRequest(item,"compromise");draw()},"secondary"));}else if(item.responseType==="player_absence_request"&&item.responseStatus){actions.append(safeText("p",item.responseLabel||"Ответ отправлен","muted"));}if(item.actionPage){actions.append(B(item.actionLabel||"Открыть раздел",()=>openPage(item.actionPage),"secondary"));}card.append(top,msg,actions);body.append(card)})};
  wrap.append(tabs,body);draw();return wrap
+}
+const GAME_DAYS_PER_SEASON=182;
+function absoluteGameDay(season=state.seasonNumber,day=state.gameDay){return (Math.max(1,Number(season)||1)-1)*GAME_DAYS_PER_SEASON+Math.max(1,Number(day)||1)}
+function gameDateFromAbsolute(value){const absolute=Math.max(1,Math.floor(Number(value)||1));return {season:Math.floor((absolute-1)/GAME_DAYS_PER_SEASON)+1,day:((absolute-1)%GAME_DAYS_PER_SEASON)+1}}
+function gameDateLabel(value){const d=gameDateFromAbsolute(value);return "сезон "+d.season+", день "+d.day}
+function getPlayerAbsenceKey(team,player){return playerRelationKey(team,player)}
+function isPlayerUnavailable(team,player,absoluteDay=absoluteGameDay()){const record=state.playerAbsences?.[getPlayerAbsenceKey(team,player)];return Boolean(record&&Number(absoluteDay)>=Number(record.startAbsDay)&&Number(absoluteDay)<Number(record.returnAbsDay))}
+function setPlayerAbsence(team,player,startAbsDay,returnAbsDay,reason){state.playerAbsences=state.playerAbsences&&typeof state.playerAbsences==="object"?state.playerAbsences:{};const key=getPlayerAbsenceKey(team,player);const existing=state.playerAbsences[key];let start=Number(startAbsDay),end=Number(returnAbsDay);if(existing&&Number(existing.returnAbsDay)>start){start=Math.min(start,Number(existing.startAbsDay)||start);end=Math.max(end,Number(existing.returnAbsDay)||end)}state.playerAbsences[key]={playerName:player.name,startAbsDay:start,returnAbsDay:end,reason:reason||"Временно недоступен"};saveState();return state.playerAbsences[key]}
+function nextOfficialMatchDay(afterDay=state.gameDay){const days=LEAGUE_MATCH_DAYS[currentCoachLeague()]||LEAGUE_MATCH_DAYS["Нижняя лига"];return days.find(day=>Number(day)>Number(afterDay))||null}
+function publishScheduledInfoMail(day){
+ const season=Number(state.seasonNumber)||1;
+ if(day===1)publishCoachEventOnce("developer-welcome","news","Добро пожаловать в «Дворовый футбол. Начало»!","Привет, тренер! Добро пожаловать в мир дворового футбола. Собери команду, найди подход к игрокам и докажи, что даже во дворе можно построить что-то большое. Удачи на футбольном поле!",{priority:"high",important:true,day:1,season:1,actionPage:"developer",actionLabel:"О разработчике"});
+ if(day===2)publishCoachEventOnce("league-welcome:"+season,"news","Скоро стартует первый тур!","Уважаемый тренер! Совсем скоро стартует новый сезон лиги. Впереди серьёзные соперники, борьба за место в таблице и возможность показать характер команды. Желаем успешного выступления!",{priority:"normal",day:2,season,actionPage:"league",actionLabel:"Открыть календарь и матчи"});
+ if(day===12)publishCoachEventOnce("scout-general:"+season,"news","Поиск молодых футбольных талантов","Скаутская служба ФК «Динамо-Владивосток» обращает внимание на вашу команду. Возможно, среди футболистов есть молодой игрок с хорошим потенциалом, которому стоит дать шанс проявить себя. Будем рады сотрудничеству.",{priority:"high",important:true,day:12,season,actionPage:"players",actionLabel:"Посмотреть футболистов"});
+ if(day===48)publishCoachEventOnce("cup-notice:"+season,"news","Скоро начнётся кубок «Достаток»","Первые матчи кубка «Достаток» запланированы на 61-й игровой день. Следите за календарём и готовьтесь к предстоящему этапу!",{priority:"normal",day:48,season,actionPage:"cup",actionLabel:"Открыть кубок «Достаток»"});
+}
+function publishScheduledPlayerRequest(day){
+ const team=getUserTeam();if(!team||!Array.isArray(team.players)||!team.players.length)return false;
+ const player=team.players[Math.min(day===4?0:1,team.players.length-1)]||team.players[0];if(!player)return false;
+ const matchDay=nextOfficialMatchDay(day);if(!matchDay)return false;const start=absoluteGameDay(state.seasonNumber,matchDay),end=absoluteGameDay(state.seasonNumber,matchDay+1);
+ const topic=day===4?"Личные проблемы перед ближайшим матчем":"Можно ли пропустить ближайший матч?";
+ const message=day===4?"Привет, тренер. В последнее время у меня непростой период в личной жизни, и мне сложно сосредоточиться на футболе. Можно мне пропустить ближайший матч? Мне нужно немного времени, чтобы прийти в себя.\n\nЕсли ты согласишься, я буду недоступен на "+gameDateLabel(start)+" и вернусь в "+gameDateLabel(end)+". Буду ждать твоего ответа.":"Привет, тренер! Сейчас я активно готовлюсь к экзаменам, и учёба отнимает почти всё свободное время. Можно мне пропустить ближайший матч, чтобы спокойно подготовиться?\n\nЕсли ты согласишься, я буду недоступен на "+gameDateLabel(start)+" и вернусь в "+gameDateLabel(end)+". Спасибо за понимание!";
+ return publishCoachEventOnce("player-request:"+state.seasonNumber+":"+day,"player",topic,player.name+": "+message,{priority:"high",important:true,day,season:state.seasonNumber,responseType:"player_absence_request",playerKey:getPlayerAbsenceKey(team,player),absenceStartAbsDay:start,absenceReturnAbsDay:end});
+}
+function deliverScheduledCoachMail(upToDay=state.gameDay){ensureCoachCommunicationState();[1,2,4,12,19,48].filter(day=>Number(day)<=Number(upToDay)).forEach(day=>{if([1,2,12,48].includes(day))publishScheduledInfoMail(day);else publishScheduledPlayerRequest(day)})}
+function resolvePlayerMailRequest(item,decision){
+ if(!item||item.responseType!=="player_absence_request"||item.responseStatus)return;
+ const team=getUserTeam(),player=team?.players?.find(p=>getPlayerAbsenceKey(team,p)===item.playerKey);
+ if(!team||!player){item.responseStatus="failed";item.responseLabel="Футболист больше не найден в составе.";saveState();return}
+ state.relationships=state.relationships&&typeof state.relationships==="object"?state.relationships:{};
+ const relationKey=playerRelationKey(team,player),current=getPlayerRelation(team,player),now=absoluteGameDay();
+ if(decision==="accept"){
+  state.xp=Math.max(0,Number(state.xp)||0)+150;state.relationships[relationKey]=Math.min(100,current+10);
+  if(Number(item.absenceStartAbsDay)>now)setPlayerAbsence(team,player,Number(item.absenceStartAbsDay),Number(item.absenceReturnAbsDay),"Тренер разрешил пропустить ближайший матч");
+  item.responseLabel="Запрос принят: +150 XP и +10 п. п. отношений."+(Number(item.absenceStartAbsDay)>now?" Футболисту разрешено пропустить матч.":" Дата матча уже прошла — решение не применяется задним числом.");
+ }else{
+  state.relationships[relationKey]=Math.max(0,current-15);item.responseLabel=decision==="compromise"?"Компромисс засчитан как отказ: 0 XP, −15 п. п. отношений.":"Отказ: 0 XP, −15 п. п. отношений.";
+  if(Math.random()<0.5){
+   const existing=state.playerAbsences?.[item.playerKey],activeOrFuture=existing&&Number(existing.returnAbsDay)>now;
+   const start=activeOrFuture?Math.min(now,Number(existing.startAbsDay)||now):now,baseEnd=activeOrFuture?Number(existing.returnAbsDay):now;
+   const absence=setPlayerAbsence(team,player,start,baseEnd+7,"Недоволен решением тренера и хочет отдохнуть от футбола"),returned=gameDateLabel(absence.returnAbsDay);
+   item.responseLabel+=" Сработало событие 50/50: футболист недоступен до "+returned+".";
+   publishCoachEventOnce("player-refusal-absence:"+state.seasonNumber+":"+state.gameDay+":"+item.id,"player","Футболист недоволен решением тренера",player.name+" недоволен решением тренера и хочет отдохнуть от футбола. Он временно недоступен для команды и вернётся в "+returned+".",{priority:"high",important:true,day:state.gameDay,season:state.seasonNumber});
+  }else item.responseLabel+=" Футболист принял решение тренера и продолжит тренироваться.";
+ }
+ item.responseStatus=decision;item.read=true;updateCoachRespect();saveState();render();
 }
 function renderCoachChronicle(){
  ensureCoachCommunicationState();const feed=$("eventFeed");if(!feed)return;feed.replaceChildren();const entries=state.coachChronicle.slice(0,5);
@@ -1385,6 +1431,7 @@ function advanceCoachDay(){
   updateCoachRespect();saveState();render();alert(state.lastCalendarEvent);return
 }
  state.gameDay=Number(state.gameDay||1)+1;
+ deliverScheduledCoachMail(state.gameDay);
  const currentSeason=Number(state.seasonNumber)||1;
  const ownLeague=currentCoachLeague();
  if(state.gameDay===officialRoundDay(9,ownLeague)+1)announceCupDraw(currentSeason);
