@@ -10,10 +10,10 @@
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <div class="brand"><span class="brand-mark">ФТ</span><div><strong>Футбольный тренер</strong><small>НАЧАЛО · ВЕРСИЯ 2.5.7</small></div></div>
+      <div class="brand"><span class="brand-mark">ФТ</span><div><strong>Футбольный тренер</strong><small>НАЧАЛО · ВЕРСИЯ 2.5.8</small></div></div>
       <div class="topbar-actions">
         <button id="fullscreenToggle" class="fullscreen-toggle" type="button" aria-pressed="false" title="Развернуть игру на весь экран">⛶ НА ВЕСЬ ЭКРАН</button>
-        <button id="musicToggle" class="music-toggle" type="button" aria-pressed="false">♫ Включить радио</button>
+        <button id="musicToggle" class="music-toggle" type="button" aria-pressed="true">♫ Радио включено</button>
         <div class="coach-chip"><img id="coachAvatar" class="avatar avatar-image" src="/images/avatarteam/avatarteam1.jpg" alt="Аватар тренера"><div class="coach-chip-info"><b id="coachNameLabel">Тренер</b><small>Уровень <span id="coachLevel">1</span></small><button id="changeAvatarButton" class="text-button hidden" type="button">Сменить аватар</button></div></div>
       </div>
     </header>
@@ -49,11 +49,11 @@
         </div>
         <nav class="hero-manager-actions" aria-label="Быстрые действия тренера">
           <button data-page="mail" class="hero-action-button" type="button">ПОЧТА</button>
-          <button data-page="ratings" class="hero-action-button" type="button">ОНЛАЙН РЕЙТИНГИ</button>
+          <button data-page="ratings" class="hero-action-button" type="button">ТРЕНЕРСКИЙ РЕЙТИНГ</button>
           <button data-page="cabinet" class="hero-action-button" type="button">КАБИНЕТ ТРЕНЕРА</button>
           <button data-page="goals" class="hero-action-button" type="button">ЦЕЛИ ТРЕНЕРА</button>
           <button data-page="training" class="hero-action-button" type="button">ТРЕНИРОВКИ</button>
-          <button data-page="league" class="hero-action-button" type="button">ТУРНИРЫ</button>
+          <button data-page="league" class="hero-action-button" type="button">ЛИГА</button>
         </nav>
       </div>
 
@@ -68,11 +68,15 @@
         <section class="panel">
           <div class="section-title"><div><p class="eyebrow">ДВОР ГОРОДА</p><h2>Выйди во двор и подними уважение к себе</h2></div><span class="pill">БЕТА</span></div>
           <nav class="menu-grid" aria-label="Главное меню">
-            <button data-page="ratings" aria-label="Онлайн рейтинги"><img class="menu-button-image" src="/images/key/onlainreyting.jpg" alt="Онлайн рейтинги"><b>ОНЛАЙН РЕЙТИНГИ</b><small>Рейтинг тренеров</small></button>
-            <button data-page="players" aria-label="Отношения игроков"><img class="menu-button-image" src="/images/key/futbolisty.jpg" alt="Футболисты во дворе"><b>ОТНОШЕНИЯ</b><small>Футболисты во дворе</small></button>
-            <button data-page="freeyard" aria-label="Свободный двор"><img class="menu-button-image" src="/images/key/svobodnyidvor.jpg" alt="Свободный двор"><b>СВОБОДНЫЙ ДВОР</b><small>Свободные молодые футболисты</small></button>
-            <button data-page="transfers" aria-label="Трансферный обмен"><img class="menu-button-image" src="/images/key/transferobmen.jpg" alt="Трансферный обмен"><b>ТРАНСФЕРНЫЙ ОБМЕН</b><small>Обмен игроками между командами</small></button>
-            <button data-page="league" aria-label="Турниры"><img class="menu-button-image" src="/images/key/turniry.jpg" alt="Турниры"><b>ТУРНИРЫ</b><small>Турнирная таблица и результаты</small></button>
+            <button data-page="ratings" aria-label="Тренерский рейтинг"><img class="menu-button-image" src="/images/key/reiting.jpg" alt="Тренерский рейтинг"><b>ТРЕНЕРСКИЙ РЕЙТИНГ</b><small>Рейтинг тренеров</small></button>
+            <button data-page="players" aria-label="Поднять уважение"><img class="menu-button-image" src="/images/key/respect.jpg" alt="Поднять уважение"><b>ПОДНЯТЬ УВАЖЕНИЕ</b><small>Отношения с футболистами</small></button>
+            <button data-page="freeyard" aria-label="Свободный двор"><img class="menu-button-image" src="/images/key/freedvor.jpg" alt="Свободный двор"><b>СВОБОДНЫЙ ДВОР</b><small>Свободные молодые футболисты</small></button>
+            <button data-page="transfers" aria-label="Трансферы"><img class="menu-button-image" src="/images/key/transfer.jpg" alt="Трансферы"><b>ТРАНСФЕРЫ</b><small>Обмен игроками между командами</small></button>
+            <button data-page="league" aria-label="Лига"><img class="menu-button-image" src="/images/key/liga.jpg" alt="Лига"><b>ЛИГА</b><small>Турнирная таблица и результаты</small></button>
+            <button data-page="shop" aria-label="Магазин"><img class="menu-button-image" src="/images/key/shop.jpg" alt="Магазин"><b>МАГАЗИН</b><small>Скоро магазин откроется</small></button>
+            <button data-page="help" aria-label="FAQ Помощь"><img class="menu-button-image" src="/images/key/help.jpg" alt="FAQ Помощь"><b>FAQ / ПОМОЩЬ</b><small>Руководство игрока</small></button>
+            <button data-page="support" aria-label="Ваша поддержка"><img class="menu-button-image" src="/images/key/podderzhka.jpg" alt="Ваша поддержка"><b>ВАША ПОДДЕРЖКА</b><small>Помоги игре развиваться</small></button>
+            <button data-page="developer" aria-label="О разработчике"><img class="menu-button-image" src="/images/key/razrabotchik.jpg" alt="О разработчике"><b>О РАЗРАБОТЧИКЕ</b><small>Кто создаёт игру</small></button>
           </nav>
         </section>
         <section class="panel home-chat-panel" aria-label="Онлайн-чат тренеров">
@@ -86,7 +90,7 @@
           <div id="eventFeed" hidden aria-hidden="true"></div>
         </section>
       </div>
-      <footer>Футбольный тренер · Версия 2.5.7</footer>
+      <footer>Футбольный тренер · Версия 2.5.8</footer>
     </section>
 
     <section id="pageView" class="panel page-view hidden">
