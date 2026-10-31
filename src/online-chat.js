@@ -31,6 +31,25 @@
     updateFullscreenLabel();
   }
 
+  document.querySelectorAll(".sidebar-link").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll(".sidebar-link").forEach((item) => item.classList.remove("is-active"));
+      button.classList.add("is-active");
+    });
+  });
+
+  const collapseButton = $("chatCollapseToggle");
+  const chatPanel = $("homeChatPanel");
+  const chatBody = $("chatPanelBody");
+  if (collapseButton && chatPanel && chatBody) {
+    collapseButton.addEventListener("click", () => {
+      const collapsed = chatPanel.classList.toggle("is-collapsed");
+      collapseButton.setAttribute("aria-expanded", String(!collapsed));
+      collapseButton.setAttribute("aria-label", collapsed ? "Развернуть чат" : "Свернуть чат");
+      collapseButton.textContent = collapsed ? "+" : "−";
+    });
+  }
+
   const form = $("coachChatForm");
   if (!form) return;
   const messages = $("coachChatMessages");
