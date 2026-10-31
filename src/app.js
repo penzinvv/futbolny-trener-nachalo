@@ -275,7 +275,7 @@ function render() {
   const matchOpponentNote=$("nextMatchOpponentNote");
   if(matchUserName) matchUserName.textContent=state.teamName||"Ваша команда";
   if(matchUserLogo) matchUserLogo.src=teamLogoPath(state.teamLogoIndex||1);
-  const upcomingFixture=nextRound?getOfficialRoundFixtures(nextRound).find(f=>f.home?.isUserTeam||f.away?.isUserTeam):null;
+  const upcomingFixture=nextRound?getOfficialRoundFixtures(nextRound,currentCoachLeague()).find(f=>f.home?.isUserTeam||f.away?.isUserTeam):null;
   const upcomingOpponent=upcomingFixture?(upcomingFixture.home?.isUserTeam?upcomingFixture.away:upcomingFixture.home):null;
   if(matchOpponentName) matchOpponentName.textContent=upcomingOpponent?matchTeamLabel(upcomingOpponent):"Расписание обновляется";
   if(matchOpponentLogo){const logo=upcomingOpponent?teamLogoSource(upcomingOpponent):"";matchOpponentLogo.hidden=!logo;if(logo)matchOpponentLogo.src=logo;}
@@ -286,7 +286,7 @@ function render() {
 
   const skipDay = $("skipDayButton"); if(skipDay) skipDay.textContent = Number(state.gameDay)>=182 ? "НАЧАТЬ НОВЫЙ СЕЗОН" : "ПРОПУСТИТЬ ДЕНЬ";
   $("rosterCount").textContent = getUserTeam()?.players?.length || state.players.length || 10;
-  const todayRound=officialRoundForDay(Number(state.gameDay)||1),todayFixture=currentOfficialFixture(),todayKey=todayRound&&todayFixture?roundFixtureKey(todayRound,todayFixture):null;
+  const todayRound=officialRoundForDay(Number(state.gameDay)||1,currentCoachLeague()),todayFixture=currentOfficialFixture(),todayKey=todayRound&&todayFixture?roundFixtureKey(todayRound,todayFixture):null;
   const startMatchButton=$("startMatchButton");
   if(startMatchButton){const due=Boolean(todayRound&&todayFixture&&!state.leagueResults?.[todayKey]);startMatchButton.classList.toggle("hidden",!due);startMatchButton.textContent=due?"НАЧАТЬ МАТЧ · ТУР "+todayRound:"НАЧАТЬ МАТЧ";}
   $("xpValue").textContent = `${state.xp} XP`;
@@ -1004,10 +1004,20 @@ const MATCH_FORMATIONS = {
   "3–1–1": ["ЗЩ","ЗЩ","ЗЩ","ПЗ","НП"]
 };
 function matchButton(label,onClick,cls){const b=document.createElement("button");b.type="button";b.className=cls||"secondary";b.textContent=label;b.addEventListener("click",onClick);return b}
-function officialRoundDay(round){return round<=10?round*7:108+(round-11)*7}
-function officialRoundForDay(day){for(let r=1;r<=20;r++)if(officialRoundDay(r)===day)return r;return 0}
+const LEAGUE_MATCH_DAYS = {
+ "Верхняя лига":[3,6,13,21,29,37,43,47,51,56,80,91,103,108,116,125,131,137,142,148],
+ "Нижняя лига":[5,11,15,20,26,32,35,41,46,52,82,88,96,101,109,112,118,123,129,136]
+};
+const CUP_QUARTERFINAL_DAYS=[61,62,64,65];
+const CUP_SEMIFINAL_DAYS=[68,70];
+const CUP_FINAL_DAY=75;
+const CUP_FRIENDLY_DAYS=[66,72];
+const END_SEASON_FRIENDLIES={153:["Нижняя лига","Верхняя лига"],160:["Нижняя лига","Нижняя лига"],166:["Верхняя лига","Нижняя лига"],172:["Верхняя лига","Верхняя лига"],178:["Нижняя лига","Верхняя лига"]};
+function currentCoachLeague(){return getUserTeam()?.league||state.selectedLeague||"Нижняя лига"}
+function officialRoundDay(round,leagueName=currentCoachLeague()){return (LEAGUE_MATCH_DAYS[leagueName]||LEAGUE_MATCH_DAYS["Нижняя лига"])[Number(round)-1]||0}
+function officialRoundForDay(day,leagueName=currentCoachLeague()){const index=(LEAGUE_MATCH_DAYS[leagueName]||LEAGUE_MATCH_DAYS["Нижняя лига"]).indexOf(Number(day));return index<0?0:index+1}
 function officialMatchKey(round,home,away){return String(state.seasonNumber||1)+"-"+round+"-"+home.id+"-"+away.id}
-function allCurrentLeagueTeams(leagueName="Нижняя лига"){return (leagueData?.teams||[]).filter(t=>t.league===leagueName).map(t=>t.isUserTeam?getUserTeam():t).filter(Boolean)}
+function allCurrentLeagueTeams(leagueName=currentCoachLeague()){return (leagueData?.teams||[]).filter(t=>t.league===leagueName).map(t=>t.isUserTeam?getUserTeam():t).filter(Boolean)}
 function getOfficialRoundFixtures(round,leagueName="Нижняя лига"){
  const teams=allCurrentLeagueTeams(leagueName);if(teams.length<2)return [];
  let base=teams.slice(),rounds=[];
@@ -1020,8 +1030,8 @@ function getOfficialRoundFixtures(round,leagueName="Нижняя лига"){
  return leg%2===0?fixtures:fixtures.map(f=>({home:f.away,away:f.home}));
 }
 function currentOfficialFixture(){
- const round=officialRoundForDay(Number(state.gameDay)||1);if(!round)return null;
- return getOfficialRoundFixtures(round).find(f=>f.home.isUserTeam||f.away.isUserTeam)||null;
+ const leagueName=currentCoachLeague(),round=officialRoundForDay(Number(state.gameDay)||1,leagueName);if(!round)return null;
+ return getOfficialRoundFixtures(round,leagueName).find(f=>f.home.isUserTeam||f.away.isUserTeam)||null;
 }
 function getTeamForMatch(id){const t=leagueData?.teams.find(x=>x.id===id);return t?.isUserTeam?getUserTeam():t||null}
 function matchPlayerScore(p,role){const s=p?.skills||{};const v=Number(s[role]||0);return Number.isFinite(v)?v:25}
@@ -1050,12 +1060,10 @@ function ensureRoundBackgroundResults(round,userFixture,userResult,leagueName="�
   const homeScore=scoreRandomTeam(f.home),awayScore=scoreRandomTeam(f.away),homeLineup=buildOfficialLineup(f.home,"2–2–1"),awayLineup=buildOfficialLineup(f.away,"2–2–1"),events=[];
   const addGoals=(side,team,lineup,count)=>{const forwards=lineup.filter(x=>x.role==="НП"||x.role==="ПЗ"),pool=forwards.length?forwards:lineup;for(let i=0;i<count;i++){const scorer=pool[Math.floor(Math.random()*pool.length)],helpers=lineup.filter(x=>x.player!==scorer?.player),helper=helpers.length?helpers[Math.floor(Math.random()*helpers.length)]:null;events.push({minute:Math.floor(Math.random()*20)+1,type:"goal",side,scorer:scorer?.player.name||"Игрок",assist:helper?.player.name||null,text:"Гол команды "+matchTeamLabel(team)+": "+(scorer?.player.name||"Игрок")+(helper?" (ассист: "+helper.player.name+")":"")})}};
   addGoals("home",f.home,homeLineup,homeScore);addGoals("away",f.away,awayLineup,awayScore);
-  const playerRatings=["home","away"].flatMap(side=>(side==="home"?homeLineup:awayLineup).map(entry=>{const p=entry.player||entry,goals=events.filter(ev=>ev.type==="goal"&&ev.side===side&&ev.scorer===p.name).length,assists=events.filter(ev=>ev.type==="goal"&&ev.side===side&&ev.assist===p.name).length;return {playerName:p.name,side,played:true,goals,assists,rating:Math.min(10,6+goals+assists)}}));state.leagueResults[key]={season:Number(state.seasonNumber)||1,round,day:officialRoundDay(round),homeId:f.home.id,awayId:f.away.id,homeScore,awayScore,homeLineup,awayLineup,events,playerRatings,simulated:true};
+  const playerRatings=["home","away"].flatMap(side=>(side==="home"?homeLineup:awayLineup).map(entry=>{const p=entry.player||entry,goals=events.filter(ev=>ev.type==="goal"&&ev.side===side&&ev.scorer===p.name).length,assists=events.filter(ev=>ev.type==="goal"&&ev.side===side&&ev.assist===p.name).length;return {playerName:p.name,side,played:true,goals,assists,rating:Math.min(10,6+goals+assists)}}));state.leagueResults[key]={season:Number(state.seasonNumber)||1,round,day:officialRoundDay(round,leagueName),homeId:f.home.id,awayId:f.away.id,homeScore,awayScore,homeLineup,awayLineup,events,playerRatings,simulated:true};
  });
 }
-function ensureAllLeagueRoundResults(round,userFixture,userResult){
- ["Нижняя лига","Верхняя лига"].forEach(leagueName=>ensureRoundBackgroundResults(round,userFixture,userResult,leagueName));
-}
+function ensureAllLeagueRoundResults(round,userFixture,userResult){ensureRoundBackgroundResults(round,userFixture,userResult,currentCoachLeague());}
 function addCoachRatingPoints(points,reason=""){
  const value=Math.max(0,Math.floor(Number(points)||0));if(!value)return;
  state.permanentRating=Math.max(0,Number(state.permanentRating)||0)+value;
@@ -1595,7 +1603,7 @@ function renderMatchSummaryPage(){
  else relationPanel.append(safeText("p","Отношения не изменились.","muted"));
  relationPanel.append(safeText("p","Командный бонус: победа +0,50 п.п., ничья +0,25 п.п., поражение +0. Личный бонус: оценка от 7,0 — +0,50 п.п.; лучший игрок матча — ещё +0,50 п.п. Запасные получают командный бонус. Максимум +2 п.п. на игрока за матч.","muted"));
  const roundPanel=document.createElement("section");roundPanel.className="panel match-summary-panel";roundPanel.append(safeText("h2","Другие результаты тура"));
- getOfficialRoundFixtures(result.round).forEach(f=>{const key=roundFixtureKey(result.round,f),r=state.leagueResults?.[key];roundPanel.append(tournamentMatchRow(result.round,f,r,f.home.id===ownId||f.away.id===ownId))});
+ getOfficialRoundFixtures(result.round,getTeamForMatch(result.homeId)?.league||currentCoachLeague()).forEach(f=>{const key=roundFixtureKey(result.round,f),r=state.leagueResults?.[key];roundPanel.append(tournamentMatchRow(result.round,f,r,f.home.id===ownId||f.away.id===ownId))});
  const actions=document.createElement("div");actions.className="match-summary-actions";actions.append(matchButton("К ТУРНИРНОЙ ТАБЛИЦЕ",()=>openPage("league"),"primary"),matchButton("ВЕРНУТЬСЯ НА ГЛАВНУЮ",returnToDashboard,"secondary"));
  wrap.append(actions,roundPanel,header,goalsPanel,statsPanel,lineups,spectators,eventsPanel,growthPanel);return wrap;
 }
@@ -1720,10 +1728,11 @@ function tournamentMatchRow(round,fixture,result,own=false){
 }
 function renderSeasonCalendar(){
  const wrap=document.createElement("div");wrap.className="season-calendar-page";
- const season=Number(state.seasonNumber||1),round=officialRoundForDay(Number(state.gameDay)||1);
+ const season=Number(state.seasonNumber||1);
  const leagueNames=["Нижняя лига","Верхняя лига"];
  const ownId=getUserTeam()?.id;
  const viewedLeague=leagueNames.includes(state.seasonCalendarLeague)?state.seasonCalendarLeague:(getUserTeam()?.league||"Нижняя лига");
+ const round=officialRoundForDay(Number(state.gameDay)||1,viewedLeague);
  const header=document.createElement("section");header.className="panel calendar-panel";
  const heading=document.createElement("div");heading.className="section-title";heading.append(safeText("p",calendarDateText(),"eyebrow"),safeText("h2","Календарь сезона "+season));
  const leagueToggle=document.createElement("div");leagueToggle.className="tournament-league-toggle";
@@ -1734,7 +1743,7 @@ function renderSeasonCalendar(){
  let selectedRound=round||1;
  const showRound=r=>{selectedRound=r;roundPanel.replaceChildren();if(!r){roundPanel.append(safeText("p","В этот день нет официального тура.","muted"));return}roundPanel.append(safeText("h3","Тур "+r+" · День "+officialRoundDay(r)));getOfficialRoundFixtures(r,viewedLeague).forEach(f=>roundPanel.append(tournamentMatchRow(r,f,state.leagueResults?.[roundFixtureKey(r,f)]||null,f.home.id===ownId||f.away.id===ownId)));};
  for(let day=1;day<=182;day++){
-  const r=officialRoundForDay(day),b=document.createElement("button");b.type="button";b.className="season-calendar-day"+(day===Number(state.gameDay)?" current":"")+(r?" match-day":"")+(day>=71&&day<=101?" break-day":"")+(r&&r===selectedRound?" selected-round-day":"");
+  const r=officialRoundForDay(day,viewedLeague),b=document.createElement("button");b.type="button";b.className="season-calendar-day"+(day===Number(state.gameDay)?" current":"")+(r?" match-day":"")+(day>=71&&day<=101?" break-day":"")+(r&&r===selectedRound?" selected-round-day":"");
   b.append(safeText("b",String(day)));if(r)b.append(safeText("small","Тур "+r));else if(day>=71&&day<=101)b.append(safeText("small","Перерыв"));else if(day===182)b.append(safeText("small","Финиш"));
   b.addEventListener("click",()=>{days.querySelectorAll(".season-calendar-day").forEach(el=>el.classList.remove("selected-round-day"));b.classList.add("selected-round-day");showRound(r)});days.append(b)
  }
@@ -1753,7 +1762,7 @@ function renderOtherRoundMatches(){
  header.append(leagueToggle);section.append(header);
  for(let r=1;r<=20;r++){
   const details=document.createElement("details");details.className="tournament-round-details";details.open=r===round;
-  const summary=document.createElement("summary");summary.textContent="Тур "+r+" · День "+officialRoundDay(r);details.append(summary);
+  const summary=document.createElement("summary");summary.textContent="Тур "+r+" · День "+officialRoundDay(r,viewedLeague);details.append(summary);
   const list=document.createElement("div");list.className="tournament-round-list";
   getOfficialRoundFixtures(r,viewedLeague).forEach(f=>{const result=state.leagueResults?.[roundFixtureKey(r,f)]||null;list.append(tournamentMatchRow(r,f,result,f.home.id===getUserTeam()?.id||f.away.id===getUserTeam()?.id))});
   details.append(list);section.append(details)
@@ -1765,10 +1774,11 @@ function renderOtherRoundMatches(){
 function renderLeague() {
  const wrap=document.createElement("div");wrap.className="league-calendar-view";
  if(!leagueData){wrap.append(placeholder("Загружаю данные лиг…"));return wrap}
- const season=Number(state.seasonNumber||1),round=officialRoundForDay(Number(state.gameDay)||1),fixture=currentOfficialFixture(),already=round&&fixture&&state.leagueResults?.[roundFixtureKey(round,fixture)];
+ const season=Number(state.seasonNumber||1),fixture=currentOfficialFixture();
  const ownId=getUserTeam()?.id;
  const leagueNames=["Нижняя лига","Верхняя лига"];
- const viewedLeague=leagueNames.includes(state.tournamentViewLeague)?state.tournamentViewLeague:"Нижняя лига";
+ const viewedLeague=leagueNames.includes(state.tournamentViewLeague)?state.tournamentViewLeague:currentCoachLeague();
+ const round=officialRoundForDay(Number(state.gameDay)||1,viewedLeague),already=round&&fixture&&state.leagueResults?.[roundFixtureKey(round,fixture)];
  const allResults=Object.values(state.leagueResults||{}).filter(r=>Number(r.season||season)===season&&leagueData.teams.find(t=>t.id===r.homeId)?.league===viewedLeague);
 
 
