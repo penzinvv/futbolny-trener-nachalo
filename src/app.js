@@ -250,9 +250,10 @@ function startGameDayTimer() {
 function requestNextGameDay() {
  const started=Number(state.gameDayStartedAt)||0;
  if(started&&Date.now()-started<GAME_DAY_DURATION_MS){updateGameDayTimerUI();return}
+ const beforeDay=Number(state.gameDay),beforeSeason=Number(state.seasonNumber);
  state.gameDayStartedAt=null;saveState();
  advanceCoachDay();
- if(Number(state.gameDayStartedAt)===0||!state.gameDayStartedAt)startGameDayTimer();
+ if(Number(state.gameDay)!==beforeDay||Number(state.seasonNumber)!==beforeSeason)startGameDayTimer();else updateGameDayTimerUI();
 }
 
 function render() {
@@ -786,7 +787,7 @@ document.addEventListener("click", event => {
   const homeButton = target.closest("#backHome, [data-home]");
   if (homeButton) { event.preventDefault(); returnToDashboard(); return; }
   const skipButton = target.closest("#skipDayButton");
-  if (skipButton) { event.preventDefault(); if(!state.gameDayStartedAt){startGameDayTimer();return;} requestNextGameDay(); return; }
+  if (skipButton) { event.preventDefault(); if(!state.gameDayStartedAt){const beforeDay=Number(state.gameDay),beforeSeason=Number(state.seasonNumber);advanceCoachDay();if(Number(state.gameDay)!==beforeDay||Number(state.seasonNumber)!==beforeSeason)startGameDayTimer();return;} requestNextGameDay(); return; }
   const nextDayButton=target.closest("#nextGameDayButton");
   if(nextDayButton){event.preventDefault();requestNextGameDay();return;}
   const calendarButton = target.closest("#seasonCalendarButton");
