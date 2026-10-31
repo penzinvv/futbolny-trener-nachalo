@@ -170,6 +170,19 @@ function render() {
   $("gameDate").textContent = calendarDateText();
   const nextRound = Array.from({length:20},(_,i)=>i+1).find(r=>officialRoundDay(r)>Number(state.gameDay||1)||(officialRoundDay(r)===Number(state.gameDay||1)&&!canAdvanceCoachDay()));
   const nextMatch = $("nextMatchDate"); if(nextMatch) nextMatch.textContent = nextRound ? "День "+officialRoundDay(nextRound) : "Сезон завершён";
+  const matchDayLabel=$("nextMatchDayLabel"), matchRoundLabel=$("nextMatchRoundLabel");
+  const matchUserName=$("nextMatchUserName"), matchOpponentName=$("nextMatchOpponentName");
+  const matchUserLogo=$("nextMatchUserLogo"), matchOpponentLogo=$("nextMatchOpponentLogo");
+  const matchOpponentNote=$("nextMatchOpponentNote");
+  if(matchUserName) matchUserName.textContent=state.teamName||"Ваша команда";
+  if(matchUserLogo) matchUserLogo.src=teamLogoPath(state.teamLogoIndex||1);
+  const upcomingFixture=nextRound?getOfficialRoundFixtures(nextRound).find(f=>f.home?.isUserTeam||f.away?.isUserTeam):null;
+  const upcomingOpponent=upcomingFixture?(upcomingFixture.home?.isUserTeam?upcomingFixture.away:upcomingFixture.home):null;
+  if(matchOpponentName) matchOpponentName.textContent=upcomingOpponent?matchTeamLabel(upcomingOpponent):"Расписание обновляется";
+  if(matchOpponentLogo){const logo=upcomingOpponent?teamLogoSource(upcomingOpponent):"";matchOpponentLogo.hidden=!logo;if(logo)matchOpponentLogo.src=logo;}
+  if(matchOpponentNote) matchOpponentNote.textContent=upcomingOpponent?(upcomingOpponent.league||"Соперник по лиге"):"Проверь календарь сезона";
+  if(matchDayLabel) matchDayLabel.textContent=nextRound?"День "+officialRoundDay(nextRound):"Сезон завершён";
+  if(matchRoundLabel) matchRoundLabel.textContent=nextRound?"Тур "+nextRound:"Нет предстоящих матчей";
   const skipDay = $("skipDayButton"); if(skipDay) skipDay.textContent = Number(state.gameDay)>=182 ? "НАЧАТЬ НОВЫЙ СЕЗОН" : "ПРОПУСТИТЬ ДЕНЬ";
   $("rosterCount").textContent = getUserTeam()?.players?.length || state.players.length || 10;
   const todayRound=officialRoundForDay(Number(state.gameDay)||1),todayFixture=currentOfficialFixture(),todayKey=todayRound&&todayFixture?roundFixtureKey(todayRound,todayFixture):null;
