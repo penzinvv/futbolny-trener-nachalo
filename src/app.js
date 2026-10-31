@@ -1016,9 +1016,9 @@ const END_SEASON_FRIENDLIES={153:["Нижняя лига","Верхняя лиг
 function currentCoachLeague(){return getUserTeam()?.league||state.selectedLeague||"Нижняя лига"}
 function officialRoundDay(round,leagueName=currentCoachLeague()){return (LEAGUE_MATCH_DAYS[leagueName]||LEAGUE_MATCH_DAYS["Нижняя лига"])[Number(round)-1]||0}
 function officialRoundForDay(day,leagueName=currentCoachLeague()){const index=(LEAGUE_MATCH_DAYS[leagueName]||LEAGUE_MATCH_DAYS["Нижняя лига"]).indexOf(Number(day));return index<0?0:index+1}
-function officialMatchKey(round,home,away){const leagueName=home?.league||away?.league||currentCoachLeague();return String(state.seasonNumber||1)+"-"+String(leagueName).replace(/\\s+/g,"-")+"-"+officialRoundDay(round,leagueName)+"-"+round+"-"+home.id+"-"+away.id}
+function officialMatchKey(round,home,away){const leagueName=home?.league||away?.league||currentCoachLeague();return String(state.seasonNumber||1)+"-"+String(leagueName).replace(/\s+/g,"-")+"-"+officialRoundDay(round,leagueName)+"-"+round+"-"+home.id+"-"+away.id}
 function allCurrentLeagueTeams(leagueName=currentCoachLeague()){return (leagueData?.teams||[]).filter(t=>t.league===leagueName).map(t=>t.isUserTeam?getUserTeam():t).filter(Boolean)}
-function getOfficialRoundFixtures(round,leagueName="Нижняя лига"){
+function getOfficialRoundFixtures(round,leagueName=currentCoachLeague()){
  const teams=allCurrentLeagueTeams(leagueName);if(teams.length<2)return [];
  let base=teams.slice(),rounds=[];
  for(let r=0;r<teams.length-1;r++){
@@ -1764,20 +1764,20 @@ function renderSeasonCalendar(){
  header.append(heading,safeText("p","Нажми на день тура, чтобы посмотреть все матчи этого тура. Дни матчей отмечены зелёным.","muted"));
  const roundPanel=document.createElement("div");roundPanel.className="tournament-selected-round";const days=document.createElement("div");days.className="season-calendar-grid";
  let selectedRound=round||1;
- const showRound=r=>{selectedRound=r;roundPanel.replaceChildren();if(!r){roundPanel.append(safeText("p","В этот день нет официального тура.","muted"));return}roundPanel.append(safeText("h3","Тур "+r+" · День "+officialRoundDay(r)));getOfficialRoundFixtures(r,viewedLeague).forEach(f=>roundPanel.append(tournamentMatchRow(r,f,state.leagueResults?.[roundFixtureKey(r,f)]||null,f.home.id===ownId||f.away.id===ownId)));};
+ const showRound=(r,day=Number(state.gameDay)||1)=>{selectedRound=r;roundPanel.replaceChildren();if(!r){let event="В этот день нет запланированного матча лиги.";if(CUP_QUARTERFINAL_DAYS.includes(day))event="Кубок «Достаток»: четвертьфинальный матч.";else if(CUP_SEMIFINAL_DAYS.includes(day))event="Кубок «Достаток»: полуфинальный матч.";else if(day===CUP_FINAL_DAY)event="Кубок «Достаток»: финал.";else if(CUP_FRIENDLY_DAYS.includes(day))event="Товарищеские матчи команд, не участвующих в кубке.";else if(END_SEASON_FRIENDLIES[day])event="Товарищеские матчи: "+END_SEASON_FRIENDLIES[day][0]+" — "+END_SEASON_FRIENDLIES[day][1]+".";else if(day===182)event="Завершение сезона. Следующий сезон начнётся с дня 1.";roundPanel.append(safeText("h3","День "+day),safeText("p",event,"muted"));return}roundPanel.append(safeText("h3","Тур "+r+" · День "+officialRoundDay(r,viewedLeague)));getOfficialRoundFixtures(r,viewedLeague).forEach(f=>roundPanel.append(tournamentMatchRow(r,f,state.leagueResults?.[roundFixtureKey(r,f)]||null,f.home.id===ownId||f.away.id===ownId)));};
  for(let day=1;day<=182;day++){
   const r=officialRoundForDay(day,viewedLeague),cupQuarter=CUP_QUARTERFINAL_DAYS.includes(day),cupSemi=CUP_SEMIFINAL_DAYS.includes(day),cupFinal=day===CUP_FINAL_DAY,cupFriendly=CUP_FRIENDLY_DAYS.includes(day),friendly=Boolean(END_SEASON_FRIENDLIES[day]),b=document.createElement("button");b.type="button";b.className="season-calendar-day"+(day===Number(state.gameDay)?" current":"")+(r?" match-day":"")+((cupQuarter||cupSemi||cupFinal||cupFriendly||friendly)?" cup-day":"")+(r&&r===selectedRound?" selected-round-day":"");
   b.append(safeText("b",String(day)));if(r)b.append(safeText("small","Тур "+r));else if(cupQuarter)b.append(safeText("small","Кубок · 1/4"));else if(cupSemi)b.append(safeText("small","Кубок · 1/2"));else if(cupFinal)b.append(safeText("small","Финал кубка"));else if(cupFriendly)b.append(safeText("small","Тов. матчи"));else if(friendly)b.append(safeText("small","Тов. матчи"));else if(day===182)b.append(safeText("small","Финиш"));
-  b.addEventListener("click",()=>{days.querySelectorAll(".season-calendar-day").forEach(el=>el.classList.remove("selected-round-day"));b.classList.add("selected-round-day");showRound(r)});days.append(b)
+  b.addEventListener("click",()=>{days.querySelectorAll(".season-calendar-day").forEach(el=>el.classList.remove("selected-round-day"));b.classList.add("selected-round-day");showRound(r,day)});days.append(b)
  }
- header.append(days,roundPanel);wrap.append(header);showRound(selectedRound);
+ header.append(days,roundPanel);wrap.append(header);showRound(selectedRound,Number(state.gameDay)||1);
  const back=matchButton("← К ТУРНИРАМ",()=>openPage("league"),"secondary");back.classList.add("calendar-back-button");wrap.append(back);
  return wrap
 }
 function renderOtherRoundMatches(){
  const wrap=document.createElement("div");wrap.className="tournament-other-matches-page";
  const viewedLeague=["Нижняя лига","Верхняя лига"].includes(state.tournamentViewLeague)?state.tournamentViewLeague:"Нижняя лига";
- const round=officialRoundForDay(Number(state.gameDay)||1);
+ const round=officialRoundForDay(Number(state.gameDay)||1,viewedLeague);
  const section=document.createElement("section");section.className="panel tournament-other-matches";
  const header=document.createElement("div");header.className="section-title";header.append(safeText("h2","Другие встречи · "+viewedLeague));
  const leagueToggle=document.createElement("div");leagueToggle.className="tournament-league-toggle";
