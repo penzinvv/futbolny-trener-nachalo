@@ -1216,7 +1216,7 @@ function announceCupDraw(season){
 function runCupRound(stage,matchIndex=0){
  const season=Number(state.seasonNumber)||1;state.cupResults=state.cupResults&&typeof state.cupResults==="object"?state.cupResults:{};
  const cup=state.cupResults[season]||(state.cupResults[season]={matches:[],championId:null,championName:null});
- if(cup.matches.some(x=>x.stage===stage&&Number(x.bracketIndex||0)===Number(matchIndex)))return;
+ if(cup.matches.some(x=>x.stage===stage&&(x.bracketIndex==null||Number(x.bracketIndex||0)===Number(matchIndex))))return;
  const draw=getSeasonCupTeams(season),entrants=draw.entrants;
  let pair=null;
  if(stage==="quarterfinals"){
@@ -1763,7 +1763,7 @@ function renderSeasonCalendar(){
  heading.append(leagueToggle);
  header.append(heading,safeText("p","Нажми на день тура, чтобы посмотреть все матчи этого тура. Дни матчей отмечены зелёным.","muted"));
  const roundPanel=document.createElement("div");roundPanel.className="tournament-selected-round";const days=document.createElement("div");days.className="season-calendar-grid";
- let selectedRound=round||1;
+ let selectedRound=round||0;
  const showRound=(r,day=Number(state.gameDay)||1)=>{selectedRound=r;roundPanel.replaceChildren();if(!r){let event="В этот день нет запланированного матча лиги.";if(CUP_QUARTERFINAL_DAYS.includes(day))event="Кубок «Достаток»: четвертьфинальный матч.";else if(CUP_SEMIFINAL_DAYS.includes(day))event="Кубок «Достаток»: полуфинальный матч.";else if(day===CUP_FINAL_DAY)event="Кубок «Достаток»: финал.";else if(CUP_FRIENDLY_DAYS.includes(day))event="Товарищеские матчи команд, не участвующих в кубке.";else if(END_SEASON_FRIENDLIES[day])event="Товарищеские матчи: "+END_SEASON_FRIENDLIES[day][0]+" — "+END_SEASON_FRIENDLIES[day][1]+".";else if(day===182)event="Завершение сезона. Следующий сезон начнётся с дня 1.";roundPanel.append(safeText("h3","День "+day),safeText("p",event,"muted"));return}roundPanel.append(safeText("h3","Тур "+r+" · День "+officialRoundDay(r,viewedLeague)));getOfficialRoundFixtures(r,viewedLeague).forEach(f=>roundPanel.append(tournamentMatchRow(r,f,state.leagueResults?.[roundFixtureKey(r,f)]||null,f.home.id===ownId||f.away.id===ownId)));};
  for(let day=1;day<=182;day++){
   const r=officialRoundForDay(day,viewedLeague),cupQuarter=CUP_QUARTERFINAL_DAYS.includes(day),cupSemi=CUP_SEMIFINAL_DAYS.includes(day),cupFinal=day===CUP_FINAL_DAY,cupFriendly=CUP_FRIENDLY_DAYS.includes(day),friendly=Boolean(END_SEASON_FRIENDLIES[day]),b=document.createElement("button");b.type="button";b.className="season-calendar-day"+(day===Number(state.gameDay)?" current":"")+(r?" match-day":"")+((cupQuarter||cupSemi||cupFinal||cupFriendly||friendly)?" cup-day":"")+(r&&r===selectedRound?" selected-round-day":"");
