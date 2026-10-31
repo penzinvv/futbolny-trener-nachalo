@@ -1,10 +1,19 @@
 const STORAGE_KEY = "football-coach-start-v1";
+const GAME_DAY_DURATION_MS = 60000;
+const GAME_DAY_TIPS = [
+ {key:"training",title:"ТРЕНИРОВКИ",text:"Развивай игроков и готовь команду.",page:"training"},
+ {key:"respect",title:"ПОДНЯТЬ УВАЖЕНИЕ",text:"Позаботься о репутации тренера и отношении к команде.",page:"cabinet"},
+ {key:"ratings",title:"ТРЕНЕРСКИЙ РЕЙТИНГ",text:"Посмотри, как ты продвигаешься среди других тренеров.",page:"ratings"},
+ {key:"shop",title:"МАГАЗИН",text:"Загляни за наградами и полезными покупками.",page:"shop"},
+ {key:"help",title:"FAQ / ПОМОЩЬ",text:"Изучи советы и узнай больше о возможностях игры.",page:"help"}
+];
 const defaultState = {
   coachName: "", teamName: "", emblem: "🛡️", teamLogoIndex: 1, avatarIndex: 1, seasonNumber: 1, avatarChangeUsedSeason: 0,
   xp: 0, permanentRating: 0, seasonRating: 0, respect: 0, gameDay: 1, players: [], relationships: {},
-  careerCoachId: null, careerTeamId: null, careerPlayerIds: {}, careerHistory: { officialMatches: [], seasons: {} }
+  careerCoachId: null, careerTeamId: null, careerPlayerIds: {}, careerHistory: { officialMatches: [], seasons: {} }, gameDayStartedAt: null, gameDayTipKey: null, gameDayPreviousTipKey: null
 };
 let state = loadState();
+let gameDayTimerInterval = null;
 let leagueData = null;
 fetch("/data/league.json").then(r => { if (!r.ok) throw new Error("Не удалось загрузить данные лиги"); return r.json(); }).then(data => { leagueData = data; if (state.coachName && state.teamName) render(); if (!$("pageView")?.classList.contains("hidden") && $("pageTitle")?.textContent === "Тренировка") openPage("training"); }).catch(err => console.error(err));
 
@@ -207,6 +216,43 @@ function renderTeamRecords(showAll=false) {
   });
   const more=$("allTeamRecordsButton");
   if(more){more.textContent=showAll?"Свернуть ›":"Все рекорды ›";more.onclick=()=>renderTeamRecords(!showAll);}
+}
+
+
+function chooseGameDayTip() {
+ const options=GAME_DAY_TIPS.filter(t=>t.key!==state.gameDayPreviousTipKey);
+ const selected=options[Math.floor(Math.random()*options.length)]||GAME_DAY_TIPS[0];
+ state.gameDayPreviousTipKey=selected.key;state.gameDayTipKey=selected.key;return selected;
+}
+function updateGameDayTimerUI() {
+ const panel=$("gameDayTimerPanel");if(!panel)return;
+ const started=Number(state.gameDayStartedAt)||0;
+ if(!started){panel.classList.add("hidden");return}
+ panel.classList.remove("hidden");
+ const elapsed=Math.max(0,Date.now()-started),remaining=Math.max(0,GAME_DAY_DURATION_MS-elapsed),finished=remaining<=0;
+ const seconds=Math.ceil(remaining/1000),value=$("gameDayTimerValue");
+ if(value)value.textContent=String(Math.floor(seconds/60)).padStart(2,"0")+":"+String(seconds%60).padStart(2,"0");
+ const progress=$("gameDayTimerProgress");if(progress)progress.style.width=(Math.min(1,elapsed/GAME_DAY_DURATION_MS)*100)+"%";
+ const title=$("gameDayTimerTitle");if(title)title.textContent=finished?"ДЕНЬ ЗАВЕРШЁН!":"ДЕНЬ НАЧАЛСЯ!";
+ const message=$("gameDayTimerMessage");if(message)message.textContent=finished?"Минута прошла. Решай сам, когда переходить к следующему дню.":"САМОЕ ВРЕМЯ СДЕЛАТЬ ЧТО-НИБУДЬ ВАЖНОЕ В ИГРЕ.";
+ const tip=GAME_DAY_TIPS.find(t=>t.key===state.gameDayTipKey)||GAME_DAY_TIPS[0];
+ const tipTitle=$("gameDayTipTitle");if(tipTitle)tipTitle.textContent=tip.title;
+ const tipText=$("gameDayTipText");if(tipText)tipText.textContent=tip.text;
+ const tipButton=$("gameDayTipButton");if(tipButton)tipButton.onclick=()=>openPage(tip.page);
+ const next=$("nextGameDayButton");if(next)next.classList.toggle("hidden",!finished);
+ const skip=$("skipDayButton");if(skip){skip.classList.toggle("hidden",!finished);skip.textContent=Number(state.gameDay)>=182?"НАЧАТЬ НОВЫЙ СЕЗОН":"ПРОПУСТИТЬ ДЕНЬ";}
+}
+function startGameDayTimer() {
+ state.gameDayStartedAt=Date.now();chooseGameDayTip();saveState();render();updateGameDayTimerUI();
+ if(gameDayTimerInterval)clearInterval(gameDayTimerInterval);
+ gameDayTimerInterval=setInterval(updateGameDayTimerUI,250);
+}
+function requestNextGameDay() {
+ const started=Number(state.gameDayStartedAt)||0;
+ if(started&&Date.now()-started<GAME_DAY_DURATION_MS){updateGameDayTimerUI();return}
+ state.gameDayStartedAt=null;saveState();
+ advanceCoachDay();
+ if(Number(state.gameDayStartedAt)===0||!state.gameDayStartedAt)startGameDayTimer();
 }
 
 function render() {
@@ -740,7 +786,9 @@ document.addEventListener("click", event => {
   const homeButton = target.closest("#backHome, [data-home]");
   if (homeButton) { event.preventDefault(); returnToDashboard(); return; }
   const skipButton = target.closest("#skipDayButton");
-  if (skipButton) { event.preventDefault(); advanceCoachDay(); return; }
+  if (skipButton) { event.preventDefault(); if(!state.gameDayStartedAt){startGameDayTimer();return;} requestNextGameDay(); return; }
+  const nextDayButton=target.closest("#nextGameDayButton");
+  if(nextDayButton){event.preventDefault();requestNextGameDay();return;}
   const calendarButton = target.closest("#seasonCalendarButton");
   if (calendarButton) { event.preventDefault(); openPage("seasonCalendar"); return; }
   const startMatchButton = target.closest("#startMatchButton");
