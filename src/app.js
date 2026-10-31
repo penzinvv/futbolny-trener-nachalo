@@ -227,7 +227,7 @@ function chooseGameDayTip() {
 function updateGameDayTimerUI() {
  const panel=$("gameDayTimerPanel");if(!panel)return;
  const started=Number(state.gameDayStartedAt)||0;
- if(!started){panel.classList.add("hidden");return}
+ if(!started){panel.classList.add("hidden");const skip=$("skipDayButton");if(skip){skip.classList.remove("hidden");skip.textContent=Number(state.gameDay)>=182?"НАЧАТЬ НОВЫЙ СЕЗОН":"ПРОПУСТИТЬ ДЕНЬ";}const next=$("nextGameDayButton");if(next)next.classList.add("hidden");return}
  panel.classList.remove("hidden");
  const elapsed=Math.max(0,Date.now()-started),remaining=Math.max(0,GAME_DAY_DURATION_MS-elapsed),finished=remaining<=0;
  const seconds=Math.ceil(remaining/1000),value=$("gameDayTimerValue");
