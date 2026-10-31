@@ -1360,7 +1360,7 @@ function publishScheduledInfoMail(day){
 }
 function publishScheduledPlayerRequest(day,scheduledSeason=state.seasonNumber){
  const team=getUserTeam();if(!team||!Array.isArray(team.players)||!team.players.length)return false;
- const player=team.players[Math.min(day===4?0:1,team.players.length-1)]||team.players[0];if(!player)return false;
+ const playerIndex=(((Math.max(1,Number(scheduledSeason)||1)-1)*2)+(day===4?0:1))%team.players.length;const player=team.players[playerIndex]||team.players[0];if(!player)return false;
  const matchDay=(LEAGUE_MATCH_DAYS[currentCoachLeague()]||LEAGUE_MATCH_DAYS["Нижняя лига"]).find(value=>Number(value)>Number(day));if(!matchDay)return false;const start=absoluteGameDay(scheduledSeason,matchDay),end=absoluteGameDay(scheduledSeason,matchDay+1);
  const topic=day===4?"Личные проблемы перед ближайшим матчем":"Можно ли пропустить ближайший матч?";
  const message=day===4?"Привет, тренер. В последнее время у меня непростой период в личной жизни, и мне сложно сосредоточиться на футболе. Можно мне пропустить ближайший матч? Мне нужно немного времени, чтобы прийти в себя.\n\nЕсли ты согласишься, я буду недоступен на "+gameDateLabel(start)+" и вернусь в "+gameDateLabel(end)+". Буду ждать твоего ответа.":"Привет, тренер! Сейчас я активно готовлюсь к экзаменам, и учёба отнимает почти всё свободное время. Можно мне пропустить ближайший матч, чтобы спокойно подготовиться?\n\nЕсли ты согласишься, я буду недоступен на "+gameDateLabel(start)+" и вернусь в "+gameDateLabel(end)+". Спасибо за понимание!";
