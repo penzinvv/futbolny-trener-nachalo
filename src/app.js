@@ -1490,6 +1490,10 @@ function matchPositionCoordinates(lineup,side){
   return {...entry,x,y:ys[order]||50,index};
  });
 }
+function renderCompactMatchLineups(session,home,away){
+ const panel=document.createElement("section");panel.className="match-rosters panel";
+ [["home",home],["away",away]].forEach(([side,team])=>{const col=document.createElement("div");col.className="match-roster-column "+side;const head=document.createElement("div");head.className="match-roster-heading";const logo=teamLogoSource(team);if(logo){const img=document.createElement("img");img.src=logo;img.alt="";img.className="match-roster-logo";img.onerror=()=>img.remove();head.append(img)}head.append(safeText("h3",matchTeamLabel(team)));col.append(head);(session.lineups?.[side]||[]).forEach(entry=>{const player=entry.player||entry,row=document.createElement("div");row.className="match-roster-player"+(entry.sentOff?" is-sent-off":"");row.append(makeMatchPortrait(player,team));const details=document.createElement("div");details.className="match-roster-player-details";details.append(safeText("b",player.name||"Футболист"),safeText("span",entry.role||player.position||"—","match-roster-position"));row.append(details);if(entry.sentOff)row.append(safeText("span","Удалён","match-roster-status"));col.append(row)});panel.append(col)});return panel;
+}
 function createSpectatorPanel(session,home,away){
  const box=document.createElement("aside");box.className="match-spectators compact-spectators";
  box.append(safeText("h3","НА ТРИБУНАХ"),safeText("p","Небольшая компания болельщиков следит за матчем.","muted"));
@@ -1718,7 +1722,7 @@ function renderMatchSummaryPage(){
  const roundPanel=document.createElement("section");roundPanel.className="panel match-summary-panel";roundPanel.append(safeText("h2","Другие результаты тура"));
  getOfficialRoundFixtures(result.round,getTeamForMatch(result.homeId)?.league||currentCoachLeague()).forEach(f=>{const key=roundFixtureKey(result.round,f),r=state.leagueResults?.[key];roundPanel.append(tournamentMatchRow(result.round,f,r,f.home.id===ownId||f.away.id===ownId))});
  const actions=document.createElement("div");actions.className="match-summary-actions";actions.append(matchButton("К ТУРНИРНОЙ ТАБЛИЦЕ",()=>openPage("league"),"primary"),matchButton("ВЕРНУТЬСЯ НА ГЛАВНУЮ",returnToDashboard,"secondary"));
- wrap.append(actions,roundPanel,header,goalsPanel,statsPanel,lineups,spectators,eventsPanel,growthPanel);return wrap;
+ wrap.append(actions,header,lineups,spectators,growthPanel,relationPanel,roundPanel);return wrap;
 }
 function renderMatchPage(){
  const wrap=document.createElement("div");wrap.className="official-match-view";
@@ -1739,20 +1743,20 @@ function renderMatchPage(){
  const homeName=document.createElement("div");homeName.className="match-score-team";const homeLogo=teamLogoSource(home);if(homeLogo){const img=document.createElement("img");img.src=homeLogo;img.alt="";img.className="match-score-logo";homeName.append(img)}homeName.append(safeText("b",matchTeamLabel(home)));
  const score=safeText("strong",session.score.home+" : "+session.score.away);score.className="match-score-number";
  const awayName=document.createElement("div");awayName.className="match-score-team";const awayLogo=teamLogoSource(away);if(awayLogo){const img=document.createElement("img");img.src=awayLogo;img.alt="";img.className="match-score-logo";awayName.append(img)}awayName.append(safeText("b",matchTeamLabel(away)));
- scoreline.append(homeName,score,awayName);header.append(scoreline,safeText("p",session.finished?"МАТЧ ЗАВЕРШЁН":session.halfTime?"ПЕРЕРЫВ · ВАЖНЫЕ МОМЕНТЫ ТАЙМА":"МИНУТА "+session.minute+" / 40","match-clock"));
+ scoreline.append(homeName,score,awayName);header.append(scoreline);const goalScorers=(session.events||[]).filter(e=>e.type==="goal").map(e=>({minute:e.minute,scorer:e.scorer,side:getEventTeamSide(e)}));if(goalScorers.length){const scorers=document.createElement("div");scorers.className="match-score-scorers";goalScorers.forEach(g=>{const team=g.side==="home"?home:away;const item=document.createElement("span");item.className="match-score-scorer";item.append(safeText("b",g.minute+"′"),safeText("span",(g.side==="home"?"● ":"○ ")+(g.scorer||"Автор не указан")));item.title=matchTeamLabel(team)+" — "+(g.scorer||"Автор гола не указан");scorers.append(item)});header.append(scorers)}header.append(safeText("p",session.finished?"МАТЧ ЗАВЕРШЁН":session.halfTime?"ПЕРЕРЫВ · ВАЖНЫЕ МОМЕНТЫ ТАЙМА":"МИНУТА "+session.minute+" / 40","match-clock"));
  const body=document.createElement("div");body.className="match-main-columns";
  const eventPanel=document.createElement("section");eventPanel.className="match-events-panel panel";
  eventPanel.append(safeText("h3","ВАЖНЫЕ МОМЕНТЫ"));
  const eventList=document.createElement("div");eventList.className="match-event-list";
- session.events.filter(isImportantMatchEvent).slice().reverse().forEach(ev=>{const row=document.createElement("article");row.className="match-event "+(ev.type||"play");row.append(safeText("b",ev.minute+"'"));appendMatchEventClubIcon(row,ev,home,away);row.append(safeText("span",ev.text));eventList.append(row)});
+ session.events.filter(isImportantMatchEvent).slice().reverse().forEach(ev=>{const row=document.createElement("article");row.className="match-event "+(ev.type||"play");row.append(safeText("b",ev.minute+"′"));appendMatchEventClubIcon(row,ev,home,away);const text=safeText("span",ev.text);text.className="match-event-text";text.title=ev.text;row.append(text);eventList.append(row)});
  if(!session.events.length)eventList.append(safeText("p","Матч ещё не начался. Нажми «НАЧАТЬ МАТЧ».","muted"));
  eventPanel.append(eventList);
  const spectators=createSpectatorPanel(session,home,away);
- body.append(spectators);
- const pitch=renderTacticalPitch(session,home,away);
+ const playerLists=renderCompactMatchLineups(session,home,away);
+ body.append(playerLists,spectators);
  const actions=document.createElement("div");actions.className="match-control-row match-control-row-top";
  if(!session.finished){const label=session.halfTime?"ПЕРЕРЫВ":session.autoPlaying?(session.half===2?"ВТОРОЙ ТАЙМ НАЧАЛСЯ":"ПЕРВЫЙ ТАЙМ НАЧАЛСЯ"):session.half===2?"ВТОРОЙ ТАЙМ НАЧАЛСЯ":"НАЧАТЬ МАТЧ";const statusButton=matchButton(session.autoPlaying||session.halfTime?label:"▶ "+label,()=>{if(!session.autoPlaying&&!session.halfTime)autoAdvanceOfficialMatch(session,home,away)},"primary");statusButton.classList.add("match-status-button");statusButton.disabled=Boolean(session.autoPlaying||session.halfTime);actions.append(statusButton)}
- wrap.append(actions,header,eventPanel,pitch,body);
+ wrap.append(actions,header,eventPanel,body);
  if(session.halfTime&&!session.finished){
   const ht=document.createElement("section");ht.className="halftime-panel panel";ht.append(safeText("h2","ПЕРЕРЫВ — ВАЖНЫЕ МОМЕНТЫ ТАЙМА"));
   const firstHalf=session.events.filter(e=>e.minute<=20&&isImportantMatchEvent(e));
