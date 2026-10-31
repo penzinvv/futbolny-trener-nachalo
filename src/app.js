@@ -1354,8 +1354,8 @@ function resolvePlayerMailRequest(item,decision){
  const relationKey=playerRelationKey(team,player),current=getPlayerRelation(team,player),now=absoluteGameDay();
  if(decision==="accept"){
   state.xp=Math.max(0,Number(state.xp)||0)+150;state.relationships[relationKey]=Math.min(100,current+10);
-  if(Number(item.absenceStartAbsDay)>now)setPlayerAbsence(team,player,Number(item.absenceStartAbsDay),Number(item.absenceReturnAbsDay),"Тренер разрешил пропустить ближайший матч");
-  item.responseLabel="Запрос принят: +150 XP и +10 п. п. отношений."+(Number(item.absenceStartAbsDay)>now?" Футболисту разрешено пропустить матч.":" Дата матча уже прошла — решение не применяется задним числом.");
+  if(Number(item.absenceStartAbsDay)>=now)setPlayerAbsence(team,player,Number(item.absenceStartAbsDay),Number(item.absenceReturnAbsDay),"Тренер разрешил пропустить ближайший матч");
+  item.responseLabel="Запрос принят: +150 XP и +10 п. п. отношений."+(Number(item.absenceStartAbsDay)>=now?" Футболисту разрешено пропустить матч с момента ответа.":" Дата матча уже прошла — решение не применяется задним числом.");
  }else{
   state.relationships[relationKey]=Math.max(0,current-15);item.responseLabel=decision==="compromise"?"Компромисс засчитан как отказ: 0 XP, −15 п. п. отношений.":"Отказ: 0 XP, −15 п. п. отношений.";
   if(Math.random()<0.5){
