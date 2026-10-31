@@ -15,7 +15,7 @@ const defaultState = {
 let state = loadState();
 let gameDayTimerInterval = null;
 let leagueData = null;
-fetch("/data/league.json").then(r => { if (!r.ok) throw new Error("Не удалось загрузить данные лиги"); return r.json(); }).then(data => { leagueData = data; simulateScheduledLeagueResultsForDay(Number(state.gameDay)||1); saveState(); if (state.coachName && state.teamName) render(); if (!$("pageView")?.classList.contains("hidden") && $("pageTitle")?.textContent === "Тренировка") openPage("training"); }).catch(err => console.error(err));
+fetch("/data/league.json").then(r => { if (!r.ok) throw new Error("Не удалось загрузить данные лиги"); return r.json(); }).then(data => { leagueData = data; simulateScheduledLeagueResultsForDay(Number(state.gameDay)||1); if(END_SEASON_FRIENDLIES[Number(state.gameDay)])simulateEndSeasonFriendlyDay(Number(state.gameDay)); saveState(); if (state.coachName && state.teamName) render(); if (!$("pageView")?.classList.contains("hidden") && $("pageTitle")?.textContent === "Тренировка") openPage("training"); }).catch(err => console.error(err));
 
 const $ = (id) => document.getElementById(id);
 function loadState() {
@@ -1209,7 +1209,7 @@ function announceCupDraw(season){
  const draw=getSeasonCupTeams(season),own=getUserTeam(),selected=draw.entrants.some(t=>t.id===own?.id);
  state.cupDraws[season]={entrants:draw.entrants.map(t=>t.id),excluded:draw.excluded.map(t=>t.id),selected};
  const names=draw.entrants.map(t=>matchTeamLabel(t)).join(", ");
- const message="Уважаемые коллеги! Сегодня по утверждённому календарю определены участники кубка «ДОСТАТОК» сезона "+season+". "+(selected?"Ваша команда участвует в розыгрыше.":"Ваша команда в этом сезоне не попала в заявку и сыграет товарищеские матчи с другими командами, не прошедшими отбор.")+" Участники: "+names+". Четвертьфиналы, полуфиналы и финал пройдут в период перерыва между кругами.";
+ const message="Уважаемые коллеги! Сегодня по утверждённому календарю определены участники кубка «ДОСТАТОК» сезона "+season+". "+(selected?"Ваша команда участвует в розыгрыше.":"Ваша команда в этом сезоне не попала в заявку и сыграет товарищеские матчи с другими командами, не прошедшими отбор.")+" Участники: "+names+". Четвертьфиналы — дни 61, 62, 64 и 65; полуфиналы — дни 68 и 70; финал — день 75.";
  publishCoachEventOnce("cup-draw:"+season,"news","Жеребьёвка кубка «ДОСТАТОК»",message,{priority:"high",important:true});
  saveState();
 }
