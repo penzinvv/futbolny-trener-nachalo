@@ -802,14 +802,14 @@ body{background:radial-gradient(ellipse at 52% 0%,rgba(20,80,54,.45),transparent
 .all-records-button{flex:0 0 auto;padding:6px 8px;border:1px solid #27734e;border-radius:9px;background:#08281d;color:#70f0ae;font:800 9px/1 system-ui,sans-serif;cursor:pointer}
 .all-records-button:hover{border-color:#55f0ad;background:#0e3d2b}
 .team-records-list{display:flex;flex-direction:column;gap:0;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#286b4b transparent}
-.team-record-row{display:grid;grid-template-columns:27px minmax(0,1fr);gap:7px;align-items:center;padding:7px 0;border-bottom:1px solid #17442f}
+.team-record-row{display:grid;grid-template-columns:27px minmax(0,1fr) auto;gap:7px;align-items:center;padding:7px 0;border-bottom:1px solid #17442f}
 .team-record-row:last-child{border-bottom:0}
 .team-record-icon{display:grid;place-items:center;width:26px;height:26px;border:1px solid #285e42;border-radius:8px;background:#123a29;font-size:15px}
 .team-record-body{display:flex;flex-direction:column;gap:2px;min-width:0}
 .team-record-title{color:#62e9a6;font-size:9px;font-weight:850;line-height:1.2}
 .team-record-value{color:#f0fff5;font-size:12px;font-weight:950;line-height:1.2;overflow-wrap:anywhere}
 .team-record-detail{color:#a9cdb7;font-size:9px;line-height:1.2;overflow-wrap:anywhere}
-.team-record-date{display:none}
+.team-record-date{display:block;align-self:start;color:#7da992;font-size:8px;line-height:1.2;text-align:right;white-space:nowrap;padding-top:2px}
 .team-records-empty{margin:0;padding:12px 3px;color:#a9cdb7;font-size:11px;line-height:1.5}
 .team-records-card:has(.team-record-row:nth-child(7)){max-height:450px}
 @media(min-width:821px) and (max-width:1200px){
@@ -831,6 +831,8 @@ body{background:radial-gradient(ellipse at 52% 0%,rgba(20,80,54,.45),transparent
  .team-records-list{grid-template-columns:minmax(0,1fr)}
  .team-record-row{grid-template-columns:30px minmax(0,1fr);padding:8px 0}
  .team-record-icon{width:29px;height:29px}
+ .team-record-date{grid-column:2;grid-row:2;text-align:left;padding-top:0;font-size:9px}
+ .team-record-body{grid-column:2;grid-row:1}
  .team-record-title{font-size:10px}
  .team-record-value{font-size:13px}
  .team-record-detail{font-size:10px}
