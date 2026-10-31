@@ -15,7 +15,7 @@ const defaultState = {
 let state = loadState();
 let gameDayTimerInterval = null;
 let leagueData = null;
-fetch("/data/league.json").then(r => { if (!r.ok) throw new Error("Не удалось загрузить данные лиги"); return r.json(); }).then(data => { leagueData = data; simulateScheduledLeagueResultsForDay(Number(state.gameDay)||1); if(END_SEASON_FRIENDLIES[Number(state.gameDay)])simulateEndSeasonFriendlyDay(Number(state.gameDay)); deliverScheduledCoachMail(Number(state.gameDay)||1); saveState(); if (state.coachName && state.teamName) render(); if (!$("pageView")?.classList.contains("hidden") && $("pageTitle")?.textContent === "Тренировка") openPage("training"); }).catch(err => console.error(err));
+fetch("/data/league.json").then(r => { if (!r.ok) throw new Error("Не удалось загрузить данные лиги"); return r.json(); }).then(data => { leagueData = data; simulateScheduledLeagueResultsForDay(Number(state.gameDay)||1); if(END_SEASON_FRIENDLIES[Number(state.gameDay)])simulateEndSeasonFriendlyDay(Number(state.gameDay)); deliverScheduledCoachMail(Number(state.gameDay)||1); saveState(); if (state.coachName && state.teamName) render(); setTimeout(showNextGameEventPopup,120); if (!$("pageView")?.classList.contains("hidden") && $("pageTitle")?.textContent === "Тренировка") openPage("training"); }).catch(err => console.error(err));
 
 const $ = (id) => document.getElementById(id);
 function loadState() {
@@ -1470,7 +1470,7 @@ function advanceCoachDay(){
  if(state.gameDay===61)note="Начинается стадия четвертьфиналов кубка «Достаток». Матчи пройдут в дни 61, 62, 64 и 65.";
  if(state.gameDay===68)note="Сегодня проходят первые полуфиналы кубка «Достаток». Второй полуфинал назначен на день 70.";
  if(state.gameDay===CUP_FINAL_DAY)note="Сегодня состоится финал кубка «Достаток».";
- if(state.gameDay===182)note="Сезон завершён. Следующий переход начнёт новый сезон с дня 1.";
+ if(state.gameDay===182)note="Сезон завершён. Следующий переход начнёт новый сезон с дня 1."; setTimeout(showNextGameEventPopup,120);
  state.lastCalendarEvent=note;if(note)publishCoachEventOnce("calendar:"+state.seasonNumber+":"+state.gameDay,"news","Событие календаря",note,{priority:"high",important:true});
  if(Number(state.gameDay)%3===0){ensureCoachCommunicationState();const recent=state.coachChronicle.filter(x=>Number(x.season)===Number(state.seasonNumber)&&Number(x.day)>=Number(state.gameDay)-2&&Number(x.day)<=Number(state.gameDay)&&!String(x.key||"").startsWith("digest:"));if(recent.length)publishCoachEventOnce("digest:"+state.seasonNumber+":"+state.gameDay,"news","Сводка за последние 3 игровых дня","За последние игровые дни произошло событий: "+recent.length+". Последние события: "+recent.slice(0,3).map(x=>x.title).join("; ")+".",{priority:"normal"})}
  saveState();render();
