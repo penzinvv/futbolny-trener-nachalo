@@ -2040,9 +2040,19 @@ function renderTraining() {
     wrap.append(panel);return wrap;
   }
   const form=document.createElement("div");form.className="training-form";
-  const playerLabel=safeText("label","Футболист");playerLabel.htmlFor="trainingPlayer";
-  const playerSelect=document.createElement("select");playerSelect.id="trainingPlayer";playerSelect.className="league-select";
+  const playerLabel=safeText("label","Футболист");playerLabel.htmlFor="trainingPlayer";playerLabel.className="training-visually-hidden";
+  const playerSelect=document.createElement("select");playerSelect.id="trainingPlayer";playerSelect.className="league-select training-visually-hidden";
   roster.forEach((player,i)=>{const option=document.createElement("option");option.value=String(i);option.textContent=player.name+" · "+player.position;playerSelect.append(option);});
+  const rosterGrid=document.createElement("div");rosterGrid.className="training-roster-grid";rosterGrid.setAttribute("role","group");rosterGrid.setAttribute("aria-label","Выбрать футболиста для индивидуальной тренировки");
+  const rosterButtons=[];
+  roster.forEach((player,i)=>{
+    const button=document.createElement("button");button.type="button";button.className="training-roster-player";button.setAttribute("aria-pressed","false");
+    const portrait=document.createElement("img");portrait.src=getPortrait(player.portraitIndex||teamsPlayerIndex(team,player));portrait.alt="";portrait.loading="lazy";portrait.onerror=()=>portrait.remove();
+    const details=document.createElement("span");details.className="training-roster-details";details.append(safeText("b",player.name),safeText("small",player.position+" · "+(player.nationality||"Национальность не указана")));
+    const flagSrc=getFlag(player.nationality);if(flagSrc){const flag=document.createElement("img");flag.className="training-roster-flag";flag.src=flagSrc;flag.alt=player.nationality;flag.loading="lazy";flag.onerror=()=>flag.remove();details.append(flag);}
+    const mainSkill=Number(player.skills?.[player.position]||0);const rating=safeText("span",player.position+" "+mainSkill,"training-roster-rating");
+    button.append(portrait,details,rating);button.addEventListener("click",()=>{playerSelect.value=String(i);refreshSkillOptions();});rosterButtons.push(button);rosterGrid.append(button);
+  });
   const skillLabel=safeText("label","Характеристика");skillLabel.htmlFor="trainingSkill";
   const skillSelect=document.createElement("select");skillSelect.id="trainingSkill";skillSelect.className="league-select";
   const info=document.createElement("div");info.className="training-player-summary";
@@ -2061,6 +2071,7 @@ function renderTraining() {
     const firstAvailable=[...skillSelect.options].find(option=>!option.disabled);
     if(firstAvailable) skillSelect.value=firstAvailable.value;
     updatePlayerSummary();
+    rosterButtons.forEach((button,index)=>{const active=index===Number(playerSelect.value);button.classList.toggle("is-selected",active);button.setAttribute("aria-pressed",String(active));});
   };
   const updatePlayerSummary=()=>{
     const player=roster[Number(playerSelect.value)]||roster[0];
@@ -2105,7 +2116,7 @@ function renderTraining() {
     trainButton.disabled=true;
     status.textContent+=" Следующая тренировка этого футболиста будет доступна через 04:00:00.";
   });
-  form.append(playerLabel,playerSelect,skillLabel,skillSelect,info,status,trainButton);
+  form.append(playerLabel,playerSelect,rosterGrid,skillLabel,skillSelect,info,status,trainButton);
   panel.append(form,safeText("p","Правила: одна индивидуальная тренировка на футболиста раз в 4 часа; +1 к выбранной характеристике; максимальное значение — 100. Таймер сохраняется в этом браузере.","muted"));
   wrap.append(panel);
   refreshSkillOptions();
