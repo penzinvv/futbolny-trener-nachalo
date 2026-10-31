@@ -273,18 +273,38 @@ function transfersPage(){
  }
  w.append(P("Трансферный обмен игроками","Обмен открывается при отношениях от 50%. От 50% до менее 70% — гарантированный отказ; от 70% до менее 90% — шанс согласия 50%; от 90% — обмен гарантирован."));
  leagueData.teams.filter(t=>t.id!==getUserTeam()?.id).forEach(team=>{
-  const panel=P(team.name,team.league);
+  const panel=P(team.name,team.league);panel.classList.add("transfer-team-panel");
+  const teamHeader=document.createElement("div");teamHeader.className="transfer-team-header";
+  const logoSrc=typeof teamLogoSource==="function"?teamLogoSource(team):"";
+  if(logoSrc){const logo=document.createElement("img");logo.className="transfer-team-logo";logo.src=logoSrc;logo.alt="";logo.loading="lazy";logo.onerror=()=>logo.remove();teamHeader.append(logo);}
+  const teamInfo=document.createElement("div");teamInfo.className="transfer-team-info";
+  teamInfo.append(safeText("b",team.name),safeText("span",team.league+" · "+team.players.length+" футболистов"));
+  const teamSummary=safeText("span","СОСТАВ КОМАНДЫ","transfer-team-kicker");
+  teamHeader.append(teamInfo,teamSummary);panel.replaceChildren(teamHeader);
+  const roster=document.createElement("div");roster.className="transfer-player-list";
   team.players.forEach(player=>{
    const relation=Number(getPlayerRelation(team,player));
-   const row=document.createElement("div");row.className="feature-player-row";
-   const label=safeText("span",player.name+" · "+player.position+" · "+F(relation));
+   const row=document.createElement("article");row.className="feature-player-row transfer-player-row";
+   const portrait=document.createElement("img");portrait.className="transfer-player-portrait";portrait.src=getPortrait(player.portraitIndex||teamsPlayerIndex(team,player));portrait.alt="Портрет: "+player.name;portrait.loading="lazy";portrait.onerror=()=>{portrait.src="/images/portretplayers/portret1.jpg";portrait.onerror=()=>portrait.remove()};
+   const details=document.createElement("div");details.className="transfer-player-details";
+   details.append(safeText("b",player.name),safeText("span",player.position+" · "+(player.nationality||"Национальность не указана"),"transfer-player-meta"));
+   const flagSrc=getFlag(player.nationality);if(flagSrc){const flag=document.createElement("img");flag.className="transfer-player-flag";flag.src=flagSrc;flag.alt=player.nationality;flag.loading="lazy";flag.onerror=()=>flag.remove();details.append(flag);}
+   const relationship=document.createElement("div");relationship.className="transfer-relation";
+   const relationTop=document.createElement("div");relationTop.className="transfer-relation-top";
+   relationTop.append(safeText("span","Отношения"),safeText("b",F(relation)));
+   const track=document.createElement("div");track.className="transfer-relation-track";track.setAttribute("role","progressbar");track.setAttribute("aria-label","Отношения с "+player.name);track.setAttribute("aria-valuemin","0");track.setAttribute("aria-valuemax","100");track.setAttribute("aria-valuenow",String(relation));
+   const fill=document.createElement("span");fill.style.width=Math.max(0,Math.min(100,relation))+"%";track.append(fill);
+   const threshold=safeText("small",relation<50?"Открывается при 50%":relation<70?"До 70% — отказ":relation<90?"Шанс обмена 50%":"Обмен гарантирован","transfer-relation-note");
+   relationship.append(relationTop,track,threshold);
+   const actions=document.createElement("div");actions.className="transfer-player-actions";
    const profile=B("Профиль",()=>openPlayerProfile(team,player,teamsPlayerIndex(team,player)));
-   const exchangeLabel=relation<50?"Обмен закрыт — нужно 50%":relation<70?"Попробовать обмен (отказ до 70%)":relation<90?"Попробовать обмен (50/50)":"Обмен гарантирован";
+   const exchangeLabel=relation<50?"Нужно 50%":relation<70?"Попробовать":relation<90?"Шанс 50%":"Обмен гарантирован";
    const exchange=B(exchangeLabel,()=>{if(relation<50)return;state.transferTarget={team:team.id,name:player.name};saveState();openPage("transfers")},relation>=50?"primary":"secondary");
-   exchange.disabled=relation<50;
-   row.append(label,profile,exchange);panel.append(row);
+   exchange.disabled=relation<50;actions.append(profile,exchange);
+   const identity=document.createElement("div");identity.className="transfer-player-identity";identity.append(portrait,details);
+   row.append(identity,relationship,actions);roster.append(row);
   });
-  w.append(panel);
+  panel.append(roster);w.append(panel);
  });
  return w;
 }
