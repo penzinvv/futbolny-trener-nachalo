@@ -10,7 +10,7 @@
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <div class="brand"><span class="brand-mark">ДФ</span><div><strong>ДВОРОВЫЙ ФУТБОЛ</strong><small>НАЧАЛО · ВЕРСИЯ 2.6.2</small></div></div>
+      <div class="brand"><span class="brand-mark">ДФ</span><div><strong>ДВОРОВЫЙ ФУТБОЛ</strong><small>НАЧАЛО · ВЕРСИЯ 2.6.3</small></div></div>
       <div class="topbar-actions">
         <button id="fullscreenToggle" class="fullscreen-toggle" type="button" aria-pressed="false" title="Развернуть игру на весь экран">⛶ НА ВЕСЬ ЭКРАН</button>
         <button id="musicToggle" class="music-toggle" type="button" aria-pressed="true"><span class="radio-disc" aria-hidden="true">♫</span><span class="radio-copy"><strong>РАДИО ДВОРА</strong><small>Нажми для запуска музыки</small></span><span class="radio-equalizer" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></button>
@@ -61,6 +61,13 @@
             <div><small>СОСТАВ</small><b><span id="rosterCount">0</span> / 10</b></div>
           </div>
           <button id="skipDayButton" class="skip-day-button" type="button">ПРОПУСТИТЬ ДЕНЬ</button>
+          <section id="gameDayTimerPanel" class="game-day-timer-panel hidden" aria-live="polite">
+            <div class="game-day-timer-top"><strong id="gameDayTimerTitle">ДЕНЬ НАЧАЛСЯ!</strong><span id="gameDayTimerValue">01:00</span></div>
+            <div class="game-day-timer-track"><span id="gameDayTimerProgress"></span></div>
+            <p id="gameDayTimerMessage">САМОЕ ВРЕМЯ СДЕЛАТЬ ЧТО-НИБУДЬ ВАЖНОЕ В ИГРЕ.</p>
+            <div class="game-day-tip"><span class="game-day-tip-label">СОВЕТ ТРЕНЕРУ</span><strong id="gameDayTipTitle">ТРЕНИРОВКИ</strong><p id="gameDayTipText">Развивай игроков и готовь команду.</p><button id="gameDayTipButton" type="button">ПЕРЕЙТИ ›</button></div>
+            <button id="nextGameDayButton" class="skip-day-button hidden" type="button">НАЧАТЬ СЛЕДУЮЩИЙ ДЕНЬ</button>
+          </section>
           <button id="seasonCalendarButton" class="season-calendar-button" type="button">КАЛЕНДАРЬ СЕЗОНА</button>
           <button id="startMatchButton" class="start-match-button hidden" type="button">НАЧАТЬ МАТЧ</button>
         </div>
