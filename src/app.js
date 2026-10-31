@@ -183,14 +183,14 @@ function renderTeamRecords(showAll=false) {
     if(!side||!e.scorer)return;
     const teamId=side==="home"?m.homeId:m.awayId;
     if(teamId!==ownId)return;
-    const p=players.get(e.scorer)||{name:e.scorer,goals:0,assists:0,last:m};
-    p.goals++;p.last=m;players.set(e.scorer,p);
-    if(e.assist){const a=players.get(e.assist)||{name:e.assist,goals:0,assists:0,last:m};a.assists++;a.last=m;players.set(e.assist,a);}
+    const p=players.get(e.scorer)||{name:e.scorer,goals:0,assists:0,lastGoalRecord:m};
+    p.goals++;p.lastGoalRecord=m;players.set(e.scorer,p);
+    if(e.assist){const a=players.get(e.assist)||{name:e.assist,goals:0,assists:0,lastAssistRecord:m};a.assists++;a.lastAssistRecord=m;players.set(e.assist,a);}
   }));
   const scorers=[...players.values()].filter(p=>p.goals>0).sort((a,b)=>b.goals-a.goals||b.assists-a.assists||a.name.localeCompare(b.name,"ru"));
   const assistants=[...players.values()].filter(p=>p.assists>0).sort((a,b)=>b.assists-a.assists||b.goals-a.goals||a.name.localeCompare(b.name,"ru"));
-  if(scorers[0])records.push({icon:"⚽",title:"Лучший бомбардир",value:scorers[0].name+" · "+scorers[0].goals+" гол.",detail:"За всю историю команды",date:dateLabel(scorers[0].last)});
-  if(assistants[0])records.push({icon:"👟",title:"Лучший ассистент",value:assistants[0].name+" · "+assistants[0].assists,detail:"Голевых передач",date:dateLabel(assistants[0].last)});
+  if(scorers[0])records.push({icon:"⚽",title:"Лучший бомбардир",value:scorers[0].name+" · "+scorers[0].goals+" гол.",detail:"За всю историю команды",date:dateLabel(scorers[0].lastGoalRecord)});
+  if(assistants[0])records.push({icon:"👟",title:"Лучший ассистент",value:assistants[0].name+" · "+assistants[0].assists,detail:"Голевых передач",date:dateLabel(assistants[0].lastAssistRecord)});
   const streak=(kind)=>{let best=0,current=0,start=null,bestStart=null,bestEnd=null;matches.forEach((m,i)=>{const ok=m.result===kind;if(ok){current++;if(current===1)start=m;if(current>best){best=current;bestStart=start;bestEnd=m;}}else current=0;});return {count:best,start:bestStart,end:bestEnd};};
   const winning=streak("W"),losing=streak("L");
   if(winning.count)records.push({icon:"📈",title:"Победная серия",value:winning.count+" матч"+(winning.count===1?"":"ей")+" подряд",detail:"Лучшая серия за историю",date:dateLabel(winning.end)});
