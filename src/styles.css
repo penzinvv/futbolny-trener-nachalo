@@ -855,3 +855,37 @@ body{background:radial-gradient(ellipse at 52% 0%,rgba(20,80,54,.45),transparent
 .game-day-tip button{grid-column:2;grid-row:2;align-self:center;padding:7px 9px;border:1px solid #3eaa76;border-radius:8px;background:#174b35;color:#8ff7bc;font-size:9px;font-weight:900;cursor:pointer}
 .game-day-timer-panel>.skip-day-button{width:100%;margin-top:9px}
 @media(max-width:480px){.game-day-timer-panel{padding:10px}.game-day-timer-top strong{font-size:11px}#gameDayTimerValue{font-size:20px}}
+
+
+/* Версия 2.6.4 — страница кубка «Достаток» */
+.cup-page{display:grid;gap:14px;min-width:0}
+.cup-intro{display:grid;grid-template-columns:90px minmax(0,1fr);align-items:center;gap:16px}
+.cup-page-emblem{width:86px;height:86px;object-fit:contain;filter:drop-shadow(0 4px 14px #d9ad4a33)}
+.cup-intro h2,.cup-winners-history h2{margin:0 0 6px;color:#f5d77a}
+.cup-intro p{margin:4px 0;line-height:1.55}
+.cup-season-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.cup-season-controls h3{margin:0;color:#eaf9ef}
+.cup-season-controls select{max-width:220px}
+.cup-season-content{display:grid;gap:12px}
+.cup-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.cup-summary-grid .cabinet-metric b{overflow-wrap:anywhere}
+.cup-block{padding:15px;border:1px solid #276447;border-radius:14px;background:linear-gradient(145deg,#0b2b20,#061c14)}
+.cup-block h3{margin:0 0 10px;color:#f5d77a;font-size:15px}
+.cup-block>p{margin:0;line-height:1.55}
+.cup-match-row{display:grid;grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr);align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #1b4933}
+.cup-match-row:last-child{border-bottom:0}
+.cup-match-row b{overflow-wrap:anywhere;font-size:12px}
+.cup-match-row b:last-of-type{text-align:right}
+.cup-match-row strong{text-align:center;font-size:19px;color:#f7d66c;font-variant-numeric:tabular-nums}
+.cup-match-row small{grid-column:1/-1;color:#a9cdb7;text-align:center;font-size:10px}
+.cup-player-stats{display:grid;gap:0;overflow-x:auto}
+.cup-player-stat-row{display:grid;grid-template-columns:minmax(120px,1.4fr) minmax(110px,1.2fr) repeat(3,minmax(50px,.45fr));gap:8px;padding:9px 6px;border-bottom:1px solid #1a4832;font-size:11px}
+.cup-player-stat-row span{overflow-wrap:anywhere}
+.cup-player-stat-row span:nth-child(n+3){text-align:center;font-variant-numeric:tabular-nums}
+.cup-player-stat-row.is-header{color:#85cda5;font-size:9px;font-weight:900;text-transform:uppercase}
+.cup-winner-list{display:grid;gap:8px}
+.cup-winner-row{display:grid;grid-template-columns:100px minmax(0,1fr);gap:4px 12px;align-items:center;padding:12px;border:1px solid #285b40;border-radius:11px;background:#08251a}
+.cup-winner-row>b{color:#e9c85f;font-size:11px}
+.cup-winner-row>strong{font-size:13px;overflow-wrap:anywhere}
+.cup-winner-row>small{grid-column:2;color:#a9cdb7;font-size:10px}
+@media(max-width:650px){.cup-intro{grid-template-columns:58px minmax(0,1fr);gap:10px;padding:13px}.cup-page-emblem{width:56px;height:56px}.cup-intro h2{font-size:17px}.cup-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cup-block{padding:12px}.cup-match-row{grid-template-columns:minmax(0,1fr) 45px minmax(0,1fr);gap:6px}.cup-match-row b{font-size:10px}.cup-match-row strong{font-size:16px}.cup-player-stat-row{grid-template-columns:minmax(105px,1.3fr) minmax(90px,1fr) repeat(3,44px);font-size:10px}.cup-winner-row{grid-template-columns:78px minmax(0,1fr)}}
