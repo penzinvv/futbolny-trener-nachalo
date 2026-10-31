@@ -543,7 +543,7 @@ function renderCupPage(){
  const heading=document.createElement("section");heading.className="feature-panel cup-intro";
  const emblem=document.createElement("img");emblem.className="cup-page-emblem";emblem.src="/images/awards/awardcupdostatok.png";emblem.alt="Кубок Достаток";emblem.onerror=()=>{emblem.onerror=null;emblem.src="/images/awards/awardcupdostatok.jpg";emblem.onerror=()=>emblem.remove()};
  const intro=document.createElement("div");intro.append(safeText("h2","Кубок «Достаток»"),safeText("p","Ежесезонный кубковый турнир на выбывание. Восемь команд проходят в основную сетку; остальные команды проводят товарищеские встречи в дни кубковых этапов.","muted"));
- heading.append(emblem,intro,safeText("p","По текущему календарю участники объявляются после 10-го тура; четвертьфиналы, полуфиналы и финал проходят в перерыве между кругами.","muted"));wrap.append(heading);
+ heading.append(emblem,intro,safeText("p","Жеребьёвка проводится после 9-го тура. Четвертьфиналы — дни 61, 62, 64 и 65; полуфиналы — дни 68 и 70; финал — день 75.","muted"));wrap.append(heading);
  const controls=document.createElement("section");controls.className="feature-panel cup-season-controls";controls.append(safeText("h3","Архив розыгрышей"));
  const select=document.createElement("select");select.className="league-select";select.setAttribute("aria-label","Выбрать сезон кубка");
  seasons.forEach(season=>select.add(new Option("Сезон "+season,season)));select.value=selected;
@@ -1348,6 +1348,28 @@ function canAdvanceCoachDay(){
  const f=currentOfficialFixture();if(!f)return true;
  const key=roundFixtureKey(round,f);return Boolean(state.leagueResults?.[key]);
 }
+function simulateEndSeasonFriendlyDay(day){
+ const pair=END_SEASON_FRIENDLIES[Number(day)];if(!pair||!leagueData)return;
+ state.seasonFriendlyResults=Array.isArray(state.seasonFriendlyResults)?state.seasonFriendlyResults:[];
+ const season=Number(state.seasonNumber)||1,keyPrefix=season+":"+day+":";
+ if(state.seasonFriendlyResults.some(x=>String(x.key||"").startsWith(keyPrefix)))return;
+ const first=allCurrentLeagueTeams(pair[0]).slice().sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+ const second=allCurrentLeagueTeams(pair[1]).slice().sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+ const sameLeague=pair[0]===pair[1],offset=(season+Number(day))%Math.max(1,second.length);
+ const rotated=second.map((_,i)=>second[(i+offset)%second.length]);
+ const fixtures=[];
+ if(sameLeague){const rotatedFirst=first.map((_,i)=>first[(i+offset)%first.length]);for(let i=0;i+1<rotatedFirst.length;i+=2)fixtures.push([rotatedFirst[i],rotatedFirst[i+1]])}
+ else for(let i=0;i<Math.min(first.length,rotated.length);i++)fixtures.push([first[i],rotated[i]]);
+ fixtures.forEach(([home,away])=>{
+  if(!home||!away)return;
+  const key=keyPrefix+home.id+":"+away.id;if(state.seasonFriendlyResults.some(x=>x.key===key))return;
+  const rand=seededCupRandom("season-friendly:"+key),score=team=>Math.max(0,Math.min(6,Math.floor(rand()*3)+Math.floor(cupTeamPower(team)/35)));
+  const homeScore=score(home),awayScore=score(away),result={key,season,day,homeId:home.id,awayId:away.id,homeName:matchTeamLabel(home),awayName:matchTeamLabel(away),homeScore,awayScore,friendly:true};
+  state.seasonFriendlyResults.push(result);
+  const ownId=getUserTeam()?.id;
+  if(home.id===ownId||away.id===ownId)publishCoachEventOnce("season-friendly:"+key,"news","Товарищеский матч",result.homeName+" "+homeScore+":"+awayScore+" "+result.awayName+". Результат не влияет на таблицу лиги.",{priority:"normal"});
+ });
+}
 function advanceCoachDay(){
  if(!leagueData){alert("Календарь ещё загружается.");return}
  if(!canAdvanceCoachDay()){alert("Сегодня официальный матч тура. На главной странице появилась кнопка «НАЧАТЬ МАТЧ».");return}
@@ -1376,6 +1398,7 @@ function advanceCoachDay(){
   simulateCupFriendlyRound(currentSeason,"friendly-day-"+state.gameDay,draw.excluded);
  }
  simulateScheduledLeagueResultsForDay(state.gameDay);
+ if(END_SEASON_FRIENDLIES[state.gameDay])simulateEndSeasonFriendlyDay(state.gameDay);
  let note="";
  if(state.gameDay===61)note="Начинается стадия четвертьфиналов кубка «Достаток». Матчи пройдут в дни 61, 62, 64 и 65.";
  if(state.gameDay===68)note="Сегодня проходят первые полуфиналы кубка «Достаток». Второй полуфинал назначен на день 70.";
@@ -1776,7 +1799,7 @@ function renderSeasonCalendar(){
 }
 function renderOtherRoundMatches(){
  const wrap=document.createElement("div");wrap.className="tournament-other-matches-page";
- const viewedLeague=["Нижняя лига","Верхняя лига"].includes(state.tournamentViewLeague)?state.tournamentViewLeague:"Нижняя лига";
+ const viewedLeague=["Нижняя лига","Верхняя лига"].includes(state.tournamentViewLeague)?state.tournamentViewLeague:currentCoachLeague();
  const round=officialRoundForDay(Number(state.gameDay)||1,viewedLeague);
  const section=document.createElement("section");section.className="panel tournament-other-matches";
  const header=document.createElement("div");header.className="section-title";header.append(safeText("h2","Другие встречи · "+viewedLeague));
