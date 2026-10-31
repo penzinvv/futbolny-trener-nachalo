@@ -158,7 +158,7 @@ $("saveAvatarChange").addEventListener("click", () => {
 });
 function showSetup() { $("onboarding").classList.remove("hidden"); $("dashboard").classList.add("hidden"); }
 
-function renderTeamRecords() {
+function renderTeamRecords(showAll=false) {
   const host=$("teamRecordsList");
   if(!host)return;
   host.replaceChildren();
@@ -198,7 +198,7 @@ function renderTeamRecords() {
   const highestScoring=[...matches].sort((a,b)=>b.gf-a.gf||b.ga-a.ga)[0];
   if(highestScoring)records.push({icon:"🔥",title:"Самый результативный матч",value:highestScoring.gf+" гол.",detail:"Команда — "+opponentLabel(highestScoring),date:dateLabel(highestScoring)});
   if(!records.length){const empty=safeText("p","Рекорды появятся после первых официальных матчей.","team-records-empty");host.append(empty);return;}
-  records.slice(0,6).forEach(record=>{
+  records.slice(0,showAll?records.length:6).forEach(record=>{
     const row=document.createElement("article");row.className="team-record-row";
     const icon=safeText("span",record.icon,"team-record-icon");
     const body=document.createElement("div");body.className="team-record-body";
@@ -206,7 +206,7 @@ function renderTeamRecords() {
     row.append(icon,body,safeText("time",record.date,"team-record-date"));host.append(row);
   });
   const more=$("allTeamRecordsButton");
-  if(more)more.onclick=()=>openPage("cabinet");
+  if(more){more.textContent=showAll?"Свернуть ›":"Все рекорды ›";more.onclick=()=>renderTeamRecords(!showAll);}
 }
 
 function render() {
