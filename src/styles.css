@@ -1100,3 +1100,24 @@ body{background:radial-gradient(ellipse at 52% 0%,rgba(20,80,54,.45),transparent
 @media(max-width:620px){.training-panel{padding:13px}.training-form{grid-template-columns:minmax(0,1fr);gap:8px}.training-roster-grid{grid-column:1;grid-template-columns:minmax(0,1fr);max-height:340px;overflow:auto;padding-right:2px}.training-roster-player{grid-template-columns:42px minmax(0,1fr) auto}
 .training-player-summary{grid-column:1;grid-template-columns:70px minmax(0,1fr);gap:9px;padding:10px}.training-player-summary>img{width:70px;height:82px}.training-skill-preview{grid-column:1/-1;grid-template-columns:repeat(4,minmax(0,1fr))}.training-status,.training-form>button{grid-column:1}
 .feature-player-row.transfer-player-row{grid-template-columns:minmax(0,1fr);gap:9px;padding:10px}.transfer-player-identity{gap:10px}.transfer-player-portrait{width:44px;height:50px;flex-basis:44px}.transfer-relation{padding-left:54px}.transfer-player-actions{grid-column:1;justify-content:stretch}.transfer-player-actions>button{flex:1}.transfer-team-logo{width:42px;height:42px;flex-basis:42px}.transfer-team-info>b{font-size:15px}.transfer-team-kicker{font-size:8px;letter-spacing:.06em}}
+
+
+/* Матч 2.7.5 — компактные составы и события без пустого поля */
+.match-score-scorers{display:flex;flex-wrap:wrap;justify-content:center;gap:5px 12px;margin:4px 0 8px;min-width:0}
+.match-score-scorer{display:inline-flex;align-items:center;gap:6px;max-width:100%;font-size:12px;color:var(--muted);white-space:nowrap}
+.match-score-scorer b{color:var(--accent);font-variant-numeric:tabular-nums}
+.match-events-panel .match-event-list{display:grid;gap:5px}
+.match-events-panel .match-event{display:grid;grid-template-columns:32px 20px minmax(0,1fr);align-items:center;gap:7px;min-width:0;padding:7px 9px}
+.match-events-panel .match-event-text{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25}
+.match-rosters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;min-width:0}
+.match-roster-column{display:grid;align-content:start;gap:5px;min-width:0}
+.match-roster-heading{display:flex;align-items:center;gap:8px;padding:0 0 7px;border-bottom:1px solid var(--line);min-width:0}
+.match-roster-heading h3{font-size:13px;margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.match-roster-logo{width:26px;height:26px;object-fit:contain;flex:none}
+.match-roster-player{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:8px;min-width:0;padding:5px 7px;border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,.018)}
+.match-roster-player .match-player-photo{width:32px;height:32px;border-width:1px}
+.match-roster-player-details{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0}
+.match-roster-player-details b{font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.match-roster-position,.match-roster-status{font-size:10px;font-weight:800;white-space:nowrap;color:var(--muted)}
+.match-roster-player.is-sent-off{opacity:.55}
+@media(max-width:640px){.match-rosters{grid-template-columns:1fr}.match-roster-player-details{justify-content:flex-start;flex-wrap:wrap}.match-events-panel .match-event{grid-template-columns:28px 18px minmax(0,1fr);gap:5px;padding:6px}.match-events-panel .match-event-text{font-size:12px}.match-score-scorer{font-size:11px}}
