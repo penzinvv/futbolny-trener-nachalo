@@ -13,7 +13,7 @@
       <div class="brand"><span class="brand-mark">ДФ</span><div><strong>ДВОРОВЫЙ ФУТБОЛ</strong><small>НАЧАЛО · ВЕРСИЯ 2.5.9</small></div></div>
       <div class="topbar-actions">
         <button id="fullscreenToggle" class="fullscreen-toggle" type="button" aria-pressed="false" title="Развернуть игру на весь экран">⛶ НА ВЕСЬ ЭКРАН</button>
-        <button id="musicToggle" class="music-toggle" type="button" aria-pressed="true">♫ Радио включено</button>
+        <button id="musicToggle" class="music-toggle" type="button" aria-pressed="true"><span class="radio-disc" aria-hidden="true">♫</span><span class="radio-copy"><strong>РАДИО ДВОРА</strong><small>Нажми для запуска музыки</small></span><span class="radio-equalizer" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></button>
         <div class="coach-chip"><img id="coachAvatar" class="avatar avatar-image" src="/images/avatarteam/avatarteam1.jpg" alt="Аватар тренера"><div class="coach-chip-info"><b id="coachNameLabel">Тренер</b><small>Уровень <span id="coachLevel">1</span></small><button id="changeAvatarButton" class="text-button hidden" type="button">Сменить аватар</button></div></div>
       </div>
     </header>
@@ -33,6 +33,23 @@
 
     <section id="avatarChangePanel" class="panel avatar-change-panel hidden"><div class="section-title"><div><p class="eyebrow">ВНЕШНОСТЬ ТРЕНЕРА</p><h2>Выбери новый аватар</h2></div><button id="cancelAvatarChange" class="back-button" type="button">Отмена</button></div><p id="avatarChangeMessage" class="muted"></p><div id="avatarChangePicker" class="avatar-picker"></div><button id="saveAvatarChange" class="primary" type="button">Подтвердить смену</button></section>
     <section id="dashboard">
+      <div class="dashboard-layout">
+        <aside class="sidebar-nav" aria-label="Основная навигация">
+          <button class="sidebar-link is-active" type="button" data-home><span aria-hidden="true">⌂</span> ГЛАВНАЯ</button>
+          <button class="sidebar-link" type="button" data-page="mail"><span aria-hidden="true">✉</span> ПОЧТА</button>
+          <button class="sidebar-link" type="button" data-page="ratings"><span aria-hidden="true">🏆</span> ТРЕНЕРСКИЙ РЕЙТИНГ</button>
+          <button class="sidebar-link" type="button" data-page="cabinet"><span aria-hidden="true">▦</span> КАБИНЕТ ТРЕНЕРА</button>
+          <button class="sidebar-link" type="button" data-page="goals"><span aria-hidden="true">◎</span> ЦЕЛИ ТРЕНЕРА</button>
+          <button class="sidebar-link" type="button" data-page="training"><span aria-hidden="true">⚽</span> ТРЕНИРОВКИ</button>
+          <button class="sidebar-link" type="button" data-page="league"><span aria-hidden="true">◉</span> ЛИГА</button>
+          <div class="sidebar-divider"></div>
+          <button class="sidebar-link secondary-link" type="button" data-page="transfers"><span aria-hidden="true">⇄</span> ТРАНСФЕРЫ</button>
+          <button class="sidebar-link secondary-link" type="button" data-page="shop"><span aria-hidden="true">🛒</span> МАГАЗИН</button>
+          <button class="sidebar-link secondary-link" type="button" data-page="help"><span aria-hidden="true">?</span> FAQ / ПОМОЩЬ</button>
+          <button class="sidebar-link secondary-link" type="button" data-page="support"><span aria-hidden="true">♡</span> ВАША ПОДДЕРЖКА</button>
+          <button class="sidebar-link secondary-link" type="button" data-page="developer"><span aria-hidden="true">ⓘ</span> О РАЗРАБОТЧИКЕ</button>
+        </aside>
+        <div class="dashboard-content">
       <div class="hero pitch">
         <div class="pitch-lines"></div>
         <div class="hero-content">
@@ -47,14 +64,15 @@
           <button id="seasonCalendarButton" class="season-calendar-button" type="button">КАЛЕНДАРЬ СЕЗОНА</button>
           <button id="startMatchButton" class="start-match-button hidden" type="button">НАЧАТЬ МАТЧ</button>
         </div>
-        <nav class="hero-manager-actions" aria-label="Быстрые действия тренера">
-          <button data-page="mail" class="hero-action-button" type="button">ПОЧТА</button>
-          <button data-page="ratings" class="hero-action-button" type="button">ТРЕНЕРСКИЙ РЕЙТИНГ</button>
-          <button data-page="cabinet" class="hero-action-button" type="button">КАБИНЕТ ТРЕНЕРА</button>
-          <button data-page="goals" class="hero-action-button" type="button">ЦЕЛИ ТРЕНЕРА</button>
-          <button data-page="training" class="hero-action-button" type="button">ТРЕНИРОВКИ</button>
-          <button data-page="league" class="hero-action-button" type="button">ЛИГА</button>
-        </nav>
+        <section class="next-match-card" aria-label="Следующий матч">
+          <p class="eyebrow">СЛЕДУЮЩИЙ МАТЧ</p>
+          <div class="match-preview-teams">
+            <div class="match-preview-team"><span class="match-preview-logo"><img id="nextMatchUserLogo" src="/images/avatarteam/avatarteam1.jpg" alt=""></span><b id="nextMatchUserName">Ваша команда</b><small>Твоя команда</small></div>
+            <span class="match-versus">VS</span>
+            <div class="match-preview-team"><span class="match-preview-logo"><img id="nextMatchOpponentLogo" src="/images/logoteams/krepkieoreshki.jpg" alt=""></span><b id="nextMatchOpponentName">Соперник</b><small id="nextMatchOpponentNote">По расписанию лиги</small></div>
+          </div>
+          <div class="match-preview-footer"><span>⚽ <b id="nextMatchRoundLabel">Матч по расписанию</b></span><span>📅 <b id="nextMatchDayLabel">День 7</b></span></div>
+        </section>
       </div>
 
       <div class="stat-grid">
@@ -79,8 +97,9 @@
             <button data-page="developer" aria-label="О разработчике"><img class="menu-button-image" src="/images/key/razrabotchik.jpg" alt="О разработчике"><b>О РАЗРАБОТЧИКЕ</b><small>Кто создаёт игру</small></button>
           </nav>
         </section>
-        <section class="panel home-chat-panel" aria-label="Онлайн-чат тренеров">
-          <div class="section-title"><div><p class="eyebrow">СООБЩЕСТВО</p><h2>Онлайн-чат тренеров</h2></div><span id="coachChatStatus" class="chat-status">Подключаемся…</span></div>
+        <section class="panel home-chat-panel" id="homeChatPanel" aria-label="Онлайн-чат тренеров">
+          <div class="section-title"><div><p class="eyebrow">СООБЩЕСТВО</p><h2>Онлайн-чат тренеров</h2></div><div class="chat-heading-actions"><span id="coachChatStatus" class="chat-status">Подключаемся…</span><button id="chatCollapseToggle" class="chat-collapse-toggle" type="button" aria-expanded="true" aria-controls="chatPanelBody" aria-label="Свернуть чат">−</button></div></div>
+          <div id="chatPanelBody" class="chat-panel-body">
           <div id="coachChatMessages" class="coach-chat-messages" aria-live="polite"><p class="muted">Загружаем сообщения…</p></div>
           <form id="coachChatForm" class="coach-chat-form">
             <textarea id="coachChatInput" maxlength="300" rows="2" placeholder="Напиши сообщение…" aria-label="Сообщение в онлайн-чате" required></textarea>
@@ -88,9 +107,12 @@
           </form>
           <p class="chat-disclaimer">Общайся уважительно. Не публикуй личные данные.</p>
           <div id="eventFeed" hidden aria-hidden="true"></div>
+          </div>
         </section>
       </div>
-      <footer>Дворовый футбол. Начало · Версия 2.5.9</footer>
+      <footer>Дворовый футбол. Начало · Версия 2.6.0</footer>
+        </div>
+      </div>
     </section>
 
     <section id="pageView" class="panel page-view hidden">
