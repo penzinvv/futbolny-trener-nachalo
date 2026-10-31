@@ -658,7 +658,7 @@ body{background:radial-gradient(ellipse at 52% 0%,rgba(20,80,54,.45),transparent
 .music-toggle[aria-pressed="true"] .radio-equalizer i{animation:radio-wave .85s ease-in-out infinite alternate}
 .music-toggle[aria-pressed="true"] .radio-equalizer i:nth-child(2n){animation-delay:.2s}.music-toggle[aria-pressed="true"] .radio-equalizer i:nth-child(3n){animation-delay:.4s}
 @keyframes radio-wave{from{transform:scaleY(.35);opacity:.5}to{transform:scaleY(1);opacity:1}}
-.coach-chip{flex:0 0 auto}
+.coach-chip{flex:0 0 auto;order:3}
 .dashboard-layout{display:grid;grid-template-columns:190px minmax(0,1fr);gap:16px;align-items:start}
 .sidebar-nav{position:sticky;top:14px;display:flex;flex-direction:column;gap:5px;padding:12px;border:1px solid #176a49;border-radius:18px;background:linear-gradient(180deg,rgba(4,30,22,.97),rgba(4,22,17,.98));box-shadow:0 16px 35px #0004;min-width:0}
 .sidebar-link{display:flex;align-items:center;gap:11px;width:100%;min-height:44px;padding:9px 10px;border:1px solid transparent;border-radius:10px;background:transparent;color:#e8f7ed;text-align:left;font:800 11px/1.25 system-ui,sans-serif;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
