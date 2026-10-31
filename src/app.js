@@ -1162,6 +1162,7 @@ function simulateCupFixture(season,stage,home,away,index){
  const recordGoals=(team,goals)=>{
   const roster=Array.isArray(team?.players)?team.players:[];
   if(!roster.length)return;
+  roster.forEach(player=>{const id=String(player.careerId||player.id||player.name);if(!playerStats.some(x=>x.teamId===team.id&&x.playerId===id))playerStats.push({teamId:team.id,teamName:matchTeamLabel(team),playerId:id,playerName:player.name,goals:0,assists:0,appearances:1})});
   for(let goal=0;goal<goals;goal++){
    const scorer=roster[Math.floor(rand()*roster.length)];
    const scorerId=String(scorer.careerId||scorer.id||scorer.name);
