@@ -1395,7 +1395,7 @@ function resolvePlayerMailRequest(item,decision){
    const start=activeOrFuture?Math.min(now,Number(existing.startAbsDay)||now):now,baseEnd=activeOrFuture?Number(existing.returnAbsDay):now;
    const absence=setPlayerAbsence(team,player,start,baseEnd+7,"Недоволен решением тренера и хочет отдохнуть от футбола"),returned=gameDateLabel(absence.returnAbsDay);
    item.responseLabel+=" Сработало событие 50/50: футболист недоступен до "+returned+".";
-   publishCoachEventOnce("player-refusal-absence:"+state.seasonNumber+":"+state.gameDay+":"+item.id,"player","Футболист недоволен решением тренера",player.name+" недоволен решением тренера и хочет отдохнуть от футбола. Он временно недоступен для команды и вернётся в "+returned+".",{priority:"high",important:true,day:state.gameDay,season:state.seasonNumber});
+   publishCoachEventOnce("player-refusal-absence:"+state.seasonNumber+":"+state.gameDay+":"+item.id,"player","Футболист недоволен решением тренера",player.name+" недоволен решением тренера и хочет отдохнуть от футбола. Он временно недоступен для команды и вернётся в "+returned+".",{priority:"high",important:true,day:state.gameDay,season:state.seasonNumber,popup:true});
   }else item.responseLabel+=" Футболист принял решение тренера и продолжит тренироваться.";
  }
  item.responseStatus=decision;item.read=true;updateCoachRespect();saveState();render();
