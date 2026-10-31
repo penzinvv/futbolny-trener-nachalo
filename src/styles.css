@@ -889,3 +889,177 @@ body{background:radial-gradient(ellipse at 52% 0%,rgba(20,80,54,.45),transparent
 .cup-winner-row>strong{font-size:13px;overflow-wrap:anywhere}
 .cup-winner-row>small{grid-column:2;color:#a9cdb7;font-size:10px}
 @media(max-width:650px){.cup-intro{grid-template-columns:58px minmax(0,1fr);gap:10px;padding:13px}.cup-page-emblem{width:56px;height:56px}.cup-intro h2{font-size:17px}.cup-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cup-block{padding:12px}.cup-match-row{grid-template-columns:minmax(0,1fr) 45px minmax(0,1fr);gap:6px}.cup-match-row b{font-size:10px}.cup-match-row strong{font-size:16px}.cup-player-stat-row{grid-template-columns:minmax(105px,1.3fr) minmax(90px,1fr) repeat(3,44px);font-size:10px}.cup-winner-row{grid-template-columns:78px minmax(0,1fr)}}
+
+
+/* GAMEPLAY PAGE VISUAL POLISH — v2.7.2 */
+/* Только оформление существующих элементов: игровые расчёты и обработчики не затрагиваются. */
+.training-panel{
+  position:relative;
+  isolation:isolate;
+  max-width:none;
+  overflow:hidden;
+  padding:clamp(18px,2.2vw,30px);
+  border-color:#22543f;
+  background:
+    radial-gradient(ellipse at 100% 0%,rgba(52,211,153,.105),transparent 38%),
+    linear-gradient(145deg,rgba(12,43,31,.98),rgba(6,27,20,.98));
+}
+.training-panel::before{
+  content:"РАЗВИТИЕ СОСТАВА";
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin:0 0 10px;
+  color:#55e6b0;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.18em;
+}
+.training-panel>h2{
+  margin:0 0 10px;
+  font-size:clamp(21px,2.2vw,29px);
+  line-height:1.18;
+  letter-spacing:-.025em;
+}
+.training-panel>p.muted{
+  max-width:900px;
+  line-height:1.7;
+}
+.training-form{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:10px 14px;
+  margin-top:22px;
+}
+.training-form>label{
+  align-self:end;
+  margin:0 0 -3px;
+  color:#8ddfc0;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.training-form>.league-select{
+  max-width:none;
+  min-height:46px;
+  padding:10px 13px;
+  border:1px solid #285b45;
+  border-radius:11px;
+  background:#071f17;
+  color:#effff7;
+}
+.training-form>.league-select:focus-visible{
+  outline:2px solid #42e6ad;
+  outline-offset:2px;
+}
+.training-player-summary{
+  grid-column:1/-1;
+  grid-template-columns:100px minmax(0,1fr);
+  gap:12px 18px;
+  margin-top:5px;
+  padding:16px;
+  border-color:#285c45;
+  border-radius:15px;
+  background:
+    linear-gradient(115deg,rgba(32,91,65,.28),transparent 55%),
+    #081f17;
+}
+.training-player-summary>img{
+  width:100px;
+  height:116px;
+  object-fit:cover;
+  object-position:center 20%;
+  border:1px solid #347a59;
+  border-radius:12px;
+  box-shadow:0 8px 22px rgba(0,0,0,.22);
+}
+.training-player-copy{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:7px;
+  min-width:0;
+}
+.training-player-copy>b{
+  color:#f2fff8;
+  font-size:clamp(16px,1.5vw,20px);
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+.training-player-copy>span{
+  color:#a8cfbd;
+  font-size:12px;
+  line-height:1.45;
+}
+.training-skill-preview{
+  grid-column:2;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:7px;
+}
+.training-skill-preview>span{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:37px;
+  padding:7px 5px;
+  border:1px solid #285640;
+  border-radius:9px;
+  font-size:12px;
+  font-weight:900;
+  text-align:center;
+}
+.training-skill-preview .skill-known{
+  background:linear-gradient(180deg,#123d2b,#0b2a1e);
+  color:#70f0b9;
+}
+.training-skill-preview .skill-hidden{
+  border-style:dashed;
+  background:#0a2118;
+  color:#779b89;
+}
+.training-status{
+  grid-column:1/-1;
+  margin:0;
+  padding:11px 13px;
+  border:1px solid rgba(71,208,151,.22);
+  border-radius:10px;
+  background:rgba(16,64,44,.35);
+  color:#a9ddc3;
+  font-size:12px;
+  line-height:1.6;
+}
+.training-form>button{
+  grid-column:1/-1;
+  justify-self:stretch;
+  min-height:48px;
+  border-radius:12px;
+  background:linear-gradient(100deg,#39d99e,#62f0b7);
+  box-shadow:0 8px 22px rgba(31,206,141,.12);
+  transition:filter .15s ease,transform .15s ease,box-shadow .15s ease;
+}
+.training-form>button:hover:not(:disabled){
+  filter:brightness(1.06);
+  transform:translateY(-1px);
+  box-shadow:0 10px 25px rgba(31,206,141,.2);
+}
+.training-form>button:disabled{
+  box-shadow:none;
+}
+.training-panel>p:last-child{
+  margin-top:16px;
+  padding-top:13px;
+  border-top:1px solid rgba(78,145,111,.2);
+  font-size:11px;
+  line-height:1.7;
+}
+@media(max-width:650px){
+  .training-panel{padding:15px}
+  .training-form{grid-template-columns:minmax(0,1fr);gap:8px}
+  .training-form>label{margin-top:8px}
+  .training-form>.league-select{min-height:44px}
+  .training-player-summary{grid-column:1;grid-template-columns:70px minmax(0,1fr);padding:11px;gap:9px 12px}
+  .training-player-summary>img{width:70px;height:82px}
+  .training-skill-preview{grid-column:1/-1;grid-template-columns:repeat(4,minmax(0,1fr))}
+  .training-form>button,.training-status{grid-column:1}
+}
