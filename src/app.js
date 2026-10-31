@@ -1920,6 +1920,7 @@ function renderTraining() {
 
 if (!state.coachName || !state.teamName) showSetup();
 else { $("onboarding").classList.add("hidden"); render(); }
+if (state.gameDayStartedAt) { updateGameDayTimerUI(); gameDayTimerInterval=setInterval(updateGameDayTimerUI,250); }
 if (leagueData) initializeCloudCareer();
 else {
   const cloudInit = setInterval(() => {
