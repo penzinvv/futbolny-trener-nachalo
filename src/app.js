@@ -1304,7 +1304,7 @@ function teamsLeagueForMatch(match){return cupBracketTeam(match.homeId)?.league|
 
 function ensureCoachCommunicationState(){state.coachMail=Array.isArray(state.coachMail)?state.coachMail:[];state.coachChronicle=Array.isArray(state.coachChronicle)?state.coachChronicle:[];state.coachMailKeys=state.coachMailKeys&&typeof state.coachMailKeys==="object"?state.coachMailKeys:{}}
 function publishCoachEvent({key,type="news",title,message,priority="normal",day=state.gameDay,season=state.seasonNumber,important=false,responseType=null,playerKey=null,absenceStartAbsDay=null,absenceReturnAbsDay=null,actionPage=null,actionLabel=null}){
- ensureCoachCommunicationState();if(!key||state.coachMailKeys[key])return false;state.coachMailKeys[key]=true;
+ ensureCoachCommunicationState();if(!key)return false;if(state.coachMail.some(item=>item.key===key))return false;state.coachMailKeys[key]=true;
  const item={id:makeCareerId(),key,type,title,message,priority,important,season:Number(season)||1,day:Number(day)||1,at:Date.now(),read:false,archived:false,responseType,playerKey,absenceStartAbsDay,absenceReturnAbsDay,actionPage,actionLabel};
  state.coachMail.unshift(item);state.coachChronicle.unshift({...item});
  const normal=state.coachMail.filter(x=>!x.important);if(normal.length>50){const remove=new Set(normal.slice(50).map(x=>x.id));state.coachMail=state.coachMail.filter(x=>!remove.has(x.id))}
@@ -1337,15 +1337,15 @@ function publishScheduledInfoMail(day){
  if(day===12)publishCoachEventOnce("scout-general:"+season,"news","Поиск молодых футбольных талантов","Скаутская служба ФК «Динамо-Владивосток» обращает внимание на вашу команду. Возможно, среди футболистов есть молодой игрок с хорошим потенциалом, которому стоит дать шанс проявить себя. Будем рады сотрудничеству.",{priority:"high",important:true,day:12,season,actionPage:"players",actionLabel:"Посмотреть футболистов"});
  if(day===48)publishCoachEventOnce("cup-notice:"+season,"news","Скоро начнётся кубок «Достаток»","Первые матчи кубка «Достаток» запланированы на 61-й игровой день. Следите за календарём и готовьтесь к предстоящему этапу!",{priority:"normal",day:48,season,actionPage:"cup",actionLabel:"Открыть кубок «Достаток»"});
 }
-function publishScheduledPlayerRequest(day){
+function publishScheduledPlayerRequest(day,scheduledSeason=state.seasonNumber){
  const team=getUserTeam();if(!team||!Array.isArray(team.players)||!team.players.length)return false;
  const player=team.players[Math.min(day===4?0:1,team.players.length-1)]||team.players[0];if(!player)return false;
- const matchDay=nextOfficialMatchDay(day);if(!matchDay)return false;const start=absoluteGameDay(state.seasonNumber,matchDay),end=absoluteGameDay(state.seasonNumber,matchDay+1);
+ const matchDay=(LEAGUE_MATCH_DAYS[currentCoachLeague()]||LEAGUE_MATCH_DAYS["Нижняя лига"]).find(value=>Number(value)>Number(day));if(!matchDay)return false;const start=absoluteGameDay(scheduledSeason,matchDay),end=absoluteGameDay(scheduledSeason,matchDay+1);
  const topic=day===4?"Личные проблемы перед ближайшим матчем":"Можно ли пропустить ближайший матч?";
  const message=day===4?"Привет, тренер. В последнее время у меня непростой период в личной жизни, и мне сложно сосредоточиться на футболе. Можно мне пропустить ближайший матч? Мне нужно немного времени, чтобы прийти в себя.\n\nЕсли ты согласишься, я буду недоступен на "+gameDateLabel(start)+" и вернусь в "+gameDateLabel(end)+". Буду ждать твоего ответа.":"Привет, тренер! Сейчас я активно готовлюсь к экзаменам, и учёба отнимает почти всё свободное время. Можно мне пропустить ближайший матч, чтобы спокойно подготовиться?\n\nЕсли ты согласишься, я буду недоступен на "+gameDateLabel(start)+" и вернусь в "+gameDateLabel(end)+". Спасибо за понимание!";
- return publishCoachEventOnce("player-request:"+state.seasonNumber+":"+day,"player",topic,player.name+": "+message,{priority:"high",important:true,day,season:state.seasonNumber,responseType:"player_absence_request",playerKey:getPlayerAbsenceKey(team,player),absenceStartAbsDay:start,absenceReturnAbsDay:end});
+ return publishCoachEventOnce("player-request:"+scheduledSeason+":"+day,"player",topic,player.name+": "+message,{priority:"high",important:true,day,season:scheduledSeason,responseType:"player_absence_request",playerKey:getPlayerAbsenceKey(team,player),absenceStartAbsDay:start,absenceReturnAbsDay:end});
 }
-function deliverScheduledCoachMail(day=state.gameDay){ensureCoachCommunicationState();const currentDay=Number(day);if(![1,2,4,12,19,48].includes(currentDay))return;if([1,2,12,48].includes(currentDay))publishScheduledInfoMail(currentDay);else publishScheduledPlayerRequest(currentDay)}
+function deliverScheduledCoachMail(day=state.gameDay){ensureCoachCommunicationState();const currentDay=Math.max(1,Number(day)||1),season=Number(state.seasonNumber)||1;for(let scheduledDay=1;scheduledDay<=Math.min(currentDay,182);scheduledDay++){if([1,2,12,48].includes(scheduledDay))publishScheduledInfoMail(scheduledDay);else if([4,19].includes(scheduledDay))publishScheduledPlayerRequest(scheduledDay,season)}}
 function resolvePlayerMailRequest(item,decision){
  if(!item||item.responseType!=="player_absence_request"||item.responseStatus)return;
  const team=getUserTeam(),player=team?.players?.find(p=>getPlayerAbsenceKey(team,p)===item.playerKey);
