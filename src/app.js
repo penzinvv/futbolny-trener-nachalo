@@ -219,6 +219,11 @@ let shuffledTracks = [];
 let currentTrackIndex = -1;
 let musicEnabled = true;
 let lastTrackPath = "";
+function setMusicButtonLabel(label) {
+  const copy = musicToggle?.querySelector(".radio-copy small");
+  if (copy) copy.textContent = label;
+  else if (musicToggle) musicToggle.textContent = "♫ " + label;
+}
 
 function shuffleTracks() {
   shuffledTracks = [...musicTracks];
@@ -242,11 +247,11 @@ async function playNextTrack() {
   lastTrackPath = shuffledTracks[currentTrackIndex];
   try {
     await musicPlayer.play();
-    musicToggle.textContent = "♫ Выключить радио";
+    setMusicButtonLabel("Радио играет · нажми, чтобы выключить");
     musicToggle.setAttribute("aria-pressed", "true");
   } catch (error) {
     musicEnabled = false;
-    musicToggle.textContent = "♫ Нажми для запуска радио";
+    setMusicButtonLabel("Нажми для запуска музыки");
     musicToggle.setAttribute("aria-pressed", "false");
     console.warn("Не удалось запустить фоновую музыку:", error);
   }
@@ -259,7 +264,7 @@ musicPlayer.addEventListener("error", () => {
   if (currentTrackIndex + 1 < shuffledTracks.length) playNextTrack();
   else {
     musicEnabled = false;
-    musicToggle.textContent = "♫ Музыка недоступна";
+    setMusicButtonLabel("Музыка временно недоступна");
     musicToggle.setAttribute("aria-pressed", "false");
   }
 });
@@ -267,7 +272,7 @@ musicToggle.addEventListener("click", async () => {
   if (musicEnabled) {
     musicEnabled = false;
     musicPlayer.pause();
-    musicToggle.textContent = "♫ Включить радио";
+    setMusicButtonLabel("Нажми для запуска музыки");
     musicToggle.setAttribute("aria-pressed", "false");
     return;
   }
@@ -277,7 +282,7 @@ musicToggle.addEventListener("click", async () => {
   if (musicPlayer.src && musicPlayer.paused && currentTrackIndex >= 0) {
     try {
       await musicPlayer.play();
-      musicToggle.textContent = "♫ Выключить радио";
+      setMusicButtonLabel("Радио играет · нажми, чтобы выключить");
       musicToggle.setAttribute("aria-pressed", "true");
     } catch { await playNextTrack(); }
   } else {
@@ -286,7 +291,7 @@ musicToggle.addEventListener("click", async () => {
 });
 // При загрузке пробуем включить радио автоматически. Некоторые браузеры блокируют autoplay;
 // в таком случае кнопка предложит запуск после действия пользователя.
-if (musicToggle) { musicToggle.textContent = "♫ Радио включено"; musicToggle.setAttribute("aria-pressed", "true"); }
+if (musicToggle) { setMusicButtonLabel("Нажми для запуска музыки"); musicToggle.setAttribute("aria-pressed", "true"); }
 void playNextTrack();
 
 $("setupForm").addEventListener("submit", async (event) => {
