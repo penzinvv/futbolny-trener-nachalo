@@ -1310,6 +1310,39 @@ function publishCoachEvent({key,type="news",title,message,priority="normal",day=
  state.coachChronicle=state.coachChronicle.slice(0,30);saveState();if(item.popupRequested)setTimeout(showNextGameEventPopup,80);return true
 }
 function publishCoachEventOnce(key,type,title,message,options={}){return publishCoachEvent({key,type,title,message,...options})}
+let activeGameEventPopup=false;
+function showNextGameEventPopup(){
+ if(activeGameEventPopup||!state.coachName||!state.teamName||!document.body)return;
+ ensureCoachCommunicationState();
+ const item=state.coachMail.filter(x=>x.popupRequested&&!x.popupSeen).sort((a,b)=>(Number(a.season)-Number(b.season))||(Number(a.day)-Number(b.day))||(Number(a.at)-Number(b.at)))[0];
+ if(!item)return;
+ activeGameEventPopup=true;
+ const overlay=document.createElement("div");overlay.id="gameEventPopupOverlay";overlay.setAttribute("role","presentation");
+ Object.assign(overlay.style,{position:"fixed",inset:"0",zIndex:"10000",background:"rgba(0,10,7,.82)",display:"flex",alignItems:"center",justifyContent:"center",padding:"18px",backdropFilter:"blur(5px)"});
+ const dialog=document.createElement("section");dialog.setAttribute("role","dialog");dialog.setAttribute("aria-modal","true");dialog.setAttribute("aria-labelledby","gameEventPopupTitle");
+ Object.assign(dialog.style,{width:"min(620px,100%)",maxHeight:"min(82vh,760px)",overflowY:"auto",background:"linear-gradient(145deg,#0c3024,#041a13)",color:"#f1fff7",border:"1px solid #35d99a",borderRadius:"20px",padding:"clamp(20px,4vw,32px)",boxShadow:"0 24px 80px rgba(0,0,0,.55)",fontFamily:"inherit"});
+ const eyebrow=document.createElement("p");eyebrow.textContent=item.responseType==="player_absence_request"?"⚽ ЛИЧНЫЙ РАЗГОВОР":"📣 СОБЫТИЕ ВО ДВОРЕ";Object.assign(eyebrow.style,{color:"#55e9b0",fontWeight:"800",letterSpacing:".12em",fontSize:"12px",margin:"0 0 12px"});
+ const title=document.createElement("h2");title.id="gameEventPopupTitle";title.textContent=item.title;Object.assign(title.style,{fontSize:"clamp(21px,4vw,30px)",lineHeight:"1.15",margin:"0 0 12px"});
+ const date=document.createElement("p");date.textContent="Сезон "+item.season+" · День "+item.day;Object.assign(date.style,{fontSize:"12px",color:"#a7d8c2",margin:"0 0 16px"});
+ const message=document.createElement("p");message.textContent=item.message;Object.assign(message.style,{whiteSpace:"pre-line",lineHeight:"1.65",fontSize:"15px",margin:"0 0 24px"});
+ const actions=document.createElement("div");Object.assign(actions.style,{display:"flex",flexWrap:"wrap",gap:"10px",justifyContent:"flex-end"});
+ const closePopup=(markSeen=true)=>{if(markSeen){item.popupSeen=true;item.read=true;saveState()}overlay.remove();activeGameEventPopup=false;setTimeout(showNextGameEventPopup,250)};
+ const button=(label,kind,handler)=>{const b=document.createElement("button");b.type="button";b.textContent=label;Object.assign(b.style,{border:kind==="primary"?"1px solid #55e9b0":"1px solid #4b8e73",borderRadius:"10px",padding:"12px 16px",fontWeight:"800",fontSize:"13px",cursor:"pointer",background:kind==="primary"?"#36d99a":"#0b3a2b",color:kind==="primary"?"#052217":"#f1fff7",minHeight:"42px"});b.addEventListener("click",handler);actions.append(b);return b};
+ if(item.responseType==="player_absence_request"&&!item.responseStatus){
+  button("РАЗРЕШИТЬ ПРОПУСТИТЬ МАТЧ","primary",()=>{closePopup();resolvePlayerMailRequest(item,"accept")});
+  button("ОТКАЗАТЬ","secondary",()=>{closePopup();resolvePlayerMailRequest(item,"refuse")});
+  button("ПРЕДЛОЖИТЬ КОМПРОМИСС","secondary",()=>{closePopup();resolvePlayerMailRequest(item,"compromise")});
+ }else{
+  if(item.actionPage)button(item.actionLabel||"ПЕРЕЙТИ К РАЗДЕЛУ","primary",()=>{closePopup();openPage(item.actionPage)});
+  button("ПОНЯТНО","secondary",()=>closePopup());
+  const x=document.createElement("button");x.type="button";x.textContent="×";x.setAttribute("aria-label","Закрыть событие");Object.assign(x.style,{position:"absolute",right:"14px",top:"12px",border:"0",background:"transparent",color:"#b9f5d8",fontSize:"26px",cursor:"pointer"});x.addEventListener("click",()=>closePopup());
+  dialog.style.position="relative";dialog.append(x);
+ }
+ dialog.append(eyebrow,title,date,message,actions);overlay.append(dialog);
+ if(item.responseType!=="player_absence_request")overlay.addEventListener("click",e=>{if(e.target===overlay)closePopup()});
+ document.body.append(overlay);
+ const first=actions.querySelector("button");if(first)first.focus({preventScroll:true});
+}
 function renderCoachMail(){
  ensureCoachCommunicationState();const wrap=document.createElement("div");wrap.className="coach-mail-view";const tabs=document.createElement("div");tabs.className="cabinet-tabs";const body=document.createElement("div");body.className="cabinet-tab-content";let category="inbox";
  const choices=[["inbox","Входящие"],["news","Новости"],["players","Футболисты"],["archive","Архив"]];
