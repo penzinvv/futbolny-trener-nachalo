@@ -157,6 +157,58 @@ $("saveAvatarChange").addEventListener("click", () => {
   saveState(); closeAvatarChange(); render();
 });
 function showSetup() { $("onboarding").classList.remove("hidden"); $("dashboard").classList.add("hidden"); }
+
+function renderTeamRecords() {
+  const host=$("teamRecordsList");
+  if(!host)return;
+  host.replaceChildren();
+  const history=Array.isArray(state.careerHistory?.officialMatches)?state.careerHistory.officialMatches:[];
+  const ownId=getUserTeam()?.id||state.careerTeamId;
+  const matches=history.filter(m=>m&&(m.homeId===ownId||m.awayId===ownId)).map(m=>{
+    const ownHome=m.homeId===ownId;
+    const gf=Number(m.goalsFor??(ownHome?m.homeScore:m.awayScore)??0);
+    const ga=Number(m.goalsAgainst??(ownHome?m.awayScore:m.homeScore)??0);
+    return {...m,gf,ga,opponentId:ownHome?m.awayId:m.homeId,result:m.result||(gf>ga?"W":gf<ga?"L":"D")};
+  }).sort((a,b)=>(Number(a.season)||1)-(Number(b.season)||1)||(Number(a.day)||0)-(Number(b.day)||0));
+  const dateLabel=m=>"Сезон "+(m.season||1)+" · День "+(m.day||officialRoundDay(m.round||1));
+  const opponentLabel=m=>m.opponentId===ownId?(state.teamName||"Ваша команда"):(leagueData?.teams?.find(t=>t.id===m.opponentId)?.name||"Соперник");
+  const records=[];
+  const wins=matches.filter(m=>m.gf>m.ga).sort((a,b)=>(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf);
+  const losses=matches.filter(m=>m.gf<m.ga).sort((a,b)=>(b.ga-b.gf)-(a.ga-a.gf)||b.ga-a.ga);
+  if(wins.length){const m=wins[0];records.push({icon:"🏆",title:"Самая крупная победа",value:m.gf+" : "+m.ga,detail:(state.teamName||"Команда")+" — "+opponentLabel(m),date:dateLabel(m)});}
+  if(losses.length){const m=losses[0];records.push({icon:"🛡️",title:"Самое крупное поражение",value:m.gf+" : "+m.ga,detail:(state.teamName||"Команда")+" — "+opponentLabel(m),date:dateLabel(m)});}
+  const players=new Map();
+  matches.forEach(m=>(m.events||[]).filter(e=>e.type==="goal").forEach(e=>{
+    const side=e.side==="home"?"home":e.side==="away"?"away":null;
+    if(!side||!e.scorer)return;
+    const teamId=side==="home"?m.homeId:m.awayId;
+    if(teamId!==ownId)return;
+    const p=players.get(e.scorer)||{name:e.scorer,goals:0,assists:0,last:m};
+    p.goals++;p.last=m;players.set(e.scorer,p);
+    if(e.assist){const a=players.get(e.assist)||{name:e.assist,goals:0,assists:0,last:m};a.assists++;a.last=m;players.set(e.assist,a);}
+  }));
+  const scorers=[...players.values()].filter(p=>p.goals>0).sort((a,b)=>b.goals-a.goals||b.assists-a.assists||a.name.localeCompare(b.name,"ru"));
+  const assistants=[...players.values()].filter(p=>p.assists>0).sort((a,b)=>b.assists-a.assists||b.goals-a.goals||a.name.localeCompare(b.name,"ru"));
+  if(scorers[0])records.push({icon:"⚽",title:"Лучший бомбардир",value:scorers[0].name+" · "+scorers[0].goals+" гол.",detail:"За всю историю команды",date:dateLabel(scorers[0].last)});
+  if(assistants[0])records.push({icon:"👟",title:"Лучший ассистент",value:assistants[0].name+" · "+assistants[0].assists,detail:"Голевых передач",date:dateLabel(assistants[0].last)});
+  const streak=(kind)=>{let best=0,current=0,start=null,bestStart=null,bestEnd=null;matches.forEach((m,i)=>{const ok=m.result===kind;if(ok){current++;if(current===1)start=m;if(current>best){best=current;bestStart=start;bestEnd=m;}}else current=0;});return {count:best,start:bestStart,end:bestEnd};};
+  const winning=streak("W"),losing=streak("L");
+  if(winning.count)records.push({icon:"📈",title:"Победная серия",value:winning.count+" матч"+(winning.count===1?"":"ей")+" подряд",detail:"Лучшая серия за историю",date:dateLabel(winning.end)});
+  if(losing.count)records.push({icon:"📉",title:"Проигрышная серия",value:losing.count+" матч"+(losing.count===1?"":"ей")+" подряд",detail:"Самая длинная серия",date:dateLabel(losing.end)});
+  const highestScoring=[...matches].sort((a,b)=>b.gf-a.gf||b.ga-a.ga)[0];
+  if(highestScoring)records.push({icon:"🔥",title:"Самый результативный матч",value:highestScoring.gf+" гол.",detail:"Команда — "+opponentLabel(highestScoring),date:dateLabel(highestScoring)});
+  if(!records.length){const empty=safeText("p","Рекорды появятся после первых официальных матчей.","team-records-empty");host.append(empty);return;}
+  records.slice(0,6).forEach(record=>{
+    const row=document.createElement("article");row.className="team-record-row";
+    const icon=safeText("span",record.icon,"team-record-icon");
+    const body=document.createElement("div");body.className="team-record-body";
+    body.append(safeText("span",record.title,"team-record-title"),safeText("strong",record.value,"team-record-value"),safeText("small",record.detail,"team-record-detail"));
+    row.append(icon,body,safeText("time",record.date,"team-record-date"));host.append(row);
+  });
+  const more=$("allTeamRecordsButton");
+  if(more)more.onclick=()=>openPage("cabinet");
+}
+
 function render() {
   ensureCareerIdentity();
   $("coachNameLabel").textContent = state.coachName || "Тренер";
@@ -183,6 +235,8 @@ function render() {
   if(matchOpponentNote) matchOpponentNote.textContent=upcomingOpponent?(upcomingOpponent.league||"Соперник по лиге"):"Проверь календарь сезона";
   if(matchDayLabel) matchDayLabel.textContent=nextRound?"День "+officialRoundDay(nextRound):"Сезон завершён";
   if(matchRoundLabel) matchRoundLabel.textContent=nextRound?"Тур "+nextRound:"Нет предстоящих матчей";
+  renderTeamRecords();
+
   const skipDay = $("skipDayButton"); if(skipDay) skipDay.textContent = Number(state.gameDay)>=182 ? "НАЧАТЬ НОВЫЙ СЕЗОН" : "ПРОПУСТИТЬ ДЕНЬ";
   $("rosterCount").textContent = getUserTeam()?.players?.length || state.players.length || 10;
   const todayRound=officialRoundForDay(Number(state.gameDay)||1),todayFixture=currentOfficialFixture(),todayKey=todayRound&&todayFixture?roundFixtureKey(todayRound,todayFixture):null;
