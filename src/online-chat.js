@@ -31,6 +31,13 @@
     updateFullscreenLabel();
   }
 
+  document.querySelectorAll(".sidebar-link").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll(".sidebar-link").forEach((item) => item.classList.remove("is-active"));
+      button.classList.add("is-active");
+    });
+  });
+
   const collapseButton = $("chatCollapseToggle");
   const chatPanel = $("homeChatPanel");
   const chatBody = $("chatPanelBody");
