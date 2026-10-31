@@ -787,3 +787,5 @@ body{background:radial-gradient(ellipse at 52% 0%,rgba(20,80,54,.45),transparent
  .stat-card b{font-size:15px}
 }
 @media(prefers-reduced-motion:reduce){.music-toggle[aria-pressed="true"] .radio-equalizer i{animation:none}}
+
+.match-preview-logo img[hidden]{display:none}
