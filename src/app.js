@@ -1343,17 +1343,6 @@ function showNextGameEventPopup(){
  document.body.append(overlay);
  const first=actions.querySelector("button");if(first)first.focus({preventScroll:true});
 }
-function renderCoachMail(){
- ensureCoachCommunicationState();const wrap=document.createElement("div");wrap.className="coach-mail-view";const tabs=document.createElement("div");tabs.className="cabinet-tabs";const body=document.createElement("div");body.className="cabinet-tab-content";let category="inbox";
- const choices=[["inbox","Входящие"],["news","Новости"],["players","Футболисты"],["archive","Архив"]];
- const draw=()=>{tabs.replaceChildren();body.replaceChildren();choices.forEach(([id,label])=>{const b=document.createElement("button");b.type="button";b.className="cabinet-tab"+(category===id?" active":"");b.textContent=label;b.addEventListener("click",()=>{category=id;draw()});tabs.append(b)});
- const items=state.coachMail.filter(x=>category==="archive"?x.archived:!x.archived&&(category==="inbox"||category==="news"&&x.type==="news"||category==="players"&&x.type==="player"));
- if(!items.length){body.append(placeholder(category==="archive"?"Архив пока пуст.":"Сообщений в этой категории пока нет."));return}
- items.forEach(item=>{const card=document.createElement("article");card.className="panel";card.style.marginBottom="10px";card.style.padding="14px";if(!item.read)card.style.borderLeft="3px solid var(--accent,#65dca0)";
- const top=document.createElement("div");top.className="section-title";top.append(safeText("b",item.title),safeText("small","Сезон "+item.season+" · День "+item.day,"muted"));const msg=safeText("p",item.message);msg.style.margin="10px 0";
- const actions=document.createElement("div");actions.className="button-row";actions.append(B(item.read?"Прочитано":"Отметить прочитанным",()=>{item.read=true;saveState();draw()},"secondary"),B(item.archived?"Вернуть во входящие":"В архив",()=>{item.archived=!item.archived;saveState();draw()},"secondary"));if(item.responseType==="player_absence_request"&&!item.responseStatus){actions.append(B("Разрешить пропустить матч",()=>{resolvePlayerMailRequest(item,"accept");draw()},"primary"),B("Отказать",()=>{resolvePlayerMailRequest(item,"refuse");draw()},"secondary"),B("Предложить компромисс",()=>{resolvePlayerMailRequest(item,"compromise");draw()},"secondary"));}else if(item.responseType==="player_absence_request"&&item.responseStatus){actions.append(safeText("p",item.responseLabel||"Ответ отправлен","muted"));}if(item.actionPage){actions.append(B(item.actionLabel||"Открыть раздел",()=>openPage(item.actionPage),"secondary"));}card.append(top,msg,actions);body.append(card)})};
- wrap.append(tabs,body);draw();return wrap
-}
 const GAME_DAYS_PER_SEASON=182;
 function absoluteGameDay(season=state.seasonNumber,day=state.gameDay){return (Math.max(1,Number(season)||1)-1)*GAME_DAYS_PER_SEASON+Math.max(1,Number(day)||1)}
 function gameDateFromAbsolute(value){const absolute=Math.max(1,Math.floor(Number(value)||1));return {season:Math.floor((absolute-1)/GAME_DAYS_PER_SEASON)+1,day:((absolute-1)%GAME_DAYS_PER_SEASON)+1}}
