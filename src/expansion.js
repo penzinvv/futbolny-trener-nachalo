@@ -70,6 +70,47 @@ function ensureFreeYardPlayer(){
  const month=freeYardMonthKey();
  if(!state.freeYardMonthsSeen.includes(month)){state.freeYardPlayers.push({...randomFreeYardPlayer(),monthKey:month});state.freeYardMonthsSeen.push(month);saveState()}
 }
+function startFreeYardViewing(player,relationKey){
+ const existing=document.getElementById("freeYardViewingOverlay");if(existing)existing.remove();
+ let score=0,passed=0,lives=3,disposed=false,raf=0,last=performance.now(),moveAccumulator=0;
+ let carX=50,objects=[],held=new Set();
+ const root=document.createElement("div");root.id="freeYardViewingOverlay";
+ root.style.cssText="position:fixed;inset:0;z-index:100000;background:rgba(3,10,18,.94);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;color:#fff;font:15px system-ui,sans-serif";
+ root.innerHTML='<section style="width:min(720px,100%);max-height:96dvh;overflow:auto;background:#132238;border:2px solid #69b8ff;border-radius:16px;padding:14px;box-sizing:border-box;box-shadow:0 12px 50px #0009"><h2 style="margin:0 0 5px;color:#a8d8ff">ПРОСМОТР: ДОБЕРИСЬ ДО ПОЛЯ</h2><p style="margin:0 0 10px;color:#d5e6f7">Управляй машиной, объезжай препятствия и доберись на просмотр. За каждое успешно пройденное препятствие — 4 очка. Столкновение отнимает жизнь.</p><div id="viewingStats" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-weight:700">Очки: 0 · Проехано: 0 · Жизни: 3</div><div id="viewingRoad" role="application" aria-label="Дорога на просмотр" style="position:relative;width:100%;height:min(54vh,430px);min-height:270px;overflow:hidden;border:3px solid #9fb9d5;border-radius:12px;background:#3d4b5b;touch-action:manipulation"><div style="position:absolute;left:22%;top:0;width:56%;height:100%;border-left:5px solid #eee;border-right:5px solid #eee;box-sizing:border-box;background:repeating-linear-gradient(0deg,transparent 0 36px,#e8e8e8 36px 58px,transparent 58px 90px)"></div><div id="viewingCars" style="position:absolute;inset:0"></div><div id="viewingPlayerCar" style="position:absolute;left:50%;bottom:8%;width:34px;height:54px;background:#2477dd;border:3px solid #cce5ff;border-radius:8px;transform:translateX(-50%);box-shadow:0 2px 8px #111;z-index:2"></div></div><div style="display:flex;justify-content:center;gap:8px;margin:10px 0;flex-wrap:wrap"><button type="button" data-view-move="left" style="min-width:68px;padding:12px;border-radius:9px;border:1px solid #a8d8ff;background:#24476a;color:white;font-size:20px">◀</button><button type="button" data-view-move="right" style="min-width:68px;padding:12px;border-radius:9px;border:1px solid #a8d8ff;background:#24476a;color:white;font-size:20px">▶</button></div><p style="margin:4px 0 10px;text-align:center;color:#bed1e5;font-size:13px">Компьютер: A/D или ←/→. Телефон: кнопки или касание нужной стороны дороги.</p><button id="viewingFinish" type="button" style="width:100%;padding:13px;border:2px solid #f4d06f;border-radius:10px;background:#7a5b17;color:#fff;font-weight:800;cursor:pointer">СОХРАНИТЬ И ЗАКОНЧИТЬ</button></section>';
+ document.body.appendChild(root);
+ const field=root.querySelector("#viewingRoad"),cars=root.querySelector("#viewingCars"),playerCar=root.querySelector("#viewingPlayerCar"),stats=root.querySelector("#viewingStats");
+ function paintCars(){cars.replaceChildren();objects.forEach(o=>{const car=document.createElement("div");car.style.cssText="position:absolute;left:"+o.x+"%;top:"+o.y+"%;width:34px;height:50px;background:#e9bd4b;border:3px solid #fff;border-radius:7px;transform:translateX(-50%);box-sizing:border-box";cars.appendChild(car)})}
+ function updateStats(){stats.textContent="Очки: "+score+" · Проехано: "+passed+" · Жизни: "+lives}
+ function moveCar(direction){if(disposed)return;carX=Math.max(27,Math.min(73,carX+direction*3.6));playerCar.style.left=carX+"%"}
+ function onKeyDown(e){const key=String(e.key||"").toLowerCase();if(["arrowleft","arrowright","a","d"].includes(key)){e.preventDefault();if(key==="arrowleft"||key==="a")held.add("left");if(key==="arrowright"||key==="d")held.add("right")}}
+ function onKeyUp(e){const key=String(e.key||"").toLowerCase();if(key==="arrowleft"||key==="a")held.delete("left");if(key==="arrowright"||key==="d")held.delete("right")}
+ function clearKeys(){held.clear()}
+ function onFieldPointer(e){if(disposed)return;const rect=field.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*100;moveCar(x<carX?-1:1);e.preventDefault()}
+ function finish(){
+  if(disposed)return;disposed=true;cancelAnimationFrame(raf);window.removeEventListener("keydown",onKeyDown,true);window.removeEventListener("keyup",onKeyUp,true);window.removeEventListener("blur",clearKeys);field.removeEventListener("pointerdown",onFieldPointer);
+  root.querySelectorAll("[data-view-move]").forEach(btn=>{btn.onpointerdown=null;});
+  const before=Math.max(0,Math.min(100,Number(state.relationships?.[relationKey]||0)));
+  const after=Math.min(100,Math.round((before+score/100)*100)/100);
+  state.relationships=state.relationships||{};state.relationships[relationKey]=after;
+  if(after>before){state.relationshipHistory=Array.isArray(state.relationshipHistory)?state.relationshipHistory:[];state.relationshipHistory.push({team:"free-yard",playerId:player.id,player:player.name,before,after,earnedPoints:score,at:Date.now()})}
+  saveState();
+  const safeName=String(player.name||"Футболист").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  root.innerHTML='<section style="width:min(520px,100%);background:#132238;border:2px solid #69b8ff;border-radius:16px;padding:24px;box-sizing:border-box;text-align:center;color:#fff;font:15px system-ui,sans-serif"><h2 style="margin-top:0;color:#a8d8ff">'+(lives<=0?"ПРОСМОТР ЗАВЕРШЁН":"ЗАЕЗД СОХРАНЁН")+'</h2><p>Футболист: <b>'+safeName+'</b></p><p>Набрано очков: <b>'+score+'</b></p><p>Прибавка к отношениям: <b>+'+(Math.round((after-before)*100)/100).toLocaleString("ru-RU",{minimumFractionDigits:2,maximumFractionDigits:2})+'%</b></p><p>Отношения: <b>'+before.toLocaleString("ru-RU",{maximumFractionDigits:2})+'% → '+after.toLocaleString("ru-RU",{maximumFractionDigits:2})+'%</b></p><p style="color:#bed1e5">Каждые 100 очков дают 1%. Характеристики откроются при достижении 60% отношений.</p><button id="viewingReturn" type="button" style="width:100%;padding:13px;border:0;border-radius:10px;background:#2b8c57;color:white;font-weight:800;cursor:pointer">ВЕРНУТЬСЯ В СВОБОДНЫЙ ДВОР</button></section>';
+  root.querySelector("#viewingReturn").onclick=()=>{root.remove();openPage("freeyard")}
+ }
+ function tick(){
+  if(disposed)return;const now=performance.now(),dt=Math.min(.06,(now-last)/1000);last=now;
+  moveAccumulator+=dt;if(moveAccumulator>=.10){moveAccumulator=0;if(held.has("left"))moveCar(-1);else if(held.has("right"))moveCar(1)}
+  if(Math.random()<dt*.9)objects.push({x:27+Math.random()*46,y:-8,hit:false});
+  objects.forEach(o=>{o.y+=dt*35;if(!o.hit&&o.y>72&&o.y<87&&Math.abs(o.x-carX)<7){o.hit=true;lives--}});
+  const kept=[];objects.forEach(o=>{if(o.hit)return;if(o.y>88){passed++;score+=4;return}if(o.y<105)kept.push(o)});objects=kept;
+  paintCars();updateStats();if(lives<=0){finish();return}raf=requestAnimationFrame(tick)
+ }
+ window.addEventListener("keydown",onKeyDown,true);window.addEventListener("keyup",onKeyUp,true);window.addEventListener("blur",clearKeys);field.addEventListener("pointerdown",onFieldPointer);
+ root.querySelectorAll("[data-view-move]").forEach(btn=>{const dir=btn.dataset.viewMove;const press=e=>{e.preventDefault();held.add(dir)};const release=()=>held.delete(dir);btn.addEventListener("pointerdown",press);btn.addEventListener("pointerup",release);btn.addEventListener("pointercancel",release);btn.addEventListener("pointerleave",release)});
+ root.querySelector("#viewingFinish").onclick=finish;raf=requestAnimationFrame(tick)
+}
+
 function freeYardPage(){
  const w=document.createElement("div");
  if(!leagueData){w.append(placeholder("Загружаю список футболистов…"));return w}
@@ -89,7 +130,7 @@ function freeYardPage(){
   else info.append(T("Характеристики и скрытый потенциал откроются при отношениях 60%."));
   row.append(img,info);panel.append(row);
   const actions=document.createElement("div");actions.className="feature-actions";
-  actions.append(B("Познакомиться (+10%)",()=>{const current=Math.max(0,Math.min(100,Number(state.relationships[relationKey]||0)));state.relationships[relationKey]=Math.min(100,current+10);saveState();openPage("freeyard")},"secondary"));
+  actions.append(B("Вызвать на просмотр",()=>startFreeYardViewing(player,relationKey),"primary"));
   const invite=B("Пригласить в команду",()=>{
    if(team.players.length>=10){alert("В команде не может быть больше 10 футболистов.");return}
    const newPlayer={...player,skills:{...(player.skills||{})},potential:player.potential,portraitIndex:player.portraitIndex};
