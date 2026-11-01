@@ -10,7 +10,7 @@
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <div class="brand"><span class="brand-mark">ДФ</span><div><strong>ДВОРОВЫЙ ФУТБОЛ</strong><small>НАЧАЛО · ВЕРСИЯ 2.8.2</small></div></div>
+      <div class="brand"><span class="brand-mark">ДФ</span><div><strong>ДВОРОВЫЙ ФУТБОЛ</strong><small>НАЧАЛО · ВЕРСИЯ 2.8.3</small></div></div>
       <div class="topbar-actions">
         <button id="fullscreenToggle" class="fullscreen-toggle" type="button" aria-pressed="false" title="Развернуть игру на весь экран">⛶ НА ВЕСЬ ЭКРАН</button>
         <button id="musicToggle" class="music-toggle" type="button" aria-pressed="true"><span class="radio-disc" aria-hidden="true">♫</span><span class="radio-copy"><strong>РАДИО ДВОРА</strong><small>Нажми для запуска музыки</small></span><span class="radio-equalizer" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></button>
@@ -79,6 +79,11 @@
             <div class="match-preview-team"><span class="match-preview-logo"><img id="nextMatchOpponentLogo" alt="" hidden></span><b id="nextMatchOpponentName">Соперник</b><small id="nextMatchOpponentNote">По расписанию лиги</small></div>
           </div>
           <div class="match-preview-footer"><span>⚽ <b id="nextMatchRoundLabel">Матч по расписанию</b></span><span>📅 <b id="nextMatchDayLabel">День 7</b></span></div>
+          <section class="home-roster" aria-label="Состав команды и статистика футболистов">
+            <div class="home-roster-heading"><h2>СОСТАВ КОМАНДЫ</h2><span id="homeRosterCount">0 / 10</span><button id="homeRosterFullButton" type="button">Полный состав ›</button></div>
+            <div class="home-roster-columns" aria-hidden="true"><span>ФУТБОЛИСТ</span><span>М</span><span>Г</span><span>А</span><span>ЖК</span><span>КК</span><span>СР. ОЦ.</span></div>
+            <div id="homeRosterList" class="home-roster-list" aria-live="polite"><p class="home-roster-empty">Состав появится после создания команды.</p></div>
+          </section>
         </section>
 
         <section class="team-records-card" aria-label="Рекорды команды">
