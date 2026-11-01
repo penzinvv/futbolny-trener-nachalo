@@ -249,7 +249,7 @@ function playTraining(t,p,id){
   try{saveState()}catch(error){saved=false;console.error("Could not save training result:",error)}
   scoreLine.textContent="Итог: "+net+" очков · Отношения "+(delta>=0?"+":"")+F(delta)+" · "+p.position+" +"+growth;
   field.replaceChildren(T(details+(saved?"":" Результат посчитан, но локальное сохранение не удалось. Не закрывай вкладку и сообщи об ошибке.")));
-  actions.replaceChildren(B("Готово",()=>{close();openPage("training")},"primary"));
+  actions.replaceChildren(B("Готово",()=>{close();render();openPage("training")},"primary"));
  }
  function key(ev){const k=ev.key.toLowerCase();if(["arrowleft","arrowright","arrowup","arrowdown","a","d","w","s"].includes(k)){keys.add(k);ev.preventDefault()}}
  function keyup(ev){keys.delete(ev.key.toLowerCase())}
@@ -265,7 +265,7 @@ function playTraining(t,p,id){
  }else if(p.position==="ЗЩ"){
    field.classList.add("defender-field");let round=0,active=false,target=null,missed=0;
    const status=safeText("p","Приготовься…","defender-round");field.append(status);
-   function spawn(){if(ended||closed)return;round++;active=true;target=B("⚽",()=>{if(!active||ended)return;active=false;clearTimeout(timer);target?.remove();target=null;score+=5;scoreLine.textContent="Очки: "+score+" · Перехваты: "+(score/5)+" · Промахи: "+missed+"/3";status.textContent="Отличный перехват!";timer=setTimeout(spawn,350)},"defender-ball-target");target.style.left=(8+Math.random()*78)+"%";target.style.top=(12+Math.random()*58)+"%";field.append(target);status.textContent="Мяч "+round+" — нажми на него, пока он виден!";timer=setTimeout(()=>{if(!active||ended)return;active=false;missed++;target?.remove();target=null;scoreLine.textContent="Очки: "+score+" · Промахи: "+missed+"/3";status.textContent=missed>=3?"Три промаха — результат сохранён.":"Не успел! Следующий мяч…";if(missed>=3){finish("Три промаха. Перехвачено мячей: "+score/5+".");return}timer=setTimeout(spawn,350)},1000)}
+   function spawn(){if(ended||closed)return;round++;active=true;target=B("⚽",()=>{if(!active||ended)return;active=false;clearTimeout(timer);target?.remove();target=null;score+=5;scoreLine.textContent="Очки: "+score+" · Перехваты: "+(score/5)+" · Промахи: "+missed+"/1";status.textContent="Отличный перехват!";timer=setTimeout(spawn,350)},"defender-ball-target");target.style.left=(8+Math.random()*78)+"%";target.style.top=(12+Math.random()*58)+"%";field.append(target);status.textContent="Мяч "+round+" — нажми на него, пока он виден!";timer=setTimeout(()=>{if(!active||ended)return;active=false;missed++;target?.remove();target=null;scoreLine.textContent="Очки: "+score+" · Промахи: "+missed+"/1";status.textContent=missed>=1?"Первый промах — результат сохранён.":"Не успел! Следующий мяч…";if(missed>=1){finish("Первый промах. Перехвачено мячей: "+score/5+".");return}timer=setTimeout(spawn,350)},1000)}
    actions.append(B("СОХРАНИТЬ РЕЗУЛЬТАТ И ВЫЙТИ",()=>finish("Результат сохранён по решению тренера. Перехвачено мячей: "+score/5+"."),"primary"));
    timer=setTimeout(spawn,500);
  }else{
