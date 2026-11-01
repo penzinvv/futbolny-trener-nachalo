@@ -15,14 +15,19 @@ const defaultState = {
 let state = loadState();
 let gameDayTimerInterval = null;
 let leagueData = null;
-fetch("/data/league.json").then(r => { if (!r.ok) throw new Error("Не удалось загрузить данные лиги"); return r.json(); }).then(data => { leagueData = data; simulateScheduledLeagueResultsForDay(Number(state.gameDay)||1); if(END_SEASON_FRIENDLIES[Number(state.gameDay)])simulateEndSeasonFriendlyDay(Number(state.gameDay)); deliverScheduledCoachMail(Number(state.gameDay)||1); saveState(); if (state.coachName && state.teamName) render(); setTimeout(showNextGameEventPopup,120); if (!$("pageView")?.classList.contains("hidden") && $("pageTitle")?.textContent === "Тренировка") openPage("training"); }).catch(err => console.error(err));
+let resolveLeagueDataReady;
+const leagueDataReady = new Promise(resolve => { resolveLeagueDataReady = resolve; });
+fetch("/data/league.json").then(r => { if (!r.ok) throw new Error("Не удалось загрузить данные лиги"); return r.json(); }).then(data => { leagueData = data; resolveLeagueDataReady(data); simulateScheduledLeagueResultsForDay(Number(state.gameDay)||1); if(END_SEASON_FRIENDLIES[Number(state.gameDay)])simulateEndSeasonFriendlyDay(Number(state.gameDay)); deliverScheduledCoachMail(Number(state.gameDay)||1); saveState(); if (state.coachName && state.teamName) render(); setTimeout(showNextGameEventPopup,120); if (!$("pageView")?.classList.contains("hidden") && $("pageTitle")?.textContent === "Тренировка") openPage("training"); }).catch(err => { resolveLeagueDataReady(null); console.error(err); });
 
 const $ = (id) => document.getElementById(id);
 function loadState() {
   try { return { ...defaultState, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") }; }
   catch { return { ...defaultState }; }
 }
-function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  scheduleCloudSnapshotSave();
+}
 
 const SUPABASE_URL = "https://qfkekaipmbtzxtuspjqv.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_uEoHSnOBVXtlJm--cZF_IQ_IRXmG55x";
@@ -30,6 +35,16 @@ const cloudClient = window.supabase?.createClient
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
   : null;
 let cloudSyncPromise = null;
+let cloudSnapshotReady = false;
+let cloudSnapshotBlocked = false;
+let cloudSnapshotRevision = 0;
+let cloudSnapshotSaveTimer = null;
+let cloudSnapshotSavePromise = null;
+let cloudSnapshotConflictAlerted = false;
+let cloudSnapshotInitPromise = null;
+let cloudCareerInitPromise = null;
+const CLOUD_SNAPSHOT_SCHEMA_VERSION = 1;
+const CLOUD_SNAPSHOT_BACKUP_PREFIX = STORAGE_KEY + "-before-cloud-restore-";
 
 async function getCloudSession() {
   if (!cloudClient) throw new Error("Supabase JS не загрузился. Проверь подключение к интернету и перезагрузи страницу.");
@@ -58,6 +73,173 @@ async function cloudRequest(method = "GET", body = null) {
   if (!response.ok || result.ok === false) throw new Error(result.error || "Ошибка серверной карьеры (" + response.status + ")");
   return result;
 }
+
+async function cloudSnapshotRequest(method = "GET", body = null) {
+  const session = await getCloudSession();
+  const response = await fetch(SUPABASE_URL + "/functions/v1/career-save", {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_PUBLISHABLE_KEY,
+      "Authorization": "Bearer " + session.access_token
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || result.ok === false) {
+    const error = new Error(result.error || "Ошибка облачного сохранения (" + response.status + ")");
+    error.status = response.status;
+    error.payload = result;
+    throw error;
+  }
+  return result;
+}
+
+function scheduleCloudSnapshotSave() {
+  if (!cloudSnapshotReady || cloudSnapshotBlocked || !state.coachName || !state.teamName) return;
+  if (cloudSnapshotSaveTimer) clearTimeout(cloudSnapshotSaveTimer);
+  cloudSnapshotSaveTimer = setTimeout(() => {
+    cloudSnapshotSaveTimer = null;
+    void flushCloudSnapshotSave();
+  }, 1500);
+}
+
+async function flushCloudSnapshotSave() {
+  if (!cloudSnapshotReady || cloudSnapshotBlocked || !state.coachName || !state.teamName) return;
+  if (cloudSnapshotSavePromise) return cloudSnapshotSavePromise;
+  const serializedState = JSON.stringify(state);
+  const expectedRevision = cloudSnapshotRevision;
+  cloudSnapshotSavePromise = (async () => {
+    try {
+      const result = await cloudSnapshotRequest("POST", {
+        action: "save",
+        state: JSON.parse(serializedState),
+        schemaVersion: CLOUD_SNAPSHOT_SCHEMA_VERSION,
+        expectedRevision
+      });
+      if (result.saved && result.snapshot) {
+        cloudSnapshotRevision = Number(result.snapshot.revision) || expectedRevision + 1;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+    } catch (error) {
+      if (error.status === 409 || error.payload?.conflict) {
+        cloudSnapshotBlocked = true;
+        if (!cloudSnapshotConflictAlerted) {
+          cloudSnapshotConflictAlerted = true;
+          console.error("Облачное сохранение остановлено: обнаружена более новая версия карьеры.", error);
+          alert("Облачное сохранение остановлено: на сервере есть более новая версия карьеры. Текущая игра сохранена в этом браузере. Не обновляй страницу, если хочешь сохранить текущий прогресс; сначала нужно разрешить конфликт версий.");
+        }
+      } else {
+        console.warn("Облачный снимок не сохранён; локальное сохранение сохранено.", error);
+      }
+    } finally {
+      cloudSnapshotSavePromise = null;
+      if (cloudSnapshotReady && !cloudSnapshotBlocked && state.coachName && state.teamName && JSON.stringify(state) !== serializedState) {
+        scheduleCloudSnapshotSave();
+      }
+    }
+  })();
+  return cloudSnapshotSavePromise;
+}
+
+function stableStateString(value) {
+  if (Array.isArray(value)) return "[" + value.map(stableStateString).join(",") + "]";
+  if (value && typeof value === "object") {
+    return "{" + Object.keys(value).sort().map(key => JSON.stringify(key) + ":" + stableStateString(value[key])).join(",") + "}";
+  }
+  return JSON.stringify(value);
+}
+
+async function performCloudSnapshotInitialization() {
+  const response = await cloudSnapshotRequest("GET");
+  const snapshot = response.snapshot;
+  const hasLocalCareer = Boolean(state.coachName && state.teamName);
+  if (!snapshot) {
+    cloudSnapshotRevision = 0;
+    cloudSnapshotReady = true;
+    if (hasLocalCareer) scheduleCloudSnapshotSave();
+    return;
+  }
+
+  const cloudState = snapshot.state;
+  const hasCloudCareer = Boolean(cloudState?.coachName && cloudState?.teamName);
+  if (!hasCloudCareer) {
+    console.warn("Облачный снимок не содержит имени тренера и команды; он не был применён.");
+    cloudSnapshotBlocked = true;
+    return;
+  }
+
+  if (hasLocalCareer && stableStateString(state) === stableStateString({ ...defaultState, ...cloudState })) {
+    cloudSnapshotRevision = Number(snapshot.revision) || 0;
+    cloudSnapshotReady = true;
+    return;
+  }
+
+  if (!hasLocalCareer) {
+    const restore = confirm("Найдена облачная карьера «" + cloudState.coachName + "» — «" + cloudState.teamName + "». Восстановить её в этом браузере?");
+    if (!restore) {
+      cloudSnapshotBlocked = true;
+      return;
+    }
+    state = { ...defaultState, ...cloudState };
+    cloudSnapshotRevision = Number(snapshot.revision) || 0;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    cloudSnapshotReady = true;
+    if (leagueData) render();
+    return;
+  }
+
+  const restoreCloud = confirm(
+    "Для этой сессии найдена облачная карьера «" + cloudState.coachName + "» — «" + cloudState.teamName + "».\n\n" +
+    "ОК — сохранить текущую локальную карьеру в резервную копию и восстановить облачную.\n" +
+    "Отмена — оставить карьеру из этого браузера."
+  );
+  if (restoreCloud) {
+    try {
+      localStorage.setItem(CLOUD_SNAPSHOT_BACKUP_PREFIX + Date.now(), JSON.stringify(state));
+    } catch (error) {
+      alert("Не удалось создать резервную копию локальной карьеры. Восстановление из облака отменено, локальная карьера сохранена.");
+      cloudSnapshotBlocked = true;
+      return;
+    }
+    state = { ...defaultState, ...cloudState };
+    cloudSnapshotRevision = Number(snapshot.revision) || 0;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    cloudSnapshotReady = true;
+    if (leagueData) render();
+    return;
+  }
+
+  const uploadLocal = confirm(
+    "Оставить локальную карьеру и заменить ею облачную?\n\n" +
+    "Это действие заменит облачный снимок текущей карьерой из этого браузера. Локальное сохранение останется на месте."
+  );
+  if (uploadLocal) {
+    cloudSnapshotRevision = Number(snapshot.revision) || 0;
+    cloudSnapshotReady = true;
+    scheduleCloudSnapshotSave();
+  } else {
+    cloudSnapshotBlocked = true;
+    alert("Автоматическая синхронизация приостановлена. Локальная карьера сохранена в браузере; облачная версия не изменена.");
+  }
+}
+
+function initializeCloudSnapshot() {
+  if (cloudSnapshotInitPromise) return cloudSnapshotInitPromise;
+  cloudSnapshotInitPromise = performCloudSnapshotInitialization().finally(() => {
+    cloudSnapshotInitPromise = null;
+  });
+  return cloudSnapshotInitPromise;
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "hidden" || !cloudSnapshotReady || cloudSnapshotBlocked) return;
+  if (cloudSnapshotSaveTimer) {
+    clearTimeout(cloudSnapshotSaveTimer);
+    cloudSnapshotSaveTimer = null;
+  }
+  void flushCloudSnapshotSave();
+});
 
 async function syncCareerToCloud(bootstrap = false) {
   if (cloudSyncPromise) return cloudSyncPromise;
@@ -95,8 +277,13 @@ async function syncCareerToCloud(bootstrap = false) {
     }
     const result = await cloudRequest("GET");
     if (result.initialized) {
-      state.coachName = result.coach?.display_name || state.coachName;
-      state.teamName = result.team?.name || state.teamName;
+      // Не подменяем локальную карьеру данными старого cloud API до того,
+      // как career-save сравнит локальный снимок с облачным и предложит выбор.
+      const hadLocalCareer = Boolean(state.coachName && state.teamName);
+      if (!hadLocalCareer) {
+        state.coachName = result.coach?.display_name || state.coachName;
+        state.teamName = result.team?.name || state.teamName;
+      }
       state.careerCoachId = result.coach.id;
       state.careerTeamId = result.team?.id || null;
       state.careerPlayerIds = state.careerPlayerIds || {};
@@ -112,7 +299,7 @@ async function syncCareerToCloud(bootstrap = false) {
   finally { cloudSyncPromise = null; }
 }
 
-async function initializeCloudCareer() {
+async function performCloudCareerInitialization() {
   try {
     const result = await syncCareerToCloud(false);
     if (!result.initialized && state.coachName && state.teamName && leagueData) {
@@ -121,9 +308,19 @@ async function initializeCloudCareer() {
       saveState();
       if (state.coachName && state.teamName) render();
     }
+    await initializeCloudSnapshot();
   } catch (error) {
     console.warn("Облачная карьера пока не подключена:", error);
+    // LocalStorage remains the source of truth when the cloud is unavailable.
   }
+}
+
+function initializeCloudCareer() {
+  if (cloudCareerInitPromise) return cloudCareerInitPromise;
+  cloudCareerInitPromise = performCloudCareerInitialization().finally(() => {
+    cloudCareerInitPromise = null;
+  });
+  return cloudCareerInitPromise;
 }
 
 const AVATAR_COUNT = 6;
@@ -395,13 +592,61 @@ musicToggle.addEventListener("click", async () => {
 if (musicToggle) { setMusicButtonLabel("Нажми для запуска музыки"); musicToggle.setAttribute("aria-pressed", "true"); }
 void playNextTrack();
 
+const STARTING_ROSTER_RULES_VERSION = "2.8.1";
+function shuffledCopy(items) {
+  const copy = items.slice();
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+function createInitialLeagueForNewCareer() {
+  if (!leagueData || state.initialRosterDistributionApplied) return false;
+  const teams = leagueData.teams || [];
+  if (teams.length !== 12) throw new Error("Ожидалось 12 команд для стартового распределения.");
+  const allPlayers = teams.flatMap(team => (team.players || []).map(player => ({ ...player, skills: { ...(player.skills || {}) } })));
+  if (allPlayers.length < 120) throw new Error("В исходном справочнике недостаточно футболистов для распределения 99 + 21.");
+  // Start each team with 7 players, then randomly add 15 places (up to 9 per team): 12*7 + 15 = 99.
+  const counts = teams.map(() => 7);
+  let remainingPlaces = 15;
+  while (remainingPlaces > 0) {
+    const eligible = counts.map((count, index) => count < 9 ? index : -1).filter(index => index >= 0);
+    if (!eligible.length) throw new Error("Не удалось распределить 99 стартовых мест.");
+    const index = eligible[Math.floor(Math.random() * eligible.length)];
+    counts[index]++; remainingPlaces--;
+  }
+  const shuffledPlayers = shuffledCopy(allPlayers);
+  const starters = shuffledPlayers.slice(0, 99);
+  const reserve = shuffledPlayers.slice(99, 120);
+  let cursor = 0;
+  state.userRoster = [];
+  state.externalRosters = {};
+  teams.forEach((team, index) => {
+    team.players = starters.slice(cursor, cursor + counts[index]);
+    cursor += counts[index];
+    if (team.isUserTeam || team.name === "{teamName}") state.userRoster = team.players;
+    else state.externalRosters[team.id] = team.players;
+  });
+  state.leagueReservePlayers = reserve;
+  state.initialRosterDistributionApplied = true;
+  state.initialRosterDistributionVersion = STARTING_ROSTER_RULES_VERSION;
+  state.npcTransferHistory = Array.isArray(state.npcTransferHistory) ? state.npcTransferHistory : [];
+  return true;
+}
+
 $("setupForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const coachName = $("coachName").value.trim();
   const teamName = $("teamNameInput").value.trim();
   if (!coachName || !teamName) return;
   const isNewCareer = !state.coachName || !state.teamName;
-  if (isNewCareer) state.careerRulesVersion = "2.8.0";
+  if (isNewCareer) {
+    await leagueDataReady;
+    if (!leagueData) { alert("Не удалось загрузить составы команд. Обнови страницу и попробуй ещё раз."); return; }
+    try { createInitialLeagueForNewCareer(); } catch (error) { console.error(error); alert("Не удалось подготовить стартовые составы: " + error.message); return; }
+    state.careerRulesVersion = STARTING_ROSTER_RULES_VERSION;
+  }
   state.coachName = coachName.slice(0,24);
   state.teamName = teamName.slice(0,28);
   state.teamLogoIndex = Number(document.querySelector('input[name="teamLogoInitial"]:checked')?.value || 1);
@@ -752,8 +997,7 @@ function renderCabinet() {
       p.append(list);
       p.append(safeText("p","Календарь использует тот же официальный график, что и раздел «Турниры». В сезоне предусмотрено 20 туров и четыре встречи с каждым соперником; результаты берутся из сохранённых официальных матчей.","muted"));
     } else {
-      p=panel("Карьера тренера","Постоянная история тренера и команды. Официальная статистика будет расти только от завершённых официальных матчей.");
-      const grid=document.createElement("div");grid.className="cabinet-metrics";
+      p=panel("Карьера тренера","Постоянная история тренера и команды. Официальная статистика будет расти только от завершённых официальных матчей.");      const grid=document.createElement("div");grid.className="cabinet-metrics";
       const history=state.careerHistory||{officialMatches:[],seasons:{}};
       const officialMatches=Array.isArray(history.officialMatches)?history.officialMatches:[];
       const totals=officialMatches.reduce((a,m)=>{const ownIsHome=m.homeId===(team?.id||state.careerTeamId),gf=Number(m.goalsFor??(ownIsHome?m.homeScore:m.awayScore)??0),ga=Number(m.goalsAgainst??(ownIsHome?m.awayScore:m.homeScore)??0),result=m.result||(gf>ga?"W":gf<ga?"L":"D");a.played++;a.wins+=result==="W"?1:0;a.draws+=result==="D"?1:0;a.losses+=result==="L"?1:0;a.gf+=gf;a.ga+=ga;return a;},{played:0,wins:0,draws:0,losses:0,gf:0,ga:0});
@@ -997,6 +1241,7 @@ function renderPlayers() {
   const show=()=>{const t=leagueData.teams.find(x=>x.id===select.value); if(t){const display={...t,name:t.name==="{teamName}"?state.teamName:t.name,coach:t.coach==="(имя тренера)"?state.coachName:t.coach};detail.replaceChildren(makeTeamRoster(display));}};
   select.addEventListener("change",show); controls.append(select); wrap.append(controls,detail); show(); return wrap;
 }
+
 const MATCH_FORMATIONS = {
   "2–2–1": ["ЗЩ","ЗЩ","ПЗ","ПЗ","НП"],
   "2–1–2": ["ЗЩ","ЗЩ","ПЗ","НП","НП"],
@@ -1382,7 +1627,7 @@ const SCOUT_RULES_VERSION = "2.8.0";
 const SCOUT_INTEREST_CHANCE = 0.20;
 const SCOUT_IMMEDIATE_TRANSFER_CHANCE = 0.10;
 const SCOUT_SECOND_LEAGUE_CLUBS = ["ФК «Восток»", "ФК «Смена»", "ФК «Маяк»", "ФК «Тайфун»"];
-function scoutRulesEnabled(){return state.careerRulesVersion===SCOUT_RULES_VERSION}
+function scoutRulesEnabled(){return [SCOUT_RULES_VERSION, "2.8.1"].includes(state.careerRulesVersion)}
 function scoutPlayerId(player){return String(player?.careerId||player?.id||player?.name||"unknown")}
 function scoutTeamById(teamId){
  if(!leagueData?.teams)return null;
@@ -1561,6 +1806,52 @@ function simulateEndSeasonFriendlyDay(day){
   if(home.id===ownId||away.id===ownId)publishCoachEventOnce("season-friendly:"+key,"news","Товарищеский матч",result.homeName+" "+homeScore+":"+awayScore+" "+result.awayName+". Результат не влияет на таблицу лиги.",{priority:"normal"});
  });
 }
+function simulateNpcTransferExchange() {
+ if (!leagueData || state.careerRulesVersion !== "2.8.1" || !state.initialRosterDistributionApplied) return null;
+ // Occasional in-world activity: one 8% check per progressed game day, no effect on user-team trades.
+ if (Math.random() >= 0.08) return null;
+ state.externalRosters = state.externalRosters && typeof state.externalRosters === "object" ? state.externalRosters : {};
+ const npcTeams = (leagueData.teams || []).filter(team => !team.isUserTeam && team.name !== "{teamName}").map(base => ({
+   base, players: Array.isArray(state.externalRosters[base.id]) ? state.externalRosters[base.id] : base.players
+ })).filter(team => team.players.length > 0 && team.players.length <= 10);
+ if (npcTeams.length < 2) return null;
+ const pair = shuffledCopy(npcTeams).slice(0, 2);
+ const [a, b] = pair;
+ if (a.players.length > 10 || b.players.length > 10) return null;
+ const playerA = a.players[Math.floor(Math.random() * a.players.length)];
+ const playerB = b.players[Math.floor(Math.random() * b.players.length)];
+ if (!playerA || !playerB || playerA.careerId === playerB.careerId) return null;
+ const indexA = a.players.findIndex(p => p.careerId === playerA.careerId);
+ const indexB = b.players.findIndex(p => p.careerId === playerB.careerId);
+ if (indexA < 0 || indexB < 0) return null;
+ // Two-way exchange preserves each team's player count and respects the ten-player limit.
+ a.players[indexA] = playerB;
+ b.players[indexB] = playerA;
+ state.externalRosters[a.base.id] = a.players;
+ state.externalRosters[b.base.id] = b.players;
+ a.base.players = a.players; b.base.players = b.players;
+ const record = {
+   id: "npc-transfer-" + String(state.seasonNumber || 1) + "-" + String(state.gameDay || 1) + "-" + Date.now(),
+   season: Math.max(1, Number(state.seasonNumber) || 1), day: Math.max(1, Number(state.gameDay) || 1), at: Date.now(),
+   teamAId: a.base.id, teamAName: a.base.name, playerAName: playerA.name, playerAId: playerA.careerId || null,
+   teamBId: b.base.id, teamBName: b.base.name, playerBName: playerB.name, playerBId: playerB.careerId || null
+ };
+ state.npcTransferHistory = Array.isArray(state.npcTransferHistory) ? state.npcTransferHistory : [];
+ state.npcTransferHistory.push(record);
+ if (state.npcTransferHistory.length > 500) state.npcTransferHistory = state.npcTransferHistory.slice(-500);
+ const eventKey = "npc-transfer:" + record.season + ":" + record.day;
+ publishCoachEventOnce(
+   eventKey,
+   "news",
+   "Обмен между командами",
+   "«" + record.teamAName + "» и «" + record.teamBName + "» совершили взаимный обмен. " +
+     record.playerAName + " перешёл в «" + record.teamBName + "», а " +
+     record.playerBName + " — в «" + record.teamAName + "».",
+   { priority: "normal", season: record.season, day: record.day, actionPage: "transfers", actionLabel: "Посмотреть обмены" }
+ );
+ return record;
+}
+
 function advanceCoachDay(){
  if(!leagueData){alert("Календарь ещё загружается.");return}
  if(!canAdvanceCoachDay()){alert("Сегодня официальный матч тура. На главной странице появилась кнопка «НАЧАТЬ МАТЧ».");return}
@@ -1577,6 +1868,7 @@ function advanceCoachDay(){
   updateCoachRespect();saveState();render();alert(state.lastCalendarEvent);return
 }
  state.gameDay=Number(state.gameDay||1)+1;
+ simulateNpcTransferExchange();
  processPendingScoutDepartures();
  deliverScheduledCoachMail(state.gameDay);
  const currentSeason=Number(state.seasonNumber)||1;
@@ -1704,8 +1996,7 @@ function createMatchEvent(session,home,away,minute){
    event={minute,text:"Фол: "+(offender?.player.name||"Игрок")+" нарушает правила. Судья назначает штрафной.",type:"foul",side:defSide};
    if(Math.random()<.025){event.text+=" Судья показывает красную карточку.";event.card="red";event.player=offender?.player.name;if(offender)offender.sentOff=true}
    else if(Math.random()<.18){event.text+=" Жёлтая карточка за грубую игру.";event.card="yellow";event.player=offender?.player.name}
-   if(Math.random()<.30&&scorer){event.text+=" Прямой удар со штрафного — гол! Автор: "+scorer.player.name+(helper?" (ассист: "+helper.player.name+")":"")+". ";event.type="goal";event.scoringSide=side;event.shot=true;event.onTarget=true;event.scorer=scorer.player.name;event.assist=helper?.player.name||null;session.score[side]++}
-  }
+   if(Math.random()<.30&&scorer){event.text+=" Прямой удар со штрафного — гол! Автор: "+scorer.player.name+(helper?" (ассист: "+helper.player.name+")":"")+". ";event.type="goal";event.scoringSide=side;event.shot=true;event.onTarget=true;event.scorer=scorer.player.name;event.assist=helper?.player.name||null;session.score[side]++}  }
  }else if(Math.random()<danger){
   const accuracy=Math.max(.25,Math.min(.78,.5+(avgAttack-50)/200+(attackMode?.06:0)));
   if(Math.random()<accuracy){
@@ -1996,7 +2287,8 @@ function renderSeasonCalendar(){
  return wrap
 }
 function renderOtherRoundMatches(){
- const wrap=document.createElement("div");wrap.className="tournament-other-matches-page"; const viewedLeague=["Нижняя лига","Верхняя лига"].includes(state.tournamentViewLeague)?state.tournamentViewLeague:currentCoachLeague();
+ const wrap=document.createElement("div");wrap.className="tournament-other-matches-page";
+ const viewedLeague=["Нижняя лига","Верхняя лига"].includes(state.tournamentViewLeague)?state.tournamentViewLeague:currentCoachLeague();
  const round=officialRoundForDay(Number(state.gameDay)||1,viewedLeague);
  const section=document.createElement("section");section.className="panel tournament-other-matches";
  const header=document.createElement("div");header.className="section-title";header.append(safeText("h2","Другие встречи · "+viewedLeague));

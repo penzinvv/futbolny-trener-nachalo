@@ -57,6 +57,15 @@ function localDayStart(now=Date.now()){const d=new Date(now);d.setHours(0,0,0,0)
  }
  function freeYardMonthKey(){const day=Math.max(1,Number(state.gameDay)||1),season=Math.max(1,Number(state.seasonNumber)||1);return season+":"+ (Math.floor((day-1)/28)+1)}
 function randomFreeYardPlayer(){
+ // In 2.8.1, introduce the 21 reserved original players one at a time through the existing Free Yard cadence.
+ const reserve=Array.isArray(state.leagueReservePlayers)?state.leagueReservePlayers:[];
+ if(state.careerRulesVersion==="2.8.1"&&reserve.length){
+  const index=Math.floor(Math.random()*reserve.length),[player]=reserve.splice(index,1);
+  if(player){
+   state.leagueReservePlayers=reserve;
+   return {...player,id:"free-reserve-"+String(player.careerId||player.name||Date.now()),skills:{...(player.skills||{})},age:Number(player.age)||14+Math.floor(Math.random()*7),potential:Number(player.potential)||35+Math.floor(Math.random()*56),portraitIndex:Number(player.portraitIndex)||1+Math.floor(Math.random()*77),freeYard:true,invited:false};
+  }
+ }
  const all=[];(leagueData?.teams||[]).forEach(team=>(team.players||[]).forEach(player=>{const parts=String(player.name||"").trim().split(/\s+/);if(parts.length>1)all.push({first:parts.slice(1).join(" "),last:parts[0]})}));
  const firsts=[...new Set(all.map(x=>x.first).filter(Boolean))],lasts=[...new Set(all.map(x=>x.last).filter(Boolean))];
  const first=firsts[Math.floor(Math.random()*firsts.length)]||"Алексей",last=lasts[Math.floor(Math.random()*lasts.length)]||"Смирнов";
@@ -107,7 +116,12 @@ function ensureFreeYardPlayer(){
  state.freeYardPlayers=Array.isArray(state.freeYardPlayers)?state.freeYardPlayers:[];
  state.freeYardMonthsSeen=Array.isArray(state.freeYardMonthsSeen)?state.freeYardMonthsSeen:[];
  const month=freeYardMonthKey();
- if(!state.freeYardMonthsSeen.includes(month)){state.freeYardPlayers.push({...randomFreeYardPlayer(),monthKey:month});state.freeYardMonthsSeen.push(month);saveState()}
+ if(!state.freeYardMonthsSeen.includes(month)){
+  const newcomer=randomFreeYardPlayer();
+  state.freeYardPlayers.push({...newcomer,monthKey:month});
+  state.freeYardMonthsSeen.push(month);
+  saveState();
+ }
 }
 function freeYardPage(){
  const w=document.createElement("div");
@@ -329,6 +343,30 @@ function transfersPage(){
   });
   w.append(panel);
  });
+ const npcHistory = Array.isArray(state.npcTransferHistory) ? state.npcTransferHistory : [];
+ const availableSeasons = [...new Set(npcHistory.map(item => Math.max(1, Number(item.season) || 1)))].sort((a,b)=>b-a);
+ const archive = P("История обменов команд", "Здесь сохраняются реальные взаимные обмены между командами NPC. История не меняет правила пользовательского обмена.");
+ if (!availableSeasons.length) {
+  archive.append(T("Обменов между командами NPC пока не было. Новости появятся после фактически состоявшихся сделок."));
+ } else {
+  const tabs = document.createElement("div"); tabs.className = "feature-actions";
+  const list = document.createElement("div");
+  function showSeason(season) {
+   list.replaceChildren();
+   const rows = npcHistory.filter(item => Number(item.season) === Number(season)).sort((a,b)=>(Number(b.day)||0)-(Number(a.day)||0));
+   if (!rows.length) { list.append(T("В этом сезоне обменов не было.")); return; }
+   rows.forEach(item => {
+    const card = document.createElement("article"); card.className = "feature-panel";
+    card.append(safeText("h3", "Сезон " + item.season + " · игровой день " + item.day));
+    card.append(T(item.teamAName + " ↔ " + item.teamBName));
+    card.append(T(item.playerAName + " перешёл в «" + item.teamBName + "», а " + item.playerBName + " — в «" + item.teamAName + "»."));
+    list.append(card);
+   });
+  }
+  availableSeasons.forEach((season, index) => tabs.append(B("Сезон " + season, () => showSeason(season), index === 0 ? "primary" : "secondary")));
+  archive.append(tabs, list); showSeason(availableSeasons[0]);
+ }
+ w.append(archive);
  return w;
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
