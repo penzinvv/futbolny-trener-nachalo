@@ -1779,3 +1779,11 @@ body{background:radial-gradient(ellipse at 52% 0%,rgba(20,80,54,.45),transparent
 .home-roster-empty{margin:4px 0;color:#9fb8aa;font-size:11px}
 @media(max-width:1100px){.home-roster-list{max-height:220px}.home-roster-columns,.home-roster-player{grid-template-columns:minmax(82px,1.6fr) repeat(5,minmax(16px,.38fr)) minmax(34px,.65fr);gap:3px}.home-roster-identity{gap:4px}.home-roster-identity img{width:23px;height:23px;flex-basis:23px}.home-roster-name b{font-size:9px}.home-roster-stat{font-size:9px}}
 @media(max-width:600px){.next-match-card{margin:8px;padding:10px}.match-preview-logo{width:48px;height:48px}.home-roster-list{max-height:250px}.home-roster-columns,.home-roster-player{grid-template-columns:minmax(80px,1.55fr) repeat(5,minmax(16px,.35fr)) minmax(32px,.6fr);gap:2px}.home-roster-heading h2{font-size:10px}.home-roster-player{padding:4px 3px}.home-roster-identity img{width:21px;height:21px;flex-basis:21px}}
+
+/* 2.8.4: clear destructive-action styling on developer page. */
+.developer-page{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+.reset-career-button{max-width:100%;padding:12px 18px;border:1px solid #b94747;border-radius:10px;background:#4b171b;color:#fff;font-weight:900;letter-spacing:.035em;cursor:pointer;transition:background .15s,border-color .15s}
+.reset-career-button:hover{background:#682126;border-color:#ff7777}
+.reset-career-button:focus-visible{outline:2px solid #ffaaaa;outline-offset:3px}
+.reset-career-button:disabled{opacity:.65;cursor:wait}
+@media(max-width:600px){.reset-career-button{width:100%;white-space:normal}}
