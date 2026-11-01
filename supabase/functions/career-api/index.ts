@@ -94,6 +94,12 @@ Deno.serve(async (req: Request) => {
 
         const { error: achievementsError } = await admin.from("career_achievements").delete().eq("owner_user_id", userId);
         if (achievementsError) throw achievementsError;
+
+        const { error: coachHistoryDeleteError } = await admin.from("coach_team_history").delete().eq("coach_id", coach.id);
+        if (coachHistoryDeleteError) throw coachHistoryDeleteError;
+
+        const { error: coachDeleteError } = await admin.from("coach_profiles").delete().eq("id", coach.id).eq("owner_user_id", userId);
+        if (coachDeleteError) throw coachDeleteError;
       }
 
       // Remove the recovery snapshot last; any earlier error leaves it recoverable.
