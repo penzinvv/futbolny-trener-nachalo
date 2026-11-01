@@ -1753,3 +1753,29 @@ body{background:radial-gradient(ellipse at 52% 0%,rgba(20,80,54,.45),transparent
 /* Версия 2.8.2: адаптивная сетка восстановленного интерфейса */
 @media(max-width:900px){.dashboard-layout{grid-template-columns:1fr;gap:10px}.sidebar-nav{position:static;display:flex;flex-direction:row;flex-wrap:wrap;gap:5px;padding:7px}.sidebar-link{width:auto;flex:0 1 auto;padding:7px 9px;font-size:10px}.sidebar-divider{display:none}}
 @media(max-width:600px){.dashboard-layout{gap:8px}.sidebar-nav{gap:4px}.sidebar-link{font-size:9px;padding:6px 7px}}
+
+/* 2.8.3: компактный состав внутри карточки «Следующий матч». */
+.next-match-card{justify-content:flex-start;gap:0;margin:10px;padding:12px;overflow:hidden}
+.next-match-card>.eyebrow{margin-bottom:8px}
+.match-preview-logo{width:58px;height:58px}
+.match-preview-footer{margin-top:9px;padding-top:8px}
+.home-roster{min-width:0;margin-top:10px;padding-top:9px;border-top:1px solid #1d543a}
+.home-roster-heading{display:flex;align-items:center;gap:7px;margin-bottom:6px;min-width:0}
+.home-roster-heading h2{margin:0;color:#70f0ae;font-size:11px;letter-spacing:.08em;white-space:nowrap}
+.home-roster-heading>span{color:#a5c9b3;font-size:10px;white-space:nowrap}
+.home-roster-heading button{margin-left:auto;padding:4px 7px;border:1px solid #276849;border-radius:7px;background:#0b3928;color:#9ff5c7;font-size:9px;font-weight:800;white-space:nowrap;cursor:pointer}
+.home-roster-columns,.home-roster-player{display:grid;grid-template-columns:minmax(90px,1.7fr) repeat(5,minmax(18px,.42fr)) minmax(38px,.7fr);align-items:center;gap:4px}
+.home-roster-columns{padding:4px 5px;color:#8db6a0;font-size:8px;font-weight:800;text-align:center}
+.home-roster-columns span:first-child{text-align:left}
+.home-roster-list{display:grid;gap:2px;max-height:260px;overflow-y:auto;overscroll-behavior:contain;padding-right:2px}
+.home-roster-player{min-width:0;padding:4px 5px;border:1px solid #174630;border-radius:7px;background:#062319;font-size:10px;text-align:center}
+.home-roster-identity{display:flex;align-items:center;gap:6px;min-width:0;text-align:left}
+.home-roster-identity img{width:27px;height:27px;flex:0 0 27px;object-fit:cover;border:1px solid #317354;border-radius:6px;background:#0b2119}
+.home-roster-name{display:flex;flex-direction:column;gap:1px;min-width:0}
+.home-roster-name b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.2}
+.home-roster-name small{color:#70f0ae;font-size:9px;font-weight:800}
+.home-roster-stat{font-variant-numeric:tabular-nums;color:#e5f8eb;font-size:10px;font-weight:700}
+.home-roster-clean-sheets{grid-column:1/-1;text-align:left;color:#8bd8aa;font-size:9px;padding-left:33px}
+.home-roster-empty{margin:4px 0;color:#9fb8aa;font-size:11px}
+@media(max-width:1100px){.home-roster-list{max-height:220px}.home-roster-columns,.home-roster-player{grid-template-columns:minmax(82px,1.6fr) repeat(5,minmax(16px,.38fr)) minmax(34px,.65fr);gap:3px}.home-roster-identity{gap:4px}.home-roster-identity img{width:23px;height:23px;flex-basis:23px}.home-roster-name b{font-size:9px}.home-roster-stat{font-size:9px}}
+@media(max-width:600px){.next-match-card{margin:8px;padding:10px}.match-preview-logo{width:48px;height:48px}.home-roster-list{max-height:250px}.home-roster-columns,.home-roster-player{grid-template-columns:minmax(80px,1.55fr) repeat(5,minmax(16px,.35fr)) minmax(32px,.6fr);gap:2px}.home-roster-heading h2{font-size:10px}.home-roster-player{padding:4px 3px}.home-roster-identity img{width:21px;height:21px;flex-basis:21px}}
