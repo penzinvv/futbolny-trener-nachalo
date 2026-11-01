@@ -828,7 +828,7 @@ function renderSupportPage(){
 }
 async function resetCareerFromDeveloper(button) {
  const confirmed=window.confirm(
-  "НАЧАТЬ КАРЬЕРУ С НУЛЯ?\\n\\nБудут удалены локальное сохранение и связанное облачное сохранение карьеры, а текущая команда будет закрыта. Весь прогресс карьеры, состав, достижения и игровые события текущей карьеры будут сброшены. Это действие нельзя отменить.\\n\\nПубличные рейтинги, сообщения онлайн-чата и данные других игроков не удаляются.\\n\\nДействительно начать заново?"
+  "НАЧАТЬ КАРЬЕРУ С НУЛЯ?\n\nБудут удалены локальное сохранение и связанное облачное сохранение карьеры, а текущая команда будет закрыта. Весь прогресс карьеры, состав, достижения и игровые события текущей карьеры будут сброшены. Это действие нельзя отменить.\n\nПубличные рейтинги, сообщения онлайн-чата и данные других игроков не удаляются.\n\nДействительно начать заново?"
  );
  if(!confirmed)return;
  if(button) {button.disabled=true;button.textContent="СБРОС КАРЬЕРЫ…";}
@@ -850,10 +850,11 @@ async function resetCareerFromDeveloper(button) {
  } catch(error) {
   console.error("Не удалось сбросить карьеру:",error);
   if(button){button.disabled=false;button.textContent="НАЧАТЬ КАРЬЕРУ С НУЛЯ";}
-  alert("Не удалось безопасно завершить сброс карьеры на сервере. Данные браузера не очищены. Проверь подключение и попробуй ещё раз.\\n\\nПричина: "+(error?.message||"неизвестная ошибка"));
+  alert("Не удалось безопасно завершить сброс карьеры на сервере. Данные браузера не очищены. Проверь подключение и попробуй ещё раз.\n\nПричина: "+(error?.message||"неизвестная ошибка"));
  }
 }
-\nfunction renderDeveloperPage(){
+
+function renderDeveloperPage(){
  const wrap=document.createElement("section");wrap.className="feature-panel developer-page";
  const p=document.createElement("p");p.textContent="Разработчик: Валерий DOS. Музыка: DOSLER, LERDOS.";
  const warning=document.createElement("p");warning.className="muted";warning.textContent="Здесь можно начать новую карьеру. Сброс затронет только вашу карьеру и её облачное сохранение; публичные рейтинги, сообщения чата и данные других игроков останутся нетронутыми.";
