@@ -826,7 +826,41 @@ function renderSupportPage(){
  const back=document.createElement("button");back.type="button";back.className="secondary";back.textContent="ИГРАТЬ ДАЛЬШЕ";back.addEventListener("click",returnToDashboard);
  actions.append(donate,back);wrap.append(p,actions);return wrap;
 }
-function renderDeveloperPage(){const wrap=document.createElement("section");wrap.className="feature-panel";const p=document.createElement("p");p.textContent="Разработчик: Валерий DOS. Музыка: DOSLER, LERDOS.";wrap.append(p);return wrap}
+async function resetCareerFromDeveloper(button) {
+ const confirmed=window.confirm(
+  "НАЧАТЬ КАРЬЕРУ С НУЛЯ?\\n\\nБудут удалены локальное сохранение и связанное облачное сохранение карьеры, а текущая команда будет закрыта. Весь прогресс карьеры, состав, достижения и игровые события текущей карьеры будут сброшены. Это действие нельзя отменить.\\n\\nПубличные рейтинги, сообщения онлайн-чата и данные других игроков не удаляются.\\n\\nДействительно начать заново?"
+ );
+ if(!confirmed)return;
+ if(button) {button.disabled=true;button.textContent="СБРОС КАРЬЕРЫ…";}
+ if(cloudSnapshotSaveTimer){clearTimeout(cloudSnapshotSaveTimer);cloudSnapshotSaveTimer=null;}
+ cloudSnapshotBlocked=true;
+ cloudSnapshotReady=false;
+ try {
+  const result=await cloudRequest("POST",{action:"reset-career"});
+  if(!result?.reset)throw new Error("Сервер не подтвердил сброс карьеры.");
+  localStorage.removeItem(STORAGE_KEY);
+  const backupKeys=[];
+  for(let i=0;i<localStorage.length;i++){
+   const key=localStorage.key(i);
+   if(key&&key.startsWith(CLOUD_SNAPSHOT_BACKUP_PREFIX))backupKeys.push(key);
+  }
+  backupKeys.forEach(key=>localStorage.removeItem(key));
+  if(gameDayTimerInterval){clearInterval(gameDayTimerInterval);gameDayTimerInterval=null;}
+  window.location.reload();
+ } catch(error) {
+  console.error("Не удалось сбросить карьеру:",error);
+  if(button){button.disabled=false;button.textContent="НАЧАТЬ КАРЬЕРУ С НУЛЯ";}
+  alert("Не удалось безопасно завершить сброс карьеры на сервере. Данные браузера не очищены. Проверь подключение и попробуй ещё раз.\\n\\nПричина: "+(error?.message||"неизвестная ошибка"));
+ }
+}
+\nfunction renderDeveloperPage(){
+ const wrap=document.createElement("section");wrap.className="feature-panel developer-page";
+ const p=document.createElement("p");p.textContent="Разработчик: Валерий DOS. Музыка: DOSLER, LERDOS.";
+ const warning=document.createElement("p");warning.className="muted";warning.textContent="Здесь можно начать новую карьеру. Сброс затронет только вашу карьеру и её облачное сохранение; публичные рейтинги, сообщения чата и данные других игроков останутся нетронутыми.";
+ const reset=document.createElement("button");reset.type="button";reset.id="resetCareerButton";reset.className="reset-career-button";reset.textContent="НАЧАТЬ КАРЬЕРУ С НУЛЯ";
+ reset.addEventListener("click",()=>void resetCareerFromDeveloper(reset));
+ wrap.append(p,warning,reset);return wrap
+}
 
 function renderCupPage(){
  const wrap=document.createElement("div");wrap.className="cup-page";
