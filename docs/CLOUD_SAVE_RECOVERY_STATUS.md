@@ -13,21 +13,20 @@ Last verified: 2026-11-01
 - The RPC is executable by `service_role` only; `anon` and `authenticated` cannot execute it directly.
 - At the time of this check, the snapshot table contains 0 rows.
 
-## Not yet complete
+## Client integration status
 
-- The game client has **not** been connected to `career-save`.
+- The currently published GitHub branch `ui-redesign-home` does **not yet contain** the client integration described below.
+- A local draft based on the user's 2.8.1 archive now contains delayed cloud autosave after local `saveState()`, authenticated snapshot loading, explicit local/cloud conflict choices, a separate local backup before cloud restore, and HTTP 409 conflict blocking.
+- Local saves continue to use `localStorage`; cloud failures do not remove the local save.
+- The local draft passed JavaScript syntax checks. A headless browser smoke test did not complete, and no live authenticated end-to-end save/restore test has passed.
 - No local career has yet been uploaded to this table by the game.
-- Automatic restore/merge UI has not been implemented or tested.
-- Existing browser saves remain in localStorage and must not be overwritten automatically when a cloud snapshot also exists.
-- Live authenticated save/restore testing is pending.
 
-## Required integration safeguards
+## Required before release
 
-1. Keep localStorage saving as a fallback.
-2. Never silently replace an existing local career with a cloud snapshot.
-3. When local and cloud careers both exist and differ, stop automatic writes and offer an explicit recovery choice.
-4. Update the local expected revision only after a successful server response; handle HTTP 409 as a conflict.
-5. Test persistence of user roster, NPC rosters, reserve players, in-game events, transfer history, and season history across reloads.
-6. Do not claim cloud backup or recovery is complete until the client integration and authenticated end-to-end test pass.
+1. Synchronize the complete, correct 2.8.1 source tree to GitHub. Do not combine the local draft with the older 2.7.x branch files.
+2. Test authenticated first save, repeat save, restore into a clean browser, local-vs-cloud conflict, and stale-revision HTTP 409.
+3. Test persistence of user roster, NPC rosters, reserve players, in-game events, transfer history, and season history across reloads.
+4. Confirm that existing local saves remain unchanged unless the user explicitly chooses a restore or replacement.
+5. Do not claim cloud backup or recovery is complete until source synchronization and end-to-end testing pass.
 
 Anonymous Supabase sessions are tied to the browser's persisted session. Cross-device recovery requires a durable account/sign-in flow; a browser-only anonymous session alone does not guarantee recovery on another device.
