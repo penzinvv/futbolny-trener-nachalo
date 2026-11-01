@@ -48,7 +48,7 @@ function localDayStart(now=Date.now()){const d=new Date(now);d.setHours(0,0,0,0)
    state.coachGoals=state.coachGoals||{};let record=state.coachGoals[goal.id]||{};state.coachGoals[goal.id]=record;
    const unlock=Number(record.completedAt||0)+72000000,locked=now<unlock,progress=getGoalProgress(goal,now);
    if(progress.done&&!locked&&Number(record.rewardedAt||0)<goalWindow(goal.id,now)){
-    state.xp=Math.max(0,Number(state.xp)||0)+goal.reward;record.completedAt=now;record.rewardedAt=now;record.lastReward=goal.reward;saveState();
+    awardTrainerXp(goal.reward);record.completedAt=now;record.rewardedAt=now;record.lastReward=goal.reward;saveState();
     w.append(P("Цель выполнена!",goal.title+" — начислено "+goal.reward.toLocaleString("ru-RU")+" XP. Следующее выполнение доступно через 20 часов."));return;
    }
    const card=P(goal.title,goal.description),line=locked?"Повторно доступна через "+Math.ceil((unlock-now)/3600000)+" ч. "+Math.ceil(((unlock-now)%3600000)/60000)+" мин.":"Прогресс: "+progress.current+" / "+progress.total;
@@ -170,7 +170,7 @@ function match3(t,p){
  function draw(){grid.replaceChildren();board.forEach((v,i)=>{const b=B(v<0?"":icons[v]||"⚽",()=>pick(i),"relation-match3-cell"+(sel===i?" selected":""));b.setAttribute("aria-label",v<0?"Пустая клетка":"Футбольный предмет");b.disabled=lock||done||v<0;grid.append(b)});stat.textContent="Очки: "+score}
  function matches(){let f=new Set();for(let r=0;r<8;r++)for(let c=0;c<8;c++){let i=r*8+c,v=board[i];if(v<0)continue;if(c<6&&board[i+1]===v&&board[i+2]===v)for(let x=c;x<8&&board[r*8+x]===v;x++)f.add(r*8+x);if(r<6&&board[i+8]===v&&board[i+16]===v)for(let y=r;y<8&&board[y*8+c]===v;y++)f.add(y*8+c)}return f}
  function settle(){if(done||closed)return;let f=matches();if(!f.size){lock=false;draw();return}f.forEach(i=>board[i]=-1);score+=f.size*5;draw();timer=setTimeout(()=>{for(let c=0;c<8;c++){let s=[];for(let r=7;r>=0;r--)if(board[r*8+c]>=0)s.push(board[r*8+c]);while(s.length<8)s.push(rand());for(let r=7;r>=0;r--)board[r*8+c]=s[7-r]}draw();timer=setTimeout(settle,90)},120)}
- function saveAndExit(){if(done||closed)return;done=true;clearTimeout(timer);const before=Number(state.relationships[playerRelationKey(t,p)]||0),after=rel(t,p,score),delta=after-before;if(typeof updateCoachRespect==="function")updateCoachRespect();state.xp=Math.max(0,Number(state.xp)||0)+score;state.trainingHistory=Array.isArray(state.trainingHistory)?state.trainingHistory:[];state.trainingHistory.push({type:"match3-relations",team:t.id,player:p.name,score,delta,at:Date.now()});saveState();msg.textContent="Результат сохранён. Очки: "+score+". Отношения с игроком: +"+F(delta)+". Общие отношения: "+F(after)+".";grid.replaceChildren();actions.replaceChildren(B("Вернуться в профиль",()=>{close();openPlayerProfile(t,p,0)},"primary"),B("Закрыть",close))}
+ function saveAndExit(){if(done||closed)return;done=true;clearTimeout(timer);const before=Number(state.relationships[playerRelationKey(t,p)]||0),after=rel(t,p,score),delta=after-before;if(typeof updateCoachRespect==="function")updateCoachRespect();awardTrainerXp(score);state.trainingHistory=Array.isArray(state.trainingHistory)?state.trainingHistory:[];state.trainingHistory.push({type:"match3-relations",team:t.id,player:p.name,score,delta,at:Date.now()});saveState();msg.textContent="Результат сохранён. Очки: "+score+". Отношения с игроком: +"+F(delta)+". Общие отношения: "+F(after)+".";grid.replaceChildren();actions.replaceChildren(B("Вернуться в профиль",()=>{close();openPlayerProfile(t,p,0)},"primary"),B("Закрыть",close))}
  function pick(i){if(lock||done||closed)return;if(sel<0){sel=i;draw();return}if(Math.abs(Math.floor(sel/8)-Math.floor(i/8))+Math.abs(sel%8-i%8)!==1){sel=i;draw();return}let a=sel,b=i;sel=-1;[board[a],board[b]]=[board[b],board[a]];if(!matches().size){[board[a],board[b]]=[board[b],board[a]];draw();return}lock=true;draw();settle()}
  actions.append(B("СОХРАНИТЬ РЕЗУЛЬТАТ И ВЫЙТИ",saveAndExit,"primary"),B("Выйти без сохранения",close));
  board=Array.from({length:64},rand);for(let i=0;i<64;i++)while((i%8>1&&board[i]===board[i-1]&&board[i]===board[i-2])||(i>15&&board[i]===board[i-8]&&board[i]===board[i-16]))board[i]=rand();draw()
@@ -208,7 +208,7 @@ function runTeamTraining(t){
  state.teamTrainingHistory.push({at:Date.now(),team:t.id,results});
  if(typeof publishCoachEventOnce==="function")publishCoachEventOnce("team-training:"+state.seasonNumber+":"+state.gameDay+":"+Date.now(),"news","Командная тренировка завершена","Командная тренировка завершена. Все футболисты получили развитие характеристик.");
  if(typeof addCoachRatingPoints==="function")addCoachRatingPoints(5,"team-training");if(typeof updateCoachRespect==="function")updateCoachRespect();
- state.xp=Math.max(0,Number(state.xp)||0)+1000;saveState();
+ awardTrainerXp(1000);saveState();
  const ov=document.createElement("div");ov.className="feature-game-overlay";const m=document.createElement("section");m.className="feature-game-modal";const body=document.createElement("div");body.className="feature-player-list";
  results.forEach(r=>{const row=document.createElement("div");row.className="feature-player-row";row.append(safeText("b",r.name+" · "+r.position),safeText("span",(r.main?"Основная позиция":"Случайная характеристика")+" → "+r.stat+(r.atCap?" (уже 100)":" +1")));body.append(row)});
  const close=()=>{ov.remove();openPage("training")};m.append(safeText("h2","⚽ Командная тренировка завершена"),T("Каждый футболист получил одну случайно распределённую попытку развития. Начислено +1000 XP тренеру."),body,B("Готово",close,"primary"));ov.append(m);document.body.append(ov)
@@ -237,7 +237,7 @@ function playTraining(t,p,id){
   p.skills=p.skills||{};
   p.skills[p.position]=Math.min(100,before+growth);
   if(growth>0&&typeof processScoutAttributeIncrease==="function")processScoutAttributeIncrease(t,p,before,p.skills[p.position]);
-  state.xp=Math.max(0,Number(state.xp)||0)+net;
+  awardTrainerXp(net);
   state.trainingCooldowns=state.trainingCooldowns||{};
   state.trainingCooldowns[id]=Date.now();
   state.trainingHistory=Array.isArray(state.trainingHistory)?state.trainingHistory:[];
