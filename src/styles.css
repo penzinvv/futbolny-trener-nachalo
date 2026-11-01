@@ -1787,3 +1787,8 @@ body{background:radial-gradient(ellipse at 52% 0%,rgba(20,80,54,.45),transparent
 .reset-career-button:focus-visible{outline:2px solid #ffaaaa;outline-offset:3px}
 .reset-career-button:disabled{opacity:.65;cursor:wait}
 @media(max-width:600px){.reset-career-button{width:100%;white-space:normal}}
+
+
+/* 2.8.5: shop wallet presentation; existing page layout remains unchanged. */
+.shop-page-stack{display:grid;gap:14px}
+.shop-wallet-value{font-size:clamp(26px,4vw,38px);font-weight:900;letter-spacing:.02em;margin:8px 0;color:#f2cf76;font-variant-numeric:tabular-nums}
