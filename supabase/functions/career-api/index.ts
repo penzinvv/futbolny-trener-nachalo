@@ -56,6 +56,54 @@ Deno.serve(async (req: Request) => {
     let payload: any;
     try { payload = await req.json(); } catch { return respond({ ok: false, error: "Request body must be JSON" }, 400); }
 
+    if (payload?.action === "reset-career") {
+      // Scope all career mutations to the currently authenticated user.
+      // Preserve public ratings, chat messages, shared matches, and other users.
+      const { data: coach, error: coachError } = await admin
+        .from("coach_profiles").select("id").eq("owner_user_id", userId).maybeSingle();
+      if (coachError) throw coachError;
+
+      if (coach) {
+        const { data: activeTeam, error: teamError } = await admin
+          .from("teams").select("id").eq("owner_user_id", userId).is("archived_at", null).maybeSingle();
+        if (teamError) throw teamError;
+
+        if (activeTeam) {
+          const now = new Date().toISOString();
+          const { error: playerHistoryError } = await admin
+            .from("player_team_history").update({ left_at: now, reason: "release" })
+            .eq("team_id", activeTeam.id).is("left_at", null);
+          if (playerHistoryError) throw playerHistoryError;
+
+          const { error: coachHistoryError } = await admin
+            .from("coach_team_history").update({ left_at: now, reason: "resignation" })
+            .eq("coach_id", coach.id).eq("team_id", activeTeam.id).is("left_at", null);
+          if (coachHistoryError) throw coachHistoryError;
+
+          const { error: archiveError } = await admin
+            .from("teams").update({ archived_at: now })
+            .eq("id", activeTeam.id).eq("owner_user_id", userId).is("archived_at", null);
+          if (archiveError) throw archiveError;
+        }
+
+        const { error: statsError } = await admin.from("coach_season_stats").delete().eq("coach_id", coach.id);
+        if (statsError) throw statsError;
+
+        const { error: matchesError } = await admin.from("matches").update({ coach_id: null }).eq("coach_id", coach.id);
+        if (matchesError) throw matchesError;
+
+        const { error: achievementsError } = await admin.from("career_achievements").delete().eq("owner_user_id", userId);
+        if (achievementsError) throw achievementsError;
+      }
+
+      // Remove the recovery snapshot last; any earlier error leaves it recoverable.
+      const { error: snapshotError } = await admin
+        .from("career_state_snapshots").delete().eq("owner_user_id", userId);
+      if (snapshotError) throw snapshotError;
+
+      return respond({ ok: true, reset: true });
+    }
+
     if (payload?.action === "get-online-ratings") {
       const [xpResult, generalResult] = await Promise.all([
         admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,awards,xp,general_rating,updated_at").order("xp", { ascending: false }).order("xp_submitted_at", { ascending: true, nullsFirst: false }).limit(50),
