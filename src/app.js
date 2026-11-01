@@ -453,6 +453,51 @@ function requestNextGameDay() {
  if(Number(state.gameDay)!==beforeDay||Number(state.seasonNumber)!==beforeSeason)startGameDayTimer();else updateGameDayTimerUI();
 }
 
+function renderHomeRoster() {
+  const list = $("homeRosterList"), countLabel = $("homeRosterCount");
+  if (!list) return;
+  const team = getUserTeam(), roster = team?.players || [];
+  if (countLabel) countLabel.textContent = roster.length + " / 10";
+  list.replaceChildren();
+  if (!roster.length) { list.append(safeText("p", "Состав появится после создания команды.", "home-roster-empty")); return; }
+  const season = Number(state.seasonNumber || 1);
+  const matches = Object.values(state.leagueResults || {}).filter(match => Number(match.season || season) === season);
+  roster.forEach((player, index) => {
+    const stats = {played:0,goals:0,assists:0,yellow:0,red:0,ratingTotal:0,ratingCount:0,cleanSheets:0};
+    matches.forEach(match => {
+      const isHome=match.homeId===team.id,isAway=match.awayId===team.id;
+      if(!isHome&&!isAway)return;
+      const lineup=isHome?(match.homeLineup||[]):(match.awayLineup||[]);
+      const entry=lineup.find(item=>(item.player||item).name===player.name);
+      if(!entry)return;
+      stats.played++;
+      const rating=Number(entry.rating ?? entry.matchRating ?? entry.averageRating);
+      if(Number.isFinite(rating)&&rating>0){stats.ratingTotal+=rating;stats.ratingCount++;}
+      if(player.position==="ВР"&&Number(isHome?match.awayScore:match.homeScore)===0)stats.cleanSheets++;
+      const events=Array.isArray(match.events)?match.events:Array.isArray(match.timeline)?match.timeline:[];
+      events.forEach(event=>{
+        if(event.type==="goal"&&event.scorer===player.name)stats.goals++;
+        if(event.type==="goal"&&event.assist===player.name)stats.assists++;
+        const type=String(event.type||event.card||"").toLowerCase();
+        const involved=event.player===player.name||event.playerName===player.name||event.target===player.name||event.name===player.name;
+        if(involved&&/yellow|жк|yellowcard/.test(type))stats.yellow++;
+        if(involved&&/red|кк|redcard/.test(type))stats.red++;
+      });
+    });
+    const row=document.createElement("article");row.className="home-roster-player";
+    const identity=document.createElement("div");identity.className="home-roster-identity";
+    const img=document.createElement("img");img.src=getPortrait(player.portraitIndex||teamsPlayerIndex(team,player));img.alt="";img.loading="lazy";
+    img.onerror=()=>{img.onerror=null;img.src="/images/portretplayers/portret1.jpg";};
+    const name=document.createElement("div");name.className="home-roster-name";
+    name.append(safeText("b",player.name||("Футболист "+(index+1))),safeText("small",player.position||"—"));identity.append(img,name);row.append(identity);
+    [["М",stats.played],["Г",stats.goals],["А",stats.assists],["ЖК",stats.yellow],["КК",stats.red],["СР. ОЦ.",stats.ratingCount?(stats.ratingTotal/stats.ratingCount).toFixed(2):"—"]].forEach(([label,value])=>{
+      const cell=document.createElement("span");cell.className="home-roster-stat";cell.setAttribute("data-label",label);cell.textContent=String(value);row.append(cell);
+    });
+    if(player.position==="ВР"){const clean=document.createElement("span");clean.className="home-roster-clean-sheets";clean.textContent="Сухие матчи: "+stats.cleanSheets;clean.title="Матчи без пропущенных голов";row.append(clean);}
+    list.append(row);
+  });
+}
+
 function render() {
   ensureCareerIdentity();
   $("coachNameLabel").textContent = state.coachName || "Тренер";
@@ -480,6 +525,7 @@ function render() {
   if(matchDayLabel) matchDayLabel.textContent=nextRound?"День "+officialRoundDay(nextRound):"Сезон завершён";
   if(matchRoundLabel) matchRoundLabel.textContent=nextRound?"Тур "+nextRound:"Нет предстоящих матчей";
   renderTeamRecords();
+  renderHomeRoster();
 
   const skipDay = $("skipDayButton"); if(skipDay) skipDay.textContent = Number(state.gameDay)>=182 ? "НАЧАТЬ НОВЫЙ СЕЗОН" : "ПРОПУСТИТЬ ДЕНЬ";
   $("rosterCount").textContent = getUserTeam()?.players?.length || state.players.length || 10;
@@ -1088,6 +1134,8 @@ document.addEventListener("click", event => {
   if (calendarButton) { event.preventDefault(); openPage("seasonCalendar"); return; }
   const startMatchButton = target.closest("#startMatchButton");
   if (startMatchButton && !startMatchButton.classList.contains("hidden")) { event.preventDefault(); openPage("match"); return; }
+  const fullRosterButton = target.closest("#homeRosterFullButton");
+  if (fullRosterButton) { event.preventDefault(); openPage("players"); return; }
   const pageButton = target.closest("[data-page]");
   if (pageButton) { event.preventDefault(); openPage(pageButton.dataset.page); }
 }, true);
