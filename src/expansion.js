@@ -9,7 +9,7 @@ function install(){
  const baseGetTeam=getUserTeam;
  getUserTeam=function(){const t=baseGetTeam();if(t&&Array.isArray(state.userRoster))t.players=state.userRoster;return t};
 
- const nav=document.querySelector(".menu-grid");if(nav&&!nav.querySelector('[data-page="transfers"]')&&!document.getElementById("transferHome")){const b=B("🔁 ТРАНСФЕРНЫЙ ОБМЕН ИГРОКАМИ",transfer,"transfer-home-button");b.id="transferHome";nav.append(b)}
+ const nav=document.querySelector(".menu-grid");if(nav){nav.querySelectorAll('[data-page="transfers"]').forEach(b=>b.remove());document.getElementById("transferHome")?.remove()}
  const old=pages.cabinet.render;if(!old.wrap){const w=function(){const n=old();n.prepend(B("🔁 Трансферный обмен игроками",transfer,"primary"));return n};w.wrap=true;pages.cabinet.render=w}
  profileBase=openPlayerProfile;openPlayerProfile=function(t,p,i){profileBase(t,p,i);if(t.id===getUserTeam()?.id)return;const box=P("Отношения с футболистом","Каждые 100 очков в «Три в ряд» дают +1 процентный пункт отношений.");box.append(B("ПОДНЯТЬ ОТНОШЕНИЯ С ИГРОКОМ",()=>match3(t,p),"primary"),B("Выбрать для наблюдения в следующем матче",()=>{state.matchRelationSelections||={};state.matchRelationSelections[t.id]=p.name;saveState();alert("Выбран игрок для наблюдения: "+p.name+". Начисление отношений после матча появится вместе с матчевым движком.")}),B("Предложить обмен",()=>{state.transferTarget={team:t.id,name:p.name};saveState();transfer()}));document.querySelector("#pageContent .player-profile")?.append(box)};
  pages.training.render=training;pages.goals.render=renderCoachGoals;
@@ -64,19 +64,13 @@ function randomFreeYardPlayer(){
  skills[position]=Math.min(75,skills[position]+8);
  return {id:"free-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),name:last+" "+first,position,nationality:"Россия",age:14+Math.floor(Math.random()*7),skills,potential:35+Math.floor(Math.random()*56),portraitIndex:1+Math.floor(Math.random()*77),freeYard:true,invited:false};
 }
-function ensureFreeYardPlayer(){
- state.freeYardPlayers=Array.isArray(state.freeYardPlayers)?state.freeYardPlayers:[];
- state.freeYardMonthsSeen=Array.isArray(state.freeYardMonthsSeen)?state.freeYardMonthsSeen:[];
- const month=freeYardMonthKey();
- if(!state.freeYardMonthsSeen.includes(month)){state.freeYardPlayers.push({...randomFreeYardPlayer(),monthKey:month});state.freeYardMonthsSeen.push(month);saveState()}
-}
 function startFreeYardViewing(player,relationKey){
  const existing=document.getElementById("freeYardViewingOverlay");if(existing)existing.remove();
  let score=0,passed=0,lives=3,disposed=false,raf=0,last=performance.now(),moveAccumulator=0;
  let carX=50,objects=[],held=new Set();
  const root=document.createElement("div");root.id="freeYardViewingOverlay";
  root.style.cssText="position:fixed;inset:0;z-index:100000;background:rgba(3,10,18,.94);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;color:#fff;font:15px system-ui,sans-serif";
- root.innerHTML='<section style="width:min(720px,100%);max-height:96dvh;overflow:auto;background:#132238;border:2px solid #69b8ff;border-radius:16px;padding:14px;box-sizing:border-box;box-shadow:0 12px 50px #0009"><h2 style="margin:0 0 5px;color:#a8d8ff">ПРОСМОТР: ДОБЕРИСЬ ДО ПОЛЯ</h2><p style="margin:0 0 10px;color:#d5e6f7">Управляй машиной, объезжай препятствия и доберись на просмотр. За каждое успешно пройденное препятствие — 4 очка. Столкновение отнимает жизнь.</p><div id="viewingStats" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-weight:700">Очки: 0 · Проехано: 0 · Жизни: 3</div><div id="viewingRoad" role="application" aria-label="Дорога на просмотр" style="position:relative;width:100%;height:min(54vh,430px);min-height:270px;overflow:hidden;border:3px solid #9fb9d5;border-radius:12px;background:#3d4b5b;touch-action:manipulation"><div style="position:absolute;left:22%;top:0;width:56%;height:100%;border-left:5px solid #eee;border-right:5px solid #eee;box-sizing:border-box;background:repeating-linear-gradient(0deg,transparent 0 36px,#e8e8e8 36px 58px,transparent 58px 90px)"></div><div id="viewingCars" style="position:absolute;inset:0"></div><div id="viewingPlayerCar" style="position:absolute;left:50%;bottom:8%;width:34px;height:54px;background:#2477dd;border:3px solid #cce5ff;border-radius:8px;transform:translateX(-50%);box-shadow:0 2px 8px #111;z-index:2"></div></div><div style="display:flex;justify-content:center;gap:8px;margin:10px 0;flex-wrap:wrap"><button type="button" data-view-move="left" style="min-width:68px;padding:12px;border-radius:9px;border:1px solid #a8d8ff;background:#24476a;color:white;font-size:20px">◀</button><button type="button" data-view-move="right" style="min-width:68px;padding:12px;border-radius:9px;border:1px solid #a8d8ff;background:#24476a;color:white;font-size:20px">▶</button></div><p style="margin:4px 0 10px;text-align:center;color:#bed1e5;font-size:13px">Компьютер: A/D или ←/→. Телефон: кнопки или касание нужной стороны дороги.</p><button id="viewingFinish" type="button" style="width:100%;padding:13px;border:2px solid #f4d06f;border-radius:10px;background:#7a5b17;color:#fff;font-weight:800;cursor:pointer">СОХРАНИТЬ И ЗАКОНЧИТЬ</button></section>';
+ root.innerHTML='<section style="width:min(720px,100%);max-height:96dvh;overflow:auto;background:#132238;border:2px solid #69b8ff;border-radius:16px;padding:14px;box-sizing:border-box;box-shadow:0 12px 50px #0009"><h2 style="margin:0 0 5px;color:#a8d8ff">ПРОСМОТР: ДОБЕРИСЬ ДО ПОЛЯ</h2><p style="margin:0 0 10px;color:#d5e6f7">Управляй машиной, объезжай препятствия и доберись на просмотр. За каждое успешно пройденное препятствие — 4 очка. Столкновение отнимает жизнь.</p><div id="viewingStats" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-weight:700">Очки: 0 · Проехано: 0 · Жизни: 3</div><div id="viewingRoad" role="application" aria-label="Дорога на просмотр" style="position:relative;width:100%;height:min(54vh,430px);min-height:270px;overflow:hidden;border:3px solid #9fb9d5;border-radius:12px;background:#3d4b5b;touch-action:manipulation"><div style="position:absolute;left:22%;top:0;width:56%;height:100%;border-left:5px solid #eee;border-right:5px solid #eee;box-sizing:border-box;background:repeating-linear-gradient(0deg,transparent 0 36px,#e8e8e8 36px 58px,transparent 58px 90px)"></div><div id="viewingCars" style="position:absolute;inset:0"></div><div id="viewingPlayerCar" style="position:absolute;left:50%;bottom:8%;width:34px;height:54px;background:#2477dd;border:3px solid #cce5ff;border-radius:8px;transform:translateX(-50%);box-shadow:0 2px 8px #111;z-index:2"></div></div><p style="margin:10px 0;text-align:center;color:#bed1e5;font-size:13px">Управляй влево и вправо, объезжай препятствия. Компьютер: A/D или ←/→. Телефон: касайся левой или правой стороны дороги.</p><button id="viewingFinish" type="button" style="width:100%;padding:13px;border:2px solid #f4d06f;border-radius:10px;background:#7a5b17;color:#fff;font-weight:800;cursor:pointer">СОХРАНИТЬ И ЗАКОНЧИТЬ</button></section>';
  document.body.appendChild(root);
  const field=root.querySelector("#viewingRoad"),cars=root.querySelector("#viewingCars"),playerCar=root.querySelector("#viewingPlayerCar"),stats=root.querySelector("#viewingStats");
  function paintCars(){cars.replaceChildren();objects.forEach(o=>{const car=document.createElement("div");car.style.cssText="position:absolute;left:"+o.x+"%;top:"+o.y+"%;width:34px;height:50px;background:#e9bd4b;border:3px solid #fff;border-radius:7px;transform:translateX(-50%);box-sizing:border-box";cars.appendChild(car)})}
@@ -88,7 +82,6 @@ function startFreeYardViewing(player,relationKey){
  function onFieldPointer(e){if(disposed)return;const rect=field.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*100;moveCar(x<carX?-1:1);e.preventDefault()}
  function finish(){
   if(disposed)return;disposed=true;cancelAnimationFrame(raf);window.removeEventListener("keydown",onKeyDown,true);window.removeEventListener("keyup",onKeyUp,true);window.removeEventListener("blur",clearKeys);field.removeEventListener("pointerdown",onFieldPointer);
-  root.querySelectorAll("[data-view-move]").forEach(btn=>{btn.onpointerdown=null;});
   const before=Math.max(0,Math.min(100,Number(state.relationships?.[relationKey]||0)));
   const after=Math.min(100,Math.round((before+score/100)*100)/100);
   state.relationships=state.relationships||{};state.relationships[relationKey]=after;
@@ -107,10 +100,15 @@ function startFreeYardViewing(player,relationKey){
   paintCars();updateStats();if(lives<=0){finish();return}raf=requestAnimationFrame(tick)
  }
  window.addEventListener("keydown",onKeyDown,true);window.addEventListener("keyup",onKeyUp,true);window.addEventListener("blur",clearKeys);field.addEventListener("pointerdown",onFieldPointer);
- root.querySelectorAll("[data-view-move]").forEach(btn=>{const dir=btn.dataset.viewMove;const press=e=>{e.preventDefault();held.add(dir)};const release=()=>held.delete(dir);btn.addEventListener("pointerdown",press);btn.addEventListener("pointerup",release);btn.addEventListener("pointercancel",release);btn.addEventListener("pointerleave",release)});
  root.querySelector("#viewingFinish").onclick=finish;raf=requestAnimationFrame(tick)
 }
 
+function ensureFreeYardPlayer(){
+ state.freeYardPlayers=Array.isArray(state.freeYardPlayers)?state.freeYardPlayers:[];
+ state.freeYardMonthsSeen=Array.isArray(state.freeYardMonthsSeen)?state.freeYardMonthsSeen:[];
+ const month=freeYardMonthKey();
+ if(!state.freeYardMonthsSeen.includes(month)){state.freeYardPlayers.push({...randomFreeYardPlayer(),monthKey:month});state.freeYardMonthsSeen.push(month);saveState()}
+}
 function freeYardPage(){
  const w=document.createElement("div");
  if(!leagueData){w.append(placeholder("Загружаю список футболистов…"));return w}
@@ -130,7 +128,7 @@ function freeYardPage(){
   else info.append(T("Характеристики и скрытый потенциал откроются при отношениях 60%."));
   row.append(img,info);panel.append(row);
   const actions=document.createElement("div");actions.className="feature-actions";
-  actions.append(B("Вызвать на просмотр",()=>startFreeYardViewing(player,relationKey),"primary"));
+  actions.append(B("Вызвать на просмотр",()=>startFreeYardViewing(player,relationKey),"secondary"));
   const invite=B("Пригласить в команду",()=>{
    if(team.players.length>=10){alert("В команде не может быть больше 10 футболистов.");return}
    const newPlayer={...player,skills:{...(player.skills||{})},potential:player.potential,portraitIndex:player.portraitIndex};
@@ -189,6 +187,7 @@ function runTeamTraining(t){
   const chosen=choices[Math.floor(Math.random()*choices.length)];
   const before=Number(p.skills[chosen])||0;
   p.skills[chosen]=Math.min(100,before+1);
+  if(chosen===main&&p.skills[chosen]>before&&typeof processScoutAttributeIncrease==="function")processScoutAttributeIncrease(t,p,before,p.skills[chosen]);
   results.push({name:p.name,position:main,stat:chosen,main:i===mainIndex,atCap:before>=100});
  });
  state.trainingCooldowns[key]=Date.now();state.teamTrainingHistory=state.teamTrainingHistory||[];
@@ -223,6 +222,7 @@ function playTraining(t,p,id){
   const delta=after-beforeRel;
   p.skills=p.skills||{};
   p.skills[p.position]=Math.min(100,before+growth);
+  if(growth>0&&typeof processScoutAttributeIncrease==="function")processScoutAttributeIncrease(t,p,before,p.skills[p.position]);
   state.xp=Math.max(0,Number(state.xp)||0)+net;
   state.trainingCooldowns=state.trainingCooldowns||{};
   state.trainingCooldowns[id]=Date.now();
@@ -256,15 +256,17 @@ function playTraining(t,p,id){
    timer=setTimeout(spawn,500);
  }else{
    field.classList.add("snake-training-field");const grid=document.createElement("div");grid.className="snake-grid";grid.style.touchAction="none";field.append(grid);
-   let snake=[{x:4,y:4},{x:3,y:4}],dir={x:1,y:0},food={x:7,y:4},obstacles=[];
-   function placeFood(){let tries=0;do{food={x:Math.floor(Math.random()*10),y:Math.floor(Math.random()*10)};tries++}while(tries<200&&(snake.some(s=>s.x===food.x&&s.y===food.y)||obstacles.some(s=>s.x===food.x&&s.y===food.y)))}
-   function draw(){grid.replaceChildren();for(let y=0;y<10;y++)for(let x=0;x<10;x++){const c=document.createElement("span");c.className="snake-cell"+(snake.some(s=>s.x===x&&s.y===y)?" snake-body":"")+(food.x===x&&food.y===y?" snake-food":"")+(obstacles.some(s=>s.x===x&&s.y===y)?" snake-obstacle":"");c.textContent=food.x===x&&food.y===y?"⚽":obstacles.some(s=>s.x===x&&s.y===y)?"🧍":"";grid.append(c)}scoreLine.textContent="Очки: "+score+" · Мячей: "+score/5}
-   function tick(){if(ended||closed)return;const h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};if(h.x<0||h.y<0||h.x>=10||h.y>=10||snake.slice(0,-1).some(s=>s.x===h.x&&s.y===h.y)||obstacles.some(s=>s.x===h.x&&s.y===h.y)){finish("Змейка столкнулась с футболистом или границей. Собрано мячей: "+score/5+".");return}snake.unshift(h);if(h.x===food.x&&h.y===food.y){score+=5;placeFood();if(score%50===0&&obstacles.length<8){let o;do{o={x:Math.floor(Math.random()*10),y:Math.floor(Math.random()*10)}}while((snake.some(s=>s.x===o.x&&s.y===o.y)||(food.x===o.x&&food.y===o.y)||obstacles.some(s=>s.x===o.x&&s.y===o.y)));obstacles.push(o)}}else snake.pop();draw()}
+   const SIZE=20;let snake=[{x:10,y:10},{x:9,y:10}],dir={x:1,y:0},food={x:14,y:10},obstacles=[];
+   function freeCell(){for(let i=0;i<500;i++){const p={x:Math.floor(Math.random()*SIZE),y:Math.floor(Math.random()*SIZE)};if(!snake.some(s=>s.x===p.x&&s.y===p.y)&&!(food.x===p.x&&food.y===p.y)&&!obstacles.some(s=>s.x===p.x&&s.y===p.y))return p}return null}
+   function placeFood(){const p=freeCell();if(p)food=p}
+   function draw(){grid.replaceChildren();for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++){const c=document.createElement("span");c.className="snake-cell"+(snake.some(s=>s.x===x&&s.y===y)?" snake-body":"")+(food.x===x&&food.y===y?" snake-food":"")+(obstacles.some(s=>s.x===x&&s.y===y)?" snake-obstacle":"");c.textContent=food.x===x&&food.y===y?"⚽":obstacles.some(s=>s.x===x&&s.y===y)?"🧍":"";grid.append(c)}scoreLine.textContent="Очки: "+score+" · Мячей: "+score/5}
+   function tick(){if(ended||closed)return;const h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};if(h.x<0||h.y<0||h.x>=SIZE||h.y>=SIZE||snake.slice(0,-1).some(s=>s.x===h.x&&s.y===h.y)||obstacles.some(s=>s.x===h.x&&s.y===h.y)){finish("Змейка столкнулась с футболистом или границей. Собрано мячей: "+score/5+".");return}snake.unshift(h);if(h.x===food.x&&h.y===food.y){score+=5;placeFood();if(score%50===0&&obstacles.length<12){const o=freeCell();if(o)obstacles.push(o)}}else snake.pop();draw()}
    function setDirection(dx,dy){if(!(dx===-dir.x&&dy===-dir.y))dir={x:dx,y:dy}}
-   function keySnake(ev){const map={arrowup:[0,-1],arrowdown:[0,1],arrowleft:[-1,0],arrowright:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]},v=map[ev.key.toLowerCase()];if(v){setDirection(v[0],v[1]);ev.preventDefault()}}
+   function keySnake(ev){const target=ev.target;if(target&&(target.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)))return;const map={arrowup:[0,-1],arrowdown:[0,1],arrowleft:[-1,0],arrowright:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]},v=map[String(ev.key||"").toLowerCase()];if(v){setDirection(v[0],v[1]);ev.preventDefault()}}
    let swipeStart=null;grid.addEventListener("pointerdown",ev=>{swipeStart={x:ev.clientX,y:ev.clientY};try{grid.setPointerCapture(ev.pointerId)}catch(_){}});grid.addEventListener("pointerup",ev=>{if(!swipeStart)return;const dx=ev.clientX-swipeStart.x,dy=ev.clientY-swipeStart.y;swipeStart=null;if(Math.max(Math.abs(dx),Math.abs(dy))<12)return;if(Math.abs(dx)>Math.abs(dy))setDirection(dx>0?1:-1,0);else setDirection(0,dy>0?1:-1)});grid.addEventListener("pointercancel",()=>{swipeStart=null});
+   const touchPad=document.createElement("div");touchPad.className="snake-touch-pad";touchPad.setAttribute("aria-label","Сенсорное управление змейкой");[["↑",0,-1,"up"],["←",-1,0,"left"],["↓",0,1,"down"],["→",1,0,"right"]].forEach(([label,dx,dy,place])=>{const b=B(label,()=>setDirection(dx,dy),"secondary");b.classList.add("snake-touch-button", "snake-touch-"+place);b.setAttribute("aria-label",({up:"Вверх",left:"Влево",down:"Вниз",right:"Вправо"})[place]);touchPad.append(b)});field.append(touchPad);
    document.addEventListener("keydown",keySnake);extraCleanup=()=>document.removeEventListener("keydown",keySnake);
-   timer=setInterval(tick,280);draw();
+   timer=setInterval(tick,180);draw();
    actions.append(B("Выйти без награды",close));
  }
  if(p.position!=="ЗЩ"&&p.position!=="ВР") actions.append(B("Выйти без награды",close));
