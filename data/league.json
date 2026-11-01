@@ -1430,5 +1430,427 @@
       ],
       "isUserTeam": true
     }
+  ],
+  "freeYardNominees": [
+    {
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "name": "Каналов Сергей",
+      "skills": {
+        "ВР": 4,
+        "ЗЩ": 35,
+        "ПЗ": 29,
+        "НП": 27
+      },
+      "careerId": "00000000-0000-4000-8000-000000000005",
+      "portraitIndex": 5,
+      "id": "nominee-team1-00000000-0000-4000-8000-000000000005",
+      "age": 17,
+      "potential": 58,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team1",
+      "originTeamName": "КРЕПКИЕ ОРЕШКИ"
+    },
+    {
+      "position": "НП",
+      "nationality": "Россия",
+      "name": "Гордевич Борис",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 25,
+        "ПЗ": 30,
+        "НП": 44
+      },
+      "careerId": "00000000-0000-4000-8000-000000000010",
+      "portraitIndex": 10,
+      "id": "nominee-team1-00000000-0000-4000-8000-000000000010",
+      "age": 15,
+      "potential": 90,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team1",
+      "originTeamName": "КРЕПКИЕ ОРЕШКИ"
+    },
+    {
+      "position": "ВР",
+      "nationality": "Россия",
+      "name": "Соболев Михаил",
+      "skills": {
+        "ВР": 35,
+        "ЗЩ": 29,
+        "ПЗ": 15,
+        "НП": 2
+      },
+      "careerId": "00000000-0000-4000-8000-000000000012",
+      "portraitIndex": 12,
+      "id": "nominee-team2-00000000-0000-4000-8000-000000000012",
+      "age": 17,
+      "potential": 36,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team2",
+      "originTeamName": "СПАРТАКИШ"
+    },
+    {
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "name": "Южный Антон",
+      "skills": {
+        "ВР": 7,
+        "ЗЩ": 32,
+        "ПЗ": 30,
+        "НП": 23
+      },
+      "careerId": "00000000-0000-4000-8000-000000000015",
+      "portraitIndex": 15,
+      "id": "nominee-team2-00000000-0000-4000-8000-000000000015",
+      "age": 15,
+      "potential": 53,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team2",
+      "originTeamName": "СПАРТАКИШ"
+    },
+    {
+      "position": "НП",
+      "nationality": "Россия",
+      "name": "Пензин Валерий",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 44,
+        "ПЗ": 22,
+        "НП": 50
+      },
+      "careerId": "00000000-0000-4000-8000-000000000029",
+      "portraitIndex": 29,
+      "id": "nominee-team3-00000000-0000-4000-8000-000000000029",
+      "age": 15,
+      "potential": 52,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team3",
+      "originTeamName": "ДИНАМИТ"
+    },
+    {
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "name": "Глебов Родион",
+      "skills": {
+        "ВР": 7,
+        "ЗЩ": 43,
+        "ПЗ": 35,
+        "НП": 22
+      },
+      "careerId": "00000000-0000-4000-8000-000000000033",
+      "portraitIndex": 33,
+      "id": "nominee-team4-00000000-0000-4000-8000-000000000033",
+      "age": 20,
+      "potential": 50,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team4",
+      "originTeamName": "АЛАЯ РОЗА"
+    },
+    {
+      "position": "НП",
+      "nationality": "Россия",
+      "name": "Николаев Алексей",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 30,
+        "ПЗ": 32,
+        "НП": 41
+      },
+      "careerId": "00000000-0000-4000-8000-000000000040",
+      "portraitIndex": 40,
+      "id": "nominee-team4-00000000-0000-4000-8000-000000000040",
+      "age": 19,
+      "potential": 83,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team4",
+      "originTeamName": "АЛАЯ РОЗА"
+    },
+    {
+      "position": "ВР",
+      "nationality": "Россия",
+      "name": "Носов Тимофей",
+      "skills": {
+        "ВР": 40,
+        "ЗЩ": 26,
+        "ПЗ": 20,
+        "НП": 5
+      },
+      "careerId": "00000000-0000-4000-8000-000000000041",
+      "portraitIndex": 41,
+      "id": "nominee-team5-00000000-0000-4000-8000-000000000041",
+      "age": 20,
+      "potential": 87,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team5",
+      "originTeamName": "ДРОНЫ"
+    },
+    {
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "name": "Хабаров Максим",
+      "skills": {
+        "ВР": 15,
+        "ЗЩ": 36,
+        "ПЗ": 22,
+        "НП": 12
+      },
+      "careerId": "00000000-0000-4000-8000-000000000045",
+      "portraitIndex": 45,
+      "id": "nominee-team5-00000000-0000-4000-8000-000000000045",
+      "age": 18,
+      "potential": 55,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team5",
+      "originTeamName": "ДРОНЫ"
+    },
+    {
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "name": "Долматов Тимур",
+      "skills": {
+        "ВР": 22,
+        "ЗЩ": 43,
+        "ПЗ": 39,
+        "НП": 21
+      },
+      "careerId": "00000000-0000-4000-8000-000000000053",
+      "portraitIndex": 53,
+      "id": "nominee-team6-00000000-0000-4000-8000-000000000053",
+      "age": 15,
+      "potential": 65,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team6",
+      "originTeamName": "ЛУЧ"
+    },
+    {
+      "position": "ВР",
+      "nationality": "Россия",
+      "name": "Захаров Тимур",
+      "skills": {
+        "ВР": 42,
+        "ЗЩ": 23,
+        "ПЗ": 12,
+        "НП": 10
+      },
+      "careerId": "00000000-0000-4000-8000-000000000061",
+      "portraitIndex": 61,
+      "id": "nominee-team7-00000000-0000-4000-8000-000000000061",
+      "age": 19,
+      "potential": 60,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team7",
+      "originTeamName": "МОГНЕМ"
+    },
+    {
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "name": "Шикулин Прохор",
+      "skills": {
+        "ВР": 15,
+        "ЗЩ": 30,
+        "ПЗ": 40,
+        "НП": 31
+      },
+      "careerId": "00000000-0000-4000-8000-000000000066",
+      "portraitIndex": 66,
+      "id": "nominee-team7-00000000-0000-4000-8000-000000000066",
+      "age": 18,
+      "potential": 90,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team7",
+      "originTeamName": "МОГНЕМ"
+    },
+    {
+      "position": "НП",
+      "nationality": "Индия",
+      "name": "Кхан Радж",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 22,
+        "ПЗ": 34,
+        "НП": 42
+      },
+      "careerId": "00000000-0000-4000-8000-000000000069",
+      "portraitIndex": 69,
+      "id": "nominee-team7-00000000-0000-4000-8000-000000000069",
+      "age": 14,
+      "potential": 52,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team7",
+      "originTeamName": "МОГНЕМ"
+    },
+    {
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "name": "Заманухин Александр",
+      "skills": {
+        "ВР": 3,
+        "ЗЩ": 23,
+        "ПЗ": 40,
+        "НП": 32
+      },
+      "careerId": "00000000-0000-4000-8000-000000000077",
+      "portraitIndex": 77,
+      "id": "nominee-team8-00000000-0000-4000-8000-000000000077",
+      "age": 19,
+      "potential": 49,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team8",
+      "originTeamName": "ЗЕНИТ ДВОР"
+    },
+    {
+      "position": "ПЗ",
+      "nationality": "Вьетнам",
+      "name": "Фам Дык",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 32,
+        "ПЗ": 33,
+        "НП": 23
+      },
+      "careerId": "00000000-0000-4000-8000-000000000078",
+      "portraitIndex": 78,
+      "id": "nominee-team8-00000000-0000-4000-8000-000000000078",
+      "age": 17,
+      "potential": 87,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team8",
+      "originTeamName": "ЗЕНИТ ДВОР"
+    },
+    {
+      "position": "ЗЩ",
+      "nationality": "Беларусь",
+      "name": "Златов Виталий",
+      "skills": {
+        "ВР": 9,
+        "ЗЩ": 40,
+        "ПЗ": 34,
+        "НП": 20
+      },
+      "careerId": "00000000-0000-4000-8000-000000000084",
+      "portraitIndex": 84,
+      "id": "nominee-team9-00000000-0000-4000-8000-000000000084",
+      "age": 17,
+      "potential": 80,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team9",
+      "originTeamName": "ЛОКОЛЕЙТМОТИВ"
+    },
+    {
+      "position": "НП",
+      "nationality": "Россия",
+      "name": "Скалатов Владимир",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 22,
+        "ПЗ": 30,
+        "НП": 35
+      },
+      "careerId": "00000000-0000-4000-8000-000000000090",
+      "portraitIndex": 90,
+      "id": "nominee-team9-00000000-0000-4000-8000-000000000090",
+      "age": 18,
+      "potential": 41,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team9",
+      "originTeamName": "ЛОКОЛЕЙТМОТИВ"
+    },
+    {
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "name": "Юрьев Юрий",
+      "skills": {
+        "ВР": 6,
+        "ЗЩ": 24,
+        "ПЗ": 30,
+        "НП": 29
+      },
+      "careerId": "00000000-0000-4000-8000-000000000098",
+      "portraitIndex": 98,
+      "id": "nominee-team10-00000000-0000-4000-8000-000000000098",
+      "age": 16,
+      "potential": 49,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team10",
+      "originTeamName": "НЕВОР"
+    },
+    {
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "name": "Губкин Матвей",
+      "skills": {
+        "ВР": 30,
+        "ЗЩ": 44,
+        "ПЗ": 30,
+        "НП": 12
+      },
+      "careerId": "00000000-0000-4000-8000-000000000103",
+      "portraitIndex": 103,
+      "id": "nominee-team11-00000000-0000-4000-8000-000000000103",
+      "age": 19,
+      "potential": 78,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team11",
+      "originTeamName": "СПАС"
+    },
+    {
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "name": "Ряженка Василий",
+      "skills": {
+        "ВР": 13,
+        "ЗЩ": 45,
+        "ПЗ": 32,
+        "НП": 30
+      },
+      "careerId": "00000000-0000-4000-8000-000000000114",
+      "portraitIndex": 114,
+      "id": "nominee-team12-00000000-0000-4000-8000-000000000114",
+      "age": 15,
+      "potential": 72,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team12",
+      "originTeamName": "{teamName}"
+    },
+    {
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "name": "Тыркин Дмитрий",
+      "skills": {
+        "ВР": 28,
+        "ЗЩ": 30,
+        "ПЗ": 12,
+        "НП": 21
+      },
+      "careerId": "00000000-0000-4000-8000-000000000115",
+      "portraitIndex": 115,
+      "id": "nominee-team12-00000000-0000-4000-8000-000000000115",
+      "age": 14,
+      "potential": 39,
+      "freeYard": true,
+      "invited": false,
+      "originTeamId": "team12",
+      "originTeamName": "{teamName}"
+    }
   ]
 }
