@@ -64,6 +64,22 @@ function randomFreeYardPlayer(){
  skills[position]=Math.min(75,skills[position]+8);
  return {id:"free-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),name:last+" "+first,position,nationality:"Россия",age:14+Math.floor(Math.random()*7),skills,potential:35+Math.floor(Math.random()*56),portraitIndex:1+Math.floor(Math.random()*77),freeYard:true,invited:false};
 }
+function ensureFreeYardNominees(){
+ state.freeYardPlayers=Array.isArray(state.freeYardPlayers)?state.freeYardPlayers:[];
+ const existing=new Set(state.freeYardPlayers.map(p=>String(p.id||p.careerId||p.name)));
+ const activeIds=new Set();
+ const addActive=players=>(players||[]).forEach(p=>{if(p?.careerId)activeIds.add(String(p.careerId));if(p?.id)activeIds.add(String(p.id))});
+ addActive(getUserTeam()?.players);
+ Object.values(state.externalRosters||{}).forEach(addActive);
+ let changed=false;
+ (leagueData?.freeYardNominees||[]).forEach(player=>{
+   const key=String(player.id||player.careerId||player.name);
+   if(existing.has(key)||activeIds.has(String(player.careerId||"")))return;
+   state.freeYardPlayers.push({...player,skills:{...(player.skills||{})},freeYard:true,invited:false});
+   existing.add(key);changed=true;
+ });
+ if(changed)saveState();
+}
 function ensureFreeYardPlayer(){
  state.freeYardPlayers=Array.isArray(state.freeYardPlayers)?state.freeYardPlayers:[];
  state.freeYardMonthsSeen=Array.isArray(state.freeYardMonthsSeen)?state.freeYardMonthsSeen:[];
@@ -74,6 +90,7 @@ function freeYardPage(){
  const w=document.createElement("div");
  if(!leagueData){w.append(placeholder("Загружаю список футболистов…"));return w}
  const team=getUserTeam();if(!team){w.append(placeholder("Сначала создай команду."));return w}
+ ensureFreeYardNominees();
  ensureFreeYardPlayer();
  const available=(state.freeYardPlayers||[]).filter(p=>!p.invited);
  w.append(P("Новые игроки двора","Каждый игровой месяц появляется один новый футболист. Если его не пригласить, он останется доступен и в следующие месяцы."));
