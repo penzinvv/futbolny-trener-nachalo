@@ -9,7 +9,7 @@ const GAME_DAY_TIPS = [
 ];
 const defaultState = {
   coachName: "", teamName: "", emblem: "🛡️", teamLogoIndex: 1, avatarIndex: 1, seasonNumber: 1, avatarChangeUsedSeason: 0,
-  xp: 0, permanentRating: 0, seasonRating: 0, respect: 0, gameDay: 1, players: [], relationships: {},
+  xp: 0, shopCoins: 0, shopOwnedItems: [], shopEquippedItems: {}, permanentRating: 0, seasonRating: 0, respect: 0, gameDay: 1, players: [], relationships: {},
   careerCoachId: null, careerTeamId: null, careerPlayerIds: {}, careerHistory: { officialMatches: [], seasons: {} }, gameDayStartedAt: null, gameDayTipKey: null, gameDayPreviousTipKey: null
 };
 let state = loadState();
@@ -24,6 +24,36 @@ function loadState() {
   try { return { ...defaultState, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") }; }
   catch { return { ...defaultState }; }
 }
+// 2.8.5: trainer XP and shop currency are independent balances.
+function awardTrainerXp(amount) {
+  const earned = Math.max(0, Number(amount) || 0);
+  if (!earned) return 0;
+  state.xp = Math.max(0, Number(state.xp) || 0) + earned;
+  state.shopCoins = Math.max(0, Number(state.shopCoins) || 0) + earned;
+  return earned;
+}
+function getShopBalance() { return Math.max(0, Number(state.shopCoins) || 0); }
+function isShopItemOwned(itemId) {
+  return Array.isArray(state.shopOwnedItems) && state.shopOwnedItems.includes(String(itemId));
+}
+function purchaseShopItem(item) {
+  if (!item || typeof item !== "object" || !String(item.id || "").trim()) return { ok: false, reason: "invalid-item" };
+  const itemId = String(item.id).trim();
+  const price = Number(item.price);
+  if (!Number.isSafeInteger(price) || price < 0) return { ok: false, reason: "invalid-price" };
+  state.shopOwnedItems = Array.isArray(state.shopOwnedItems) ? state.shopOwnedItems : [];
+  if (state.shopOwnedItems.includes(itemId)) return { ok: false, reason: "already-owned" };
+  if (getShopBalance() < price) return { ok: false, reason: "insufficient-funds" };
+  state.shopCoins = getShopBalance() - price;
+  state.shopOwnedItems.push(itemId);
+  if (item.equipSlot) {
+    state.shopEquippedItems = state.shopEquippedItems && typeof state.shopEquippedItems === "object" ? state.shopEquippedItems : {};
+    state.shopEquippedItems[String(item.equipSlot)] = itemId;
+  }
+  saveState();
+  return { ok: true, balance: getShopBalance(), itemId };
+}
+
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   scheduleCloudSnapshotSave();
@@ -817,7 +847,13 @@ function renderFaqPage(){
  });
  return wrap;
 }
-function renderShopPage(){const wrap=document.createElement("section");wrap.className="feature-panel";const p=document.createElement("p");p.textContent="Скоро магазин откроется.";wrap.append(p);return wrap}
+function renderShopPage(){
+ const wrap=document.createElement("section");wrap.className="shop-page-stack";
+ const balance=document.createElement("section");balance.className="feature-panel shop-wallet";
+ balance.append(safeText("p","БАЛАНС МАГАЗИНА","eyebrow"),safeText("h2",Math.floor(getShopBalance()).toLocaleString("ru-RU")+" монет","shop-wallet-value"),safeText("p","За каждый новый заработанный XP тренера дополнительно начисляется 1 монета. XP тренера не тратится на покупки.","muted"));
+ const catalog=document.createElement("section");catalog.className="feature-panel";catalog.append(safeText("h2","Магазин наград"),safeText("p","Каталог предметов и цены будут добавлены отдельно. Баланс и покупки сохраняются вместе с карьерой.","muted"));
+ wrap.append(balance,catalog);return wrap
+}
 function renderSupportPage(){
  const wrap=document.createElement("section");wrap.className="feature-panel support-page";
  const p=document.createElement("p");p.textContent="Привет, друг! Создание игры отнимает время, силы, и конечно финансы. Если ты хочешь помочь игре в развитии, то можешь это сделать здесь. Если нет, то приятной игры, и не обращай внимания на это.";
@@ -1827,7 +1863,7 @@ function resolvePlayerMailRequest(item,decision){
  state.relationships=state.relationships&&typeof state.relationships==="object"?state.relationships:{};
  const relationKey=playerRelationKey(team,player),current=getPlayerRelation(team,player),now=absoluteGameDay();
  if(decision==="accept"){
-  state.xp=Math.max(0,Number(state.xp)||0)+150;state.relationships[relationKey]=Math.min(100,current+10);
+  awardTrainerXp(150);state.relationships[relationKey]=Math.min(100,current+10);
   if(Number(item.absenceStartAbsDay)>=now)setPlayerAbsence(team,player,Number(item.absenceStartAbsDay),Number(item.absenceReturnAbsDay),"Тренер разрешил пропустить ближайший матч");
   item.responseLabel="Запрос принят: +150 XP и +10 п. п. отношений."+(Number(item.absenceStartAbsDay)>=now?" Футболисту разрешено пропустить матч с момента ответа.":" Дата матча уже прошла — решение не применяется задним числом.");
  }else{
