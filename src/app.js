@@ -392,7 +392,7 @@ $("saveAvatarChange").addEventListener("click", () => {
   state.avatarIndex = Number(selected.value); state.avatarChangeUsedSeason = Number(state.seasonNumber || 1);
   saveState(); closeAvatarChange(); render();
 });
-function showSetup() { $("onboarding").classList.remove("hidden"); $("dashboard").classList.add("hidden"); }
+function showSetup() { setPageBackground("createTeam"); $("onboarding").classList.remove("hidden"); $("dashboard").classList.add("hidden"); }
 
 function renderTeamRecords(showAll=false) {
   const host=$("teamRecordsList");
@@ -529,6 +529,7 @@ function renderHomeRoster() {
 }
 
 function render() {
+  if ($("pageView")?.classList.contains("hidden")) setPageBackground($("onboarding") && !$("onboarding").classList.contains("hidden") ? "createTeam" : "home");
   ensureCareerIdentity();
   $("coachNameLabel").textContent = state.coachName || "Тренер";
   $("coachAvatar").src = avatarPath(state.avatarIndex || 1);
@@ -1177,14 +1178,29 @@ function renderUpbringing() {
   wrap.append(panel);
   return wrap;
 }
+const PAGE_BACKGROUND_MAP = {
+  cabinet: "trainer-cabinet", players: "yard-players", training: "training",
+  upbringing: "yard-players", league: "league", cup: "cup-dostatok",
+  seasonCalendar: "season-calendar", otherRoundMatches: "calendar-matches",
+  match: "match", matchSummary: "match", goals: "coach-goals",
+  ratings: "coach-rating", shop: "shop", transfers: "transfers",
+  freeyard: "free-yard", help: "home", support: "home", developer: "home",
+  playerCard: "player-card"
+};
+function setPageBackground(pageKey) {
+  document.body.dataset.pageBg = PAGE_BACKGROUND_MAP[pageKey] || "home";
+}
+
 function openPage(key) {
   const page = pages[key]; if (!page) return;
+  setPageBackground(key);
   $("dashboard").classList.add("hidden"); $("pageView").classList.remove("hidden");
   $("pageTitle").textContent = page.title; $("pageEyebrow").textContent = page.eyebrow;
   const content = $("pageContent"); content.replaceChildren();
   const rendered = page.render(); if (rendered) content.append(rendered);
 }
 function returnToDashboard() {
+  setPageBackground("home");
   const pageView = $("pageView");
   const dashboard = $("dashboard");
   if (pageView) pageView.classList.add("hidden");
@@ -2554,6 +2570,7 @@ function openPlayerProfile(team,p,index) {
   tabItems.forEach(([key,label])=>{const b=document.createElement("button");b.type="button";b.className="player-profile-tab";b.dataset.tab=key;b.setAttribute("role","tab");b.textContent=label;b.addEventListener("click",()=>renderTab(key));tabs.append(b);});
   wrap.append(tabs,body);
   const back=document.createElement("button");back.className="back-button";back.textContent="← К составу";back.addEventListener("click",()=>{openPage("cabinet");setTimeout(()=>{const tab=[...document.querySelectorAll(".cabinet-tab")].find(b=>b.textContent.trim()==="Футболисты");if(tab)tab.click();},0);});wrap.append(back);
+  setPageBackground("playerCard");
   $("pageTitle").textContent=p.name;$("pageEyebrow").textContent="КАРТОЧКА ФУТБОЛИСТА";const content=$("pageContent");content.replaceChildren(wrap);renderTab("player");
 }
 function trainingPlayerKey(team,player,index) {

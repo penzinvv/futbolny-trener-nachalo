@@ -1334,7 +1334,7 @@ body{background:radial-gradient(ellipse at 52% 0%,rgba(20,80,54,.45),transparent
 .sidebar-divider{height:1px;background:#1c4b36;margin:7px 3px}
 .sidebar-link.secondary-link{font-size:10px;font-weight:700;color:#b5d0c0}
 .dashboard-content{min-width:0}
-.pitch{display:grid;grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);gap:0;align-items:stretch;min-height:300px;border-color:#249b67;background:linear-gradient(115deg,rgba(4,31,22,.92),rgba(9,64,41,.88)),url('/images/backgrounds/bg_create_team.jpg') center 44%/cover no-repeat;box-shadow:0 14px 38px #0004}
+.pitch{display:grid;grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);gap:0;align-items:stretch;min-height:300px;border-color:#249b67;background:linear-gradient(115deg,rgba(4,31,22,.94),rgba(9,64,41,.90));box-shadow:0 14px 38px #0004}
 .pitch:before{inset:13px;border-color:#9fffc02b}
 .pitch:after,.pitch-lines{display:none}
 .pitch .hero-content{padding:25px 22px;display:flex;flex-direction:column;justify-content:center;min-width:0}
@@ -1372,7 +1372,7 @@ body{background:radial-gradient(ellipse at 52% 0%,rgba(20,80,54,.45),transparent
 .home-chat-panel.is-collapsed .chat-panel-body{display:none}
 .home-chat-panel.is-collapsed{min-height:0}
 .home-chat-panel.is-collapsed .section-title{margin:0}
-.onboarding{position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(110deg,rgba(3,24,17,.92),rgba(4,31,22,.72)),url('/images/backgrounds/bg_create_team.jpg') center/cover no-repeat;border-color:#2b9868;box-shadow:0 20px 65px #0008}
+.onboarding{position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(110deg,rgba(3,24,17,.90),rgba(4,31,22,.84));border-color:#2b9868;box-shadow:0 20px 65px #0008}
 .onboarding:before{content:"";position:absolute;z-index:-1;inset:12px;border:1px solid #70e5a34d;border-radius:13px;pointer-events:none}
 .onboarding h1{font-size:clamp(28px,5vw,42px)}
 .onboarding form{max-width:440px}
@@ -1792,3 +1792,68 @@ body{background:radial-gradient(ellipse at 52% 0%,rgba(20,80,54,.45),transparent
 /* 2.8.5: shop wallet presentation; existing page layout remains unchanged. */
 .shop-page-stack{display:grid;gap:14px}
 .shop-wallet-value{font-size:clamp(26px,4vw,38px);font-weight:900;letter-spacing:.02em;margin:8px 0;color:#f2cf76;font-variant-numeric:tabular-nums}
+
+
+/* V2.8.7 — page-specific desktop/mobile wallpapers; no wallpaper inside pitch or setup card. */
+body[data-page-bg] {
+  background-color: #061811;
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: cover;
+  background-attachment: fixed;
+}
+body[data-page-bg="create-team"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_create_team_desktop.jpg"); }
+body[data-page-bg="home"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_home_desktop.jpg"); }
+body[data-page-bg="trainer-cabinet"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_trainer_cabinet_desktop.jpg"); }
+body[data-page-bg="yard-players"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_yard_players_desktop.jpg"); }
+body[data-page-bg="training"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_training_desktop.jpg"); }
+body[data-page-bg="player-card"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_player_card_desktop.jpg"); }
+body[data-page-bg="league"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_league_desktop.jpg"); }
+body[data-page-bg="season-calendar"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_season_calendar_desktop.jpg"); }
+body[data-page-bg="calendar-matches"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_calendar_matches_desktop.jpg"); }
+body[data-page-bg="match"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_match_desktop.jpg"); }
+body[data-page-bg="coach-goals"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_coach_goals_desktop.jpg"); }
+body[data-page-bg="coach-rating"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_coach_rating_desktop.jpg"); }
+body[data-page-bg="shop"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_shop_desktop.jpg"); }
+body[data-page-bg="transfers"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_transfers_desktop.jpg"); }
+body[data-page-bg="free-yard"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_free_yard_desktop.jpg"); }
+body[data-page-bg="cup-dostatok"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_cup_dostatok_desktop.jpg"); }
+.panel,
+.stat-card {
+  background: linear-gradient(145deg, rgba(21, 55, 44, .91), rgba(13, 37, 29, .91));
+}
+@media (max-width: 700px) {
+  body[data-page-bg="create-team"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_create_team_mobile.jpg"); }
+  body[data-page-bg="home"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_home_mobile.jpg"); }
+  body[data-page-bg="trainer-cabinet"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_trainer_cabinet_mobile.jpg"); }
+  body[data-page-bg="yard-players"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_yard_players_mobile.jpg"); }
+  body[data-page-bg="training"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_training_mobile.jpg"); }
+  body[data-page-bg="player-card"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_player_card_mobile.jpg"); }
+  body[data-page-bg="league"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_league_mobile.jpg"); }
+  body[data-page-bg="season-calendar"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_season_calendar_mobile.jpg"); }
+  body[data-page-bg="calendar-matches"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_calendar_matches_mobile.jpg"); }
+  body[data-page-bg="match"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_match_mobile.jpg"); }
+  body[data-page-bg="coach-goals"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_coach_goals_mobile.jpg"); }
+  body[data-page-bg="coach-rating"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_coach_rating_mobile.jpg"); }
+  body[data-page-bg="shop"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_shop_mobile.jpg"); }
+  body[data-page-bg="transfers"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_transfers_mobile.jpg"); }
+  body[data-page-bg="free-yard"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_free_yard_mobile.jpg"); }
+  body[data-page-bg="cup-dostatok"] { background-image: linear-gradient(rgba(3, 18, 13, .30), rgba(3, 18, 13, .42)), url("/images/backgrounds/bg_cup_dostatok_mobile.jpg"); }
+  body[data-page-bg] {
+    background-position: center top;
+    background-attachment: fixed;
+    background-size: cover;
+  }
+}
+
+/* Keep information and interactive panels readable while showing some page artwork through. */
+body[data-page-bg] .feature-panel,
+body[data-page-bg] .cabinet-panel,
+body[data-page-bg] .panel,
+body[data-page-bg] .stat-card,
+body[data-page-bg] .placeholder {
+  background: linear-gradient(145deg, rgba(21, 55, 44, .88), rgba(13, 37, 29, .90));
+}
+body[data-page-bg] .onboarding {
+  background: linear-gradient(110deg, rgba(3, 24, 17, .90), rgba(4, 31, 22, .84));
+}
