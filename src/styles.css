@@ -1925,3 +1925,25 @@ body[data-page-bg] .onboarding {
 .online-record-entry .equipped-title-badge{display:inline-flex;align-items:center;width:max-content;max-width:100%;margin-top:5px;padding:2px 7px;border:1px solid currentColor;border-radius:6px;font-size:10px;line-height:1.35;font-weight:800;overflow-wrap:anywhere}
 .online-record-entry .rarity-common{color:#c5d0ca}.online-record-entry .rarity-uncommon{color:#83d6a2}.online-record-entry .rarity-rare{color:#79baff}.online-record-entry .rarity-epic{color:#c6a0ff}.online-record-entry .rarity-legendary{color:#ffc76d}
 @media(max-width:520px){.online-record-entry{grid-template-columns:26px minmax(0,1fr);gap:8px}.online-record-entry .online-rating-score{grid-column:2;text-align:left;max-width:none}.online-ratings-actions>*{flex:1 1 100%}}
+
+
+/* Version 2.8.21 — category index and compact online record tables */
+.online-records-intro{margin:4px 0 12px;font-size:13px}
+.online-record-category-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.online-record-category-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;text-align:left;min-width:0;padding:13px 15px;border:1px solid #315746;border-radius:12px;background:linear-gradient(140deg,rgba(24,64,49,.92),rgba(10,35,26,.94));color:#f4fff7;cursor:pointer;transition:border-color .18s,transform .18s,background .18s}
+.online-record-category-card:hover,.online-record-category-card:focus-visible{border-color:#64dca0;background:linear-gradient(140deg,rgba(30,82,59,.96),rgba(10,35,26,.98));transform:translateY(-1px);outline:none}
+.online-record-category-title{font-size:14px;line-height:1.3}
+.online-record-category-count{font-size:11px;color:#82e5ae;white-space:nowrap}
+.online-record-category-best{grid-column:1/-1;color:#c1d7ca;font-size:12px;overflow-wrap:anywhere}
+.online-record-category-open{grid-column:1/-1;color:#64dca0;font-size:10px;font-weight:800;letter-spacing:.06em}
+.online-record-detail-heading{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:2px 0 8px}
+.online-record-detail-heading h2{margin:0;font-size:19px}
+.online-record-detail-panel{padding:8px 14px}
+.online-record-detail-panel .online-record-entry{gap:9px;padding:8px 0}
+.online-record-detail-panel .online-rating-avatar{width:34px;height:34px}
+.online-record-detail-panel .online-rating-team-logo{width:24px;height:24px}
+.online-record-detail-panel .online-rating-coach-line,.online-record-detail-panel .online-rating-team-line{gap:6px}
+.online-record-detail-panel .online-rating-score b{font-size:13px}
+.online-record-detail-panel .online-rating-score small{font-size:10px}
+.online-record-detail-panel .online-record-entry .equipped-title-badge{margin-top:3px;padding:1px 6px;font-size:9px}
+@media(max-width:620px){.online-record-category-grid{grid-template-columns:1fr}.online-record-category-card{padding:11px 12px}.online-record-detail-panel{padding:6px 10px}}
