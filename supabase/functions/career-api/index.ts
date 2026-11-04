@@ -112,8 +112,8 @@ Deno.serve(async (req: Request) => {
 
     if (payload?.action === "get-online-ratings") {
       const [xpResult, generalResult] = await Promise.all([
-        admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,awards,xp,general_rating,updated_at").order("xp", { ascending: false }).order("xp_submitted_at", { ascending: true, nullsFirst: false }).limit(50),
-        admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,awards,xp,general_rating,updated_at").order("general_rating", { ascending: false }).order("general_rating_submitted_at", { ascending: true, nullsFirst: false }).limit(50)
+        admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,avatar_path,team_logo_path,coach_title,coach_title_rarity,team_title,team_title_rarity,awards,xp,general_rating,updated_at").order("xp", { ascending: false }).order("xp_submitted_at", { ascending: true, nullsFirst: false }).limit(50),
+        admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,avatar_path,team_logo_path,coach_title,coach_title_rarity,team_title,team_title_rarity,awards,xp,general_rating,updated_at").order("general_rating", { ascending: false }).order("general_rating_submitted_at", { ascending: true, nullsFirst: false }).limit(50)
       ]);
       if (xpResult.error) throw xpResult.error;
       if (generalResult.error) throw generalResult.error;
@@ -121,7 +121,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (payload?.action === "submit-online-rating") {
-      const ratingType = payload.ratingType === "xp" || payload.ratingType === "general" ? payload.ratingType : null;
+      const ratingType = ["xp", "general", "both"].includes(payload.ratingType) ? payload.ratingType : null;
       const coachName = String(payload.coachName || "").trim().slice(0, 40);
       const teamName = String(payload.teamName || "").trim().slice(0, 60);
       const seasonNumber = Number(payload.seasonNumber);
@@ -135,9 +135,23 @@ Deno.serve(async (req: Request) => {
           !Number.isInteger(avatarIndex) || avatarIndex < 1 || avatarIndex > 6 ||
           !Number.isInteger(teamLogoIndex) || teamLogoIndex < 1 || teamLogoIndex > 6 ||
           !validScore(xp) || !validScore(generalRating) ||
-          (ratingType === "xp" && xp === null) || (ratingType === "general" && generalRating === null)) {
+          (ratingType === "xp" && xp === null) || (ratingType === "general" && generalRating === null) ||
+          (ratingType === "both" && (xp === null || generalRating === null))) {
         return respond({ ok: false, error: "Некорректные данные рейтинга. Обнови игру и попробуй снова." }, 400);
       }
+      const safeAssetPath = (value: unknown, kind: "avatar" | "logo") => {
+        const path = String(value || "");
+        const allowed = kind === "avatar"
+          ? /^\/(?:images\/avatartrener\/avatartrener[1-4]\.jpg|assets\/shop\/avatars\/(?:common|uncommon|rare|epic|legendary)\/[^/]{1,100}\.jpg)$/
+          : /^\/(?:images\/avatarteam\/avatarteam[1-6]\.jpg|assets\/shop\/logos\/(?:common|uncommon|rare|epic|legendary)\/[^/]{1,100}\.jpg)$/;
+        return allowed.test(path) ? path : null;
+      };
+      const coachTitle = String(payload.coachTitle || "").trim().slice(0, 80);
+      const teamTitle = String(payload.teamTitle || "").trim().slice(0, 80);
+      const coachTitleRarity = ["common", "uncommon", "rare", "epic", "legendary"].includes(payload.coachTitleRarity) ? payload.coachTitleRarity : null;
+      const teamTitleRarity = ["common", "uncommon", "rare", "epic", "legendary"].includes(payload.teamTitleRarity) ? payload.teamTitleRarity : null;
+      const avatarPath = safeAssetPath(payload.avatarPath, "avatar");
+      const teamLogoPath = safeAssetPath(payload.teamLogoPath, "logo");
       const incomingAwards = Array.isArray(payload.awards) ? payload.awards.slice(0, 80) : [];
       const awards = incomingAwards.filter((item: any) =>
         item && typeof item.icon === "string" && /^[a-z0-9_-]{1,80}$/i.test(item.icon)
@@ -160,16 +174,92 @@ Deno.serve(async (req: Request) => {
         season_number: seasonNumber,
         avatar_index: avatarIndex,
         team_logo_index: teamLogoIndex,
+        avatar_path: avatarPath,
+        team_logo_path: teamLogoPath,
+        coach_title: coachTitle,
+        coach_title_rarity: coachTitleRarity,
+        team_title: teamTitle,
+        team_title_rarity: teamTitleRarity,
         awards,
-        xp: ratingType === "xp" ? xp : Number(existing?.xp || 0),
-        general_rating: ratingType === "general" ? generalRating : Number(existing?.general_rating || 0),
-        xp_submitted_at: ratingType === "xp" ? now : (existing?.xp_submitted_at || null),
-        general_rating_submitted_at: ratingType === "general" ? now : (existing?.general_rating_submitted_at || null),
+        xp: ratingType === "xp" || ratingType === "both" ? xp : Number(existing?.xp || 0),
+        general_rating: ratingType === "general" || ratingType === "both" ? generalRating : Number(existing?.general_rating || 0),
+        xp_submitted_at: ratingType === "xp" || ratingType === "both" ? now : (existing?.xp_submitted_at || null),
+        general_rating_submitted_at: ratingType === "general" || ratingType === "both" ? now : (existing?.general_rating_submitted_at || null),
         updated_at: now
       };
       const { error: saveError } = await admin.from("online_coach_ratings").upsert(row, { onConflict: "owner_user_id" });
       if (saveError) throw saveError;
       return respond({ ok: true, updated: true, ratingType, updatedAt: now });
+    }
+
+    if (payload?.action === "get-online-career-records") {
+      const allowedTypes = ["biggest_win", "biggest_loss", "top_scorer", "top_assistant", "winning_streak", "losing_streak", "highest_scoring_match"];
+      const requestedType = typeof payload.recordType === "string" && allowedTypes.includes(payload.recordType) ? payload.recordType : null;
+      const types = requestedType ? [requestedType] : allowedTypes;
+      const results = await Promise.all(types.map(async (type) => {
+        const { data, error } = await admin.from("online_career_records")
+          .select("record_type,metric_value,record_snapshot,recorded_at")
+          .eq("record_type", type)
+          .order("metric_value", { ascending: false })
+          .order("recorded_at", { ascending: true })
+          .limit(100);
+        if (error) throw error;
+        return data || [];
+      }));
+      return respond({ ok: true, records: results.flat() });
+    }
+
+    if (payload?.action === "submit-online-career-records") {
+      const allowedTypes = new Set(["biggest_win", "biggest_loss", "top_scorer", "top_assistant", "winning_streak", "losing_streak", "highest_scoring_match"]);
+      if (!Array.isArray(payload.records) || payload.records.length > 7) {
+        return respond({ ok: false, error: "Некорректный список рекордов." }, 400);
+      }
+      const submitted = [];
+      const seenTypes = new Set<string>();
+      for (const incoming of payload.records) {
+        const recordType = String(incoming?.recordType || "");
+        const metricValue = Number(incoming?.metricValue);
+        if (!allowedTypes.has(recordType) || seenTypes.has(recordType) ||
+            !Number.isSafeInteger(metricValue) || metricValue < 0 || metricValue > 1000000000) {
+          return respond({ ok: false, error: "Некорректные данные рекорда." }, 400);
+        }
+        seenTypes.add(recordType);
+        const raw = incoming?.snapshot && typeof incoming.snapshot === "object" && !Array.isArray(incoming.snapshot) ? incoming.snapshot : {};
+        const snapshot = {
+          coach_name: String(raw.coach_name || "Тренер").trim().slice(0, 40),
+          team_name: String(raw.team_name || "Команда").trim().slice(0, 60),
+          season_number: Math.max(1, Math.min(10000, Math.floor(Number(raw.season_number) || 1))),
+          avatar_index: Math.max(1, Math.min(6, Math.floor(Number(raw.avatar_index) || 1))),
+          team_logo_index: Math.max(1, Math.min(6, Math.floor(Number(raw.team_logo_index) || 1))),
+          avatar_path: /^\/(?:images\/avatartrener\/avatartrener[1-4]\.jpg|assets\/shop\/avatars\/(?:common|uncommon|rare|epic|legendary)\/[^/]{1,100}\.jpg)$/.test(String(raw.avatar_path || "")) ? String(raw.avatar_path) : null,
+          team_logo_path: /^\/(?:images\/avatarteam\/avatarteam[1-6]\.jpg|assets\/shop\/logos\/(?:common|uncommon|rare|epic|legendary)\/[^/]{1,100}\.jpg)$/.test(String(raw.team_logo_path || "")) ? String(raw.team_logo_path) : null,
+          coach_title: String(raw.coach_title || "").trim().slice(0, 80),
+          coach_title_rarity: ["common", "uncommon", "rare", "epic", "legendary"].includes(raw.coach_title_rarity) ? raw.coach_title_rarity : null,
+          team_title: String(raw.team_title || "").trim().slice(0, 80),
+          team_title_rarity: ["common", "uncommon", "rare", "epic", "legendary"].includes(raw.team_title_rarity) ? raw.team_title_rarity : null,
+          value_label: String(raw.value_label || "").trim().slice(0, 120),
+          detail: String(raw.detail || "").trim().slice(0, 180),
+          date_label: String(raw.date_label || "").trim().slice(0, 80),
+          submitted_awards: Array.isArray(raw.awards) ? raw.awards.slice(0, 80).filter((a: any) => a && typeof a.icon === "string" && /^[a-z0-9_-]{1,80}$/i.test(a.icon)).map((a: any) => ({ icon: a.icon, label: String(a.label || "Награда").slice(0, 100) })) : []
+        };
+        const { data: existing, error: existingError } = await admin.from("online_career_records")
+          .select("id,metric_value").eq("owner_user_id", userId).eq("record_type", recordType).maybeSingle();
+        if (existingError) throw existingError;
+        // A submitted value may replace the saved record only when strictly better.
+        // Equal values retain the original snapshot and timestamp.
+        if (existing && metricValue <= Number(existing.metric_value)) {
+          submitted.push({ recordType, updated: false, reason: metricValue === Number(existing.metric_value) ? "equal" : "not_better" });
+          continue;
+        }
+        const now = new Date().toISOString();
+        const row: Record<string, unknown> = { owner_user_id: userId, record_type: recordType, metric_value: metricValue, record_snapshot: snapshot, updated_at: now };
+        // Preserve the original timestamp when improving a record; only set it on first insert.
+        if (!existing) row.recorded_at = now;
+        const { error: saveError } = await admin.from("online_career_records").upsert(row, { onConflict: "owner_user_id,record_type" });
+        if (saveError) throw saveError;
+        submitted.push({ recordType, updated: true });
+      }
+      return respond({ ok: true, results: submitted });
     }
 
     if (payload?.action !== "bootstrap") return respond({ ok: false, error: "Unsupported action" }, 400);
