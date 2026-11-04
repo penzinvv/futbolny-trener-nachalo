@@ -849,9 +849,10 @@ function renderFaqPage(){
  return wrap;
 }
 const SHOP_RARITIES=[{key:"uncommon",label:"Необычные",price:7000},{key:"rare",label:"Редкие",price:10000},{key:"epic",label:"Эпические",price:15000},{key:"legendary",label:"Легендарные",price:23000}];
+const SHOP_ITEM_COUNTS={uncommon:{avatar:6,logo:5},rare:{avatar:4,logo:5},epic:{avatar:6,logo:5},legendary:{avatar:6,logo:5}};
 const SHOP_CATALOG=SHOP_RARITIES.flatMap(r=>[
- ...Array.from({length:12},(_,i)=>({id:"avatar-"+r.key+"-"+String(i+1).padStart(2,"0"),kind:"avatar",equipSlot:"avatar",rarity:r.key,rarityLabel:r.label,price:r.price,name:"Аватар тренера "+String(i+1).padStart(2,"0"),image:"/assets/shop/avatars/"+r.key+"/coach-"+r.key+"-"+String(i+1).padStart(2,"0")+".jpg"})),
- ...Array.from({length:12},(_,i)=>({id:"logo-"+r.key+"-"+String(i+1).padStart(2,"0"),kind:"logo",equipSlot:"logo",rarity:r.key,rarityLabel:r.label,price:r.price,name:"Эмблема команды "+String(i+1).padStart(2,"0"),image:"/assets/shop/logos/"+r.key+"/team-logo-"+r.key+"-"+String(i+1).padStart(2,"0")+".jpg"}))
+ ...Array.from({length:SHOP_ITEM_COUNTS[r.key].avatar},(_,i)=>({id:"avatar-"+r.key+"-"+String(i+1).padStart(2,"0"),kind:"avatar",equipSlot:"avatar",rarity:r.key,rarityLabel:r.label,price:r.price,name:"Аватар тренера "+String(i+1).padStart(2,"0"),image:"/assets/shop/avatars/"+r.key+"/coach-"+r.key+"-"+String(i+1).padStart(2,"0")+".jpg"})),
+ ...Array.from({length:SHOP_ITEM_COUNTS[r.key].logo},(_,i)=>({id:"logo-"+r.key+"-"+String(i+1).padStart(2,"0"),kind:"logo",equipSlot:"logo",rarity:r.key,rarityLabel:r.label,price:r.price,name:"Эмблема команды "+String(i+1).padStart(2,"0"),image:"/assets/shop/logos/"+r.key+"/team-logo-"+r.key+"-"+String(i+1).padStart(2,"0")+".jpg"}))
 ]);
 function getShopItem(id){return SHOP_CATALOG.find(x=>x.id===String(id))||null}
 function getEquippedShopItem(slot){const id=state.shopEquippedItems&&state.shopEquippedItems[slot],item=getShopItem(id);return item&&isShopItemOwned(item.id)?item:null}
