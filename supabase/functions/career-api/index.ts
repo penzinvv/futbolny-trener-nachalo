@@ -121,7 +121,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (payload?.action === "submit-online-rating") {
-      const ratingType = payload.ratingType === "xp" || payload.ratingType === "general" ? payload.ratingType : null;
+      const ratingType = ["xp", "general", "both"].includes(payload.ratingType) ? payload.ratingType : null;
       const coachName = String(payload.coachName || "").trim().slice(0, 40);
       const teamName = String(payload.teamName || "").trim().slice(0, 60);
       const seasonNumber = Number(payload.seasonNumber);
@@ -135,7 +135,8 @@ Deno.serve(async (req: Request) => {
           !Number.isInteger(avatarIndex) || avatarIndex < 1 || avatarIndex > 6 ||
           !Number.isInteger(teamLogoIndex) || teamLogoIndex < 1 || teamLogoIndex > 6 ||
           !validScore(xp) || !validScore(generalRating) ||
-          (ratingType === "xp" && xp === null) || (ratingType === "general" && generalRating === null)) {
+          (ratingType === "xp" && xp === null) || (ratingType === "general" && generalRating === null) ||
+          (ratingType === "both" && (xp === null || generalRating === null))) {
         return respond({ ok: false, error: "Некорректные данные рейтинга. Обнови игру и попробуй снова." }, 400);
       }
       const safeAssetPath = (value: unknown, kind: "avatar" | "logo") => {
@@ -180,10 +181,10 @@ Deno.serve(async (req: Request) => {
         team_title: teamTitle,
         team_title_rarity: teamTitleRarity,
         awards,
-        xp: ratingType === "xp" ? xp : Number(existing?.xp || 0),
-        general_rating: ratingType === "general" ? generalRating : Number(existing?.general_rating || 0),
-        xp_submitted_at: ratingType === "xp" ? now : (existing?.xp_submitted_at || null),
-        general_rating_submitted_at: ratingType === "general" ? now : (existing?.general_rating_submitted_at || null),
+        xp: ratingType === "xp" || ratingType === "both" ? xp : Number(existing?.xp || 0),
+        general_rating: ratingType === "general" || ratingType === "both" ? generalRating : Number(existing?.general_rating || 0),
+        xp_submitted_at: ratingType === "xp" || ratingType === "both" ? now : (existing?.xp_submitted_at || null),
+        general_rating_submitted_at: ratingType === "general" || ratingType === "both" ? now : (existing?.general_rating_submitted_at || null),
         updated_at: now
       };
       const { error: saveError } = await admin.from("online_coach_ratings").upsert(row, { onConflict: "owner_user_id" });
