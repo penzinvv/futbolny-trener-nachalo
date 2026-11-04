@@ -671,6 +671,7 @@ if (musicToggle) { setMusicButtonLabel("Нажми для запуска муз�
 void playNextTrack();
 
 const STARTING_ROSTER_RULES_VERSION = "2.8.1";
+const PORTRAIT_ASSIGNMENT_RULES_VERSION = "2.8.13";
 function shuffledCopy(items) {
   const copy = items.slice();
   for (let i = copy.length - 1; i > 0; i--) {
@@ -679,11 +680,88 @@ function shuffledCopy(items) {
   }
   return copy;
 }
+function portraitPlayerKey(player) {
+  return String(player?.careerId || player?.id || player?.name || "");
+}
+function collectPortraitPlayers(extraPlayers = []) {
+  const result = [], seen = new Set();
+  const add = player => {
+    if (!player || typeof player !== "object") return;
+    const key = portraitPlayerKey(player);
+    if (!key || seen.has(key)) return;
+    seen.add(key); result.push(player);
+  };
+  (leagueData?.teams || []).forEach(team => (team.players || []).forEach(add));
+  (state.leagueReservePlayers || []).forEach(add);
+  (state.freeYardPlayers || []).forEach(add);
+  extraPlayers.forEach(add);
+  return result;
+}
+function buildPortraitQueue(players) {
+  const counts = Array(78).fill(0);
+  players.forEach(player => {
+    const index = Number(player?.portraitIndex);
+    if (Number.isInteger(index) && index >= 1 && index <= 77) counts[index]++;
+  });
+  const maxCount = Math.max(0, ...counts.slice(1));
+  const queue = [];
+  if (maxCount === 0) queue.push(...Array.from({length:77}, (_,i)=>i+1));
+  else {
+    for (let round = 0; round < maxCount; round++) {
+      const missing = [];
+      for (let index = 1; index <= 77; index++) if (counts[index] <= round) missing.push(index);
+      queue.push(...shuffledCopy(missing));
+    }
+  }
+  // The current incomplete round is completed before any portrait enters its next round.
+  queue.push(...shuffledCopy(Array.from({length:77}, (_,i)=>i+1)));
+  return queue;
+}
+function ensurePortraitQueue(extraPlayers = []) {
+  if (!Array.isArray(state.portraitAssignmentQueue)) {
+    state.portraitAssignmentQueue = buildPortraitQueue(collectPortraitPlayers(extraPlayers));
+  }
+  return state.portraitAssignmentQueue;
+}
+function assignPlayerPortrait(player, extraPlayers = []) {
+  if (!player || typeof player !== "object") return 1;
+  state.portraitAssignments = state.portraitAssignments && typeof state.portraitAssignments === "object" ? state.portraitAssignments : {};
+  const key = portraitPlayerKey(player);
+  const saved = Number(state.portraitAssignments[key]);
+  if (Number.isInteger(saved) && saved >= 1 && saved <= 77) {
+    player.portraitIndex = saved;
+    return saved;
+  }
+  const current = Number(player.portraitIndex);
+  if (Number.isInteger(current) && current >= 1 && current <= 77) {
+    if (key) state.portraitAssignments[key] = current;
+    return current;
+  }
+  const queue = ensurePortraitQueue(extraPlayers);
+  if (!queue.length) queue.push(...shuffledCopy(Array.from({length:77}, (_,i)=>i+1)));
+  const index = queue.shift();
+  player.portraitIndex = index;
+  if (key) state.portraitAssignments[key] = index;
+  return index;
+}
+function ensurePortraitAssignments() {
+  const players = collectPortraitPlayers();
+  ensurePortraitQueue(players);
+  let changed = false;
+  players.forEach(player => {
+    const before = Number(player.portraitIndex);
+    const index = assignPlayerPortrait(player, players);
+    if (before !== index) changed = true;
+  });
+  if (changed) saveState();
+}
 function createInitialLeagueForNewCareer() {
   if (!leagueData || state.initialRosterDistributionApplied) return false;
   const teams = leagueData.teams || [];
   if (teams.length !== 12) throw new Error("Ожидалось 12 команд для стартового распределения.");
   const allPlayers = teams.flatMap(team => (team.players || []).map(player => ({ ...player, skills: { ...(player.skills || {}) } })));
+  // Assign portraits to the complete 120-player pool before the players are shuffled into teams/reserve.
+  allPlayers.forEach(player => assignPlayerPortrait(player, allPlayers));
   if (allPlayers.length < 120) throw new Error("В исходном справочнике недостаточно футболистов для распределения 99 + 21.");
   // Start each team with 7 players, then randomly add 15 places (up to 9 per team): 12*7 + 15 = 99.
   const counts = teams.map(() => 7);
@@ -1268,6 +1346,7 @@ function makeCareerId() {
 }
 function ensureCareerIdentity() {
   if (!state.coachName || !state.teamName) return;
+  ensurePortraitAssignments();
   let changed=false;
   if (!state.careerCoachId) { state.careerCoachId=makeCareerId(); changed=true; }
   if (!state.careerTeamId) { state.careerTeamId=makeCareerId(); changed=true; }
