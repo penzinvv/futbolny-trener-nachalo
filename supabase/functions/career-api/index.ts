@@ -226,6 +226,8 @@ Deno.serve(async (req: Request) => {
           season_number: Math.max(1, Math.min(10000, Math.floor(Number(raw.season_number) || 1))),
           avatar_index: Math.max(1, Math.min(6, Math.floor(Number(raw.avatar_index) || 1))),
           team_logo_index: Math.max(1, Math.min(6, Math.floor(Number(raw.team_logo_index) || 1))),
+          avatar_path: /^\\/(?:images\\/avatarteam\\/avatarteam[1-6]\\.jpg|assets\\/shop\\/avatars\\/(?:common|uncommon|rare|epic|legendary)\\/[^/]{1,100}\\.jpg)$/.test(String(raw.avatar_path || "")) ? String(raw.avatar_path) : null,
+          team_logo_path: /^\\/(?:images\\/avatarteam\\/avatarteam[1-6]\\.jpg|assets\\/shop\\/logos\\/(?:common|uncommon|rare|epic|legendary)\\/[^/]{1,100}\\.jpg)$/.test(String(raw.team_logo_path || "")) ? String(raw.team_logo_path) : null,
           coach_title: String(raw.coach_title || "").trim().slice(0, 80),
           coach_title_rarity: ["common", "uncommon", "rare", "epic", "legendary"].includes(raw.coach_title_rarity) ? raw.coach_title_rarity : null,
           team_title: String(raw.team_title || "").trim().slice(0, 80),
