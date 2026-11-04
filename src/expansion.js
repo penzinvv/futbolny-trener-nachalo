@@ -218,7 +218,7 @@ function playTraining(t,p,id){
  const m=document.createElement("section");m.className="feature-game-modal";
  const title=p.position==="ВР"?"🧤 ВРАТАРЬ: ПОЙМАЙ МЯЧ":p.position==="ЗЩ"?"🛡️ ЗАЩИТНИК: ПЕРЕХВАТ":"🐍 ФУТБОЛЬНАЯ ЗМЕЙКА";
  const scoreLine=safeText("p","Очки: 0","feature-game-stats"),field=document.createElement("div");field.className="training-playfield football-training-field";
- const hint=safeText("p",p.position==="ВР"?"Двигай вратаря влево-вправо и лови мячи. 10 пропущенных мячей — игра окончена.":p.position==="ЗЩ"?"Лови мяч, пока он виден. Каждый мяч появляется примерно на секунду.":"Собирай мячи и избегай футболистов.","feature-game-message");
+ const hint=safeText("p",p.position==="ВР"?"Двигай вратаря влево-вправо и лови мячи. 10 пропущенных мячей — игра окончена.":p.position==="ЗЩ"?"Лови мяч, пока он виден. Следующий мяч появляется через случайный промежуток от 1 до 6 секунд.":"Собирай мячи и избегай футболистов.","feature-game-message");
  const actions=document.createElement("div");actions.className="feature-actions";ov.append(m);m.append(safeText("h2",title),T(p.name),scoreLine,field,hint,actions);document.body.append(ov);
  let score=0,miss=0,ended=false,closed=false,timer=null,raf=0,keys=new Set(),extraCleanup=()=>{};
  const close=()=>{if(closed)return;closed=true;clearInterval(timer);clearTimeout(timer);cancelAnimationFrame(raf);document.removeEventListener("keydown",key);document.removeEventListener("keyup",keyup);extraCleanup();ov.remove()};
@@ -265,9 +265,10 @@ function playTraining(t,p,id){
  }else if(p.position==="ЗЩ"){
    field.classList.add("defender-field");let round=0,active=false,target=null,missed=0;
    const status=safeText("p","Приготовься…","defender-round");field.append(status);
-   function spawn(){if(ended||closed)return;round++;active=true;target=B("⚽",()=>{if(!active||ended)return;active=false;clearTimeout(timer);target?.remove();target=null;score+=5;scoreLine.textContent="Очки: "+score+" · Перехваты: "+(score/5)+" · Промахи: "+missed+"/1";status.textContent="Отличный перехват!";timer=setTimeout(spawn,350)},"defender-ball-target");target.style.left=(8+Math.random()*78)+"%";target.style.top=(12+Math.random()*58)+"%";field.append(target);status.textContent="Мяч "+round+" — нажми на него, пока он виден!";timer=setTimeout(()=>{if(!active||ended)return;active=false;missed++;target?.remove();target=null;scoreLine.textContent="Очки: "+score+" · Промахи: "+missed+"/1";status.textContent=missed>=1?"Первый промах — результат сохранён.":"Не успел! Следующий мяч…";if(missed>=1){finish("Первый промах. Перехвачено мячей: "+score/5+".");return}timer=setTimeout(spawn,350)},1000)}
+   function scheduleSpawn(){if(ended||closed)return;const delay=1000+Math.floor(Math.random()*5001);timer=setTimeout(spawn,delay)}
+   function spawn(){if(ended||closed)return;round++;active=true;target=B("⚽",()=>{if(!active||ended)return;active=false;clearTimeout(timer);target?.remove();target=null;score+=5;scoreLine.textContent="Очки: "+score+" · Перехваты: "+(score/5)+" · Промахи: "+missed+"/1";status.textContent="Отличный перехват!";scheduleSpawn()},"defender-ball-target");target.style.left=(8+Math.random()*78)+"%";target.style.top=(12+Math.random()*58)+"%";field.append(target);status.textContent="Мяч "+round+" — нажми на него, пока он виден!";timer=setTimeout(()=>{if(!active||ended)return;active=false;missed++;target?.remove();target=null;scoreLine.textContent="Очки: "+score+" · Промахи: "+missed+"/1";status.textContent=missed>=1?"Первый промах — результат сохранён.":"Не успел! Следующий мяч…";if(missed>=1){finish("Первый промах. Перехвачено мячей: "+score/5+".");return}scheduleSpawn()},1000)}
    actions.append(B("СОХРАНИТЬ РЕЗУЛЬТАТ И ВЫЙТИ",()=>finish("Результат сохранён по решению тренера. Перехвачено мячей: "+score/5+"."),"primary"));
-   timer=setTimeout(spawn,500);
+   scheduleSpawn();
  }else{
    field.classList.add("snake-training-field");const grid=document.createElement("div");grid.className="snake-grid";grid.style.touchAction="none";field.append(grid);
    const SIZE=20;let snake=[{x:10,y:10},{x:9,y:10}],dir={x:1,y:0},food={x:14,y:10},obstacles=[];
