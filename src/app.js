@@ -353,12 +353,13 @@ function initializeCloudCareer() {
   return cloudCareerInitPromise;
 }
 
-const AVATAR_COUNT = 6;
+const COACH_AVATAR_COUNT = 4;
+const TEAM_LOGO_COUNT = 6;
 function avatarPath(index) { return "/images/avatartrener/avatartrener" + index + ".jpg"; }
 function teamLogoPath(index) { return "/images/avatarteam/avatarteam" + index + ".jpg"; }
 function makeTeamLogoOptions(containerId, groupName, selectedIndex) {
   const container = $(containerId); container.replaceChildren();
-  for (let i = 1; i <= AVATAR_COUNT; i++) {
+  for (let i = 1; i <= TEAM_LOGO_COUNT; i++) {
     const label = document.createElement("label"); label.className = "avatar-option team-logo-option";
     const radio = document.createElement("input"); radio.type = "radio"; radio.name = groupName; radio.value = String(i); radio.checked = i === Number(selectedIndex); radio.setAttribute("aria-label", "Логотип команды " + i);
     const img = document.createElement("img"); img.src = teamLogoPath(i); img.alt = "Логотип команды " + i; img.loading = "lazy";
@@ -368,7 +369,7 @@ function makeTeamLogoOptions(containerId, groupName, selectedIndex) {
 function makeAvatarOptions(containerId, groupName, selectedIndex) {
   const container = $(containerId);
   container.replaceChildren();
-  for (let i = 1; i <= AVATAR_COUNT; i++) {
+  for (let i = 1; i <= COACH_AVATAR_COUNT; i++) {
     const label = document.createElement("label"); label.className = "avatar-option";
     const radio = document.createElement("input"); radio.type = "radio"; radio.name = groupName; radio.value = String(i); radio.checked = i === Number(selectedIndex); radio.setAttribute("aria-label", "Аватар " + i);
     const img = document.createElement("img"); img.src = avatarPath(i); img.alt = "Аватар " + i; img.loading = "lazy";
