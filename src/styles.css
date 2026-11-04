@@ -1880,3 +1880,15 @@ body[data-page-bg] .onboarding {
 
 /* 2.8.11 — portrait and current team emblem in player lists */
 .player-team-identity{display:flex;align-items:center;gap:9px;min-width:0;text-align:left;flex:1 1 220px}.player-team-portrait{width:46px;height:46px;flex:0 0 46px;object-fit:cover;border-radius:9px;border:1px solid #5a8b70;background:#102a22}.player-team-logo{width:29px;height:29px;flex:0 0 29px;object-fit:contain;border-radius:7px;padding:2px;background:#f4f7f2;border:1px solid #9ab6a5}.player-team-copy{display:flex;flex-direction:column;min-width:0;gap:2px}.player-team-copy b{overflow-wrap:anywhere}.player-team-copy small{color:var(--muted);font-size:11px;line-height:1.25}.transfer-player-identity{max-width:340px}.transfer-player-relation{white-space:nowrap;color:var(--muted);font-size:12px}@media(max-width:600px){.player-team-portrait{width:40px;height:40px;flex-basis:40px}.player-team-logo{width:25px;height:25px;flex-basis:25px}}
+
+ 
+/* 2.8.18 — title items in the existing shop; reuse the rarity shine and responsive card grid. */
+.shop-title-art{display:flex;flex-direction:column;justify-content:center;gap:10px;text-align:center;padding:12px;background:radial-gradient(ellipse at center,color-mix(in srgb,var(--rarity-glow),#10291e 72%),#071b14 78%)}
+.shop-title-symbol{font-size:clamp(22px,3vw,34px);line-height:1;color:var(--rarity-glow);text-shadow:0 0 16px color-mix(in srgb,var(--rarity-glow),transparent 40%)}
+.shop-title-preview{position:relative;z-index:3;display:block;max-width:100%;font-size:clamp(12px,1.2vw,16px);line-height:1.35;color:#f3fff6;text-wrap:balance;overflow-wrap:anywhere;text-shadow:0 1px 10px #0008}
+.shop-title-card .shop-item-art::after{opacity:.6}
+.shop-title-card.rarity-uncommon{--rarity-glow:#76e5a5}
+.shop-title-card.rarity-rare{--rarity-glow:#e5efff}
+.shop-title-card.rarity-epic{--rarity-glow:#bf83ff}
+.shop-title-card.rarity-legendary{--rarity-glow:#ffd45a}
+@media(prefers-reduced-motion:reduce){.shop-title-card .shop-item-art::after{animation:none!important}}

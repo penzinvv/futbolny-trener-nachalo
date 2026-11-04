@@ -538,13 +538,13 @@ function renderHomeRoster() {
 function render() {
   if ($("pageView")?.classList.contains("hidden")) setPageBackground($("onboarding") && !$("onboarding").classList.contains("hidden") ? "createTeam" : "home");
   ensureCareerIdentity();
-  $("coachNameLabel").textContent = state.coachName || "Тренер";
+  $("coachNameLabel").textContent = displayedCoachName();
   $("coachAvatar").src = displayedAvatarPath();
   $("changeAvatarButton").classList.remove("hidden");
   $("changeAvatarButton").disabled = Number(state.avatarChangeUsedSeason || 0) >= Number(state.seasonNumber || 1);
   $("changeAvatarButton").textContent = $("changeAvatarButton").disabled ? "Аватар уже менялся в этом сезоне" : "Сменить аватар";
   $("coachLevel").textContent = Math.max(1, Math.floor(Math.sqrt(state.xp / 100)) + 1);
-  $("teamName").textContent = state.teamName || "Дворовые";
+  $("teamName").textContent = displayedTeamName();
   $("teamEmblem").innerHTML = '<img src="' + displayedTeamLogoPath() + '" alt="Логотип команды">';
   $("gameDate").textContent = calendarDateText();
   const nextRound = Array.from({length:20},(_,i)=>i+1).find(r=>officialRoundDay(r)>Number(state.gameDay||1)||(officialRoundDay(r)===Number(state.gameDay||1)&&!canAdvanceCoachDay()));
@@ -553,7 +553,7 @@ function render() {
   const matchUserName=$("nextMatchUserName"), matchOpponentName=$("nextMatchOpponentName");
   const matchUserLogo=$("nextMatchUserLogo"), matchOpponentLogo=$("nextMatchOpponentLogo");
   const matchOpponentNote=$("nextMatchOpponentNote");
-  if(matchUserName) matchUserName.textContent=state.teamName||"Ваша команда";
+  if(matchUserName) matchUserName.textContent=displayedTeamName();
   if(matchUserLogo) matchUserLogo.src=displayedTeamLogoPath();
   const upcomingFixture=nextRound?getOfficialRoundFixtures(nextRound,currentCoachLeague()).find(f=>f.home?.isUserTeam||f.away?.isUserTeam):null;
   const upcomingOpponent=upcomingFixture?(upcomingFixture.home?.isUserTeam?upcomingFixture.away:upcomingFixture.home):null;
@@ -935,32 +935,61 @@ function renderFaqPage(){
 }
 const SHOP_RARITIES=[{key:"uncommon",label:"Необычные",price:7000},{key:"rare",label:"Редкие",price:10000},{key:"epic",label:"Эпические",price:15000},{key:"legendary",label:"Легендарные",price:23000}];
 const SHOP_ITEM_COUNTS={uncommon:{avatar:6,logo:5},rare:{avatar:4,logo:5},epic:{avatar:6,logo:5},legendary:{avatar:6,logo:5}};
-const SHOP_CATALOG=SHOP_RARITIES.flatMap(r=>[
+const SHOP_TITLE_RARITIES=[
+ {key:"uncommon",label:"Необычные",price:2500},
+ {key:"rare",label:"Редкие",price:5000},
+ {key:"epic",label:"Эпические",price:7500},
+ {key:"legendary",label:"Легендарные",price:10000}
+];
+const SHOP_COACH_TITLES={
+ uncommon:["Дворовой Архитектор","Тренер-Самокат","Главный по Сеткам","Командир Лавочки","Мастер Подкатов","Тренер-Свисток","Хранитель Мячей","Наставник с Балкона","Дирижёр Пасов","Тренер «Ещё один»"],
+ rare:["Тень Забора","Голос с 5-го Этажа","Последний Мохикан Двора","Тренер-Призрак","Владелец Единственного Мяча","Страж Старых Бутс","Тренер Без Свистка","Легенда Подъезда №3","Хозяин Грязного Поля","Тренер «Я же говорил»"],
+ epic:["Властелин Двора","Император Лавочки","Повелитель Подкатов","Гроза Соседей","Командующий Атакой","Несокрушимый Тренер","Король Контрпрессинга","Владыка Штрафной","Главнокомандующий Двора","Тренер Апокалипсиса"],
+ legendary:["Дед-Легенда","Вечный Тренер","Живая Легенда Двора","Отец Всех Дворовых","Бессмертный Наставник","Тренер Эпохи","Папа Дворового Футбола","Великий и Ужасный","Легенда, Которую Знают Все","Тренер, Который Видел Всё"]
+};
+const SHOP_TEAM_TITLES={
+ uncommon:["Мячи из Подъезда","Дети Асфальта","Команда с Лавочки","Грязные Бутсы","Футбол После Школы","Команда «Ещё 5 минут»","Парни с 3-го Двора","Сеточные Воины","Команда Без Тренера","Футболисты с Балкона"],
+ rare:["Призраки Старого Двора","Последние Мохиканы","Команда Исчезнувшего Поля","Тени Забора","Единственные на Районе","Парни, Которых Нет в Статистике","Команда «Мы ещё вернёмся»","Забытые Чемпионы","Дети Исчезнувших Сеточек","Футболисты Без Имени"],
+ epic:["Гроза Района","Непобедимые с 5-го","Империя Двора","Властелины Поля","Короли Подкатов","Легион Лавочки","Армия Асфальта","Гладиаторы Двора","Покорители Штрафной","Воины Грязного Поля"],
+ legendary:["Легенды Двора","Вечные Чемпионы","Бессмертная Команда","Отцы Дворового Футбола","Команда, Которую Знает Весь Район","Живая Легенда","Чемпионы Всех Времён","Деды, Которые Всё Видели","Команда Эпохи","Легенда, Которую Нельзя Убить"]
+};
+const SHOP_AVATAR_LOGO_CATALOG=SHOP_RARITIES.flatMap(r=>[
  ...Array.from({length:SHOP_ITEM_COUNTS[r.key].avatar},(_,i)=>({id:"avatar-"+r.key+"-"+String(i+1).padStart(2,"0"),kind:"avatar",equipSlot:"avatar",rarity:r.key,rarityLabel:r.label,price:r.price,name:"Аватар тренера "+String(i+1).padStart(2,"0"),image:"/assets/shop/avatars/"+r.key+"/coach-"+r.key+"-"+String(i+1).padStart(2,"0")+".jpg"})),
  ...Array.from({length:SHOP_ITEM_COUNTS[r.key].logo},(_,i)=>({id:"logo-"+r.key+"-"+String(i+1).padStart(2,"0"),kind:"logo",equipSlot:"logo",rarity:r.key,rarityLabel:r.label,price:r.price,name:"Эмблема команды "+String(i+1).padStart(2,"0"),image:"/assets/shop/logos/"+r.key+"/team-logo-"+r.key+"-"+String(i+1).padStart(2,"0")+".jpg"}))
 ]);
+const SHOP_TITLE_CATALOG=SHOP_TITLE_RARITIES.flatMap(r=>[
+ ...SHOP_COACH_TITLES[r.key].map((name,i)=>({id:"coach-title-"+r.key+"-"+String(i+1).padStart(2,"0"),kind:"coachTitle",equipSlot:"coachTitle",rarity:r.key,rarityLabel:r.label,price:r.price,name})),
+ ...SHOP_TEAM_TITLES[r.key].map((name,i)=>({id:"team-title-"+r.key+"-"+String(i+1).padStart(2,"0"),kind:"teamTitle",equipSlot:"teamTitle",rarity:r.key,rarityLabel:r.label,price:r.price,name}))
+]);
+const SHOP_CATALOG=[...SHOP_AVATAR_LOGO_CATALOG,...SHOP_TITLE_CATALOG];
 function getShopItem(id){return SHOP_CATALOG.find(x=>x.id===String(id))||null}
 function getEquippedShopItem(slot){const id=state.shopEquippedItems&&state.shopEquippedItems[slot],item=getShopItem(id);return item&&isShopItemOwned(item.id)?item:null}
 function displayedAvatarPath(){return getEquippedShopItem("avatar")?.image||avatarPath(state.avatarIndex||1)}
 function displayedTeamLogoPath(){return getEquippedShopItem("logo")?.image||teamLogoPath(state.teamLogoIndex||1)}
 function equipShopItem(item){if(!item||!isShopItemOwned(item.id)||!item.equipSlot)return false;state.shopEquippedItems=state.shopEquippedItems&&typeof state.shopEquippedItems==="object"?state.shopEquippedItems:{};state.shopEquippedItems[item.equipSlot]=item.id;saveState();render();return true}
+function getEquippedCoachTitle(){return getEquippedShopItem("coachTitle")}
+function getEquippedTeamTitle(){return getEquippedShopItem("teamTitle")}
+function displayedCoachName(){const title=getEquippedCoachTitle();return (state.coachName||"Тренер")+(title?" · "+title.name:"")}
+function displayedTeamName(){const title=getEquippedTeamTitle();return (state.teamName||"Дворовые")+(title?" · "+title.name:"")}
 function renderShopPage(){
  const wrap=document.createElement("section");wrap.className="shop-page-stack";
  const balance=document.createElement("section");balance.className="feature-panel shop-wallet";
  balance.append(safeText("p","БАЛАНС МАГАЗИНА","eyebrow"),safeText("h2",Math.floor(getShopBalance()).toLocaleString("ru-RU")+" монет","shop-wallet-value"),safeText("p","За каждый новый заработанный XP тренера дополнительно начисляется 1 монета. XP тренера не тратится на покупки. Купленные предметы остаются в коллекции навсегда.","muted"));
- const catalog=document.createElement("section");catalog.className="feature-panel shop-catalog";catalog.append(safeText("h2","Коллекция тренера и команды"),safeText("p","Покупай аватары и эмблемы, а затем переключайся между всеми приобретёнными предметами без повторной оплаты.","muted"));
+ const catalog=document.createElement("section");catalog.className="feature-panel shop-catalog";catalog.append(safeText("h2","Коллекция тренера и команды"),safeText("p","Покупай аватары, эмблемы и звания. Купленные предметы сохраняются в коллекции, а звания тренера и команды экипируются независимо.","muted"));
  const kindTabs=document.createElement("div");kindTabs.className="shop-tabs";kindTabs.setAttribute("aria-label","Тип предметов");
  const rarityTabs=document.createElement("div");rarityTabs.className="shop-tabs shop-rarity-tabs";rarityTabs.setAttribute("aria-label","Редкость предметов");
  const grid=document.createElement("div");grid.className="shop-item-grid";let kind="avatar",rarity="uncommon";
  const draw=()=>{
   const walletValue=balance.querySelector(".shop-wallet-value");if(walletValue)walletValue.textContent=Math.floor(getShopBalance()).toLocaleString("ru-RU")+" монет";
   kindTabs.replaceChildren();rarityTabs.replaceChildren();grid.replaceChildren();
-  [["avatar","Аватары тренеров"],["logo","Эмблемы команд"]].forEach(([k,label])=>{const b=document.createElement("button");b.type="button";b.className="shop-tab"+(kind===k?" active":"");b.setAttribute("aria-pressed",String(kind===k));b.textContent=label;b.addEventListener("click",()=>{kind=k;draw()});kindTabs.append(b)});
-  SHOP_RARITIES.forEach(r=>{const b=document.createElement("button");b.type="button";b.className="shop-tab rarity-tab rarity-"+r.key+(rarity===r.key?" active":"");b.setAttribute("aria-pressed",String(rarity===r.key));b.textContent=r.label+" · "+r.price.toLocaleString("ru-RU");b.addEventListener("click",()=>{rarity=r.key;draw()});rarityTabs.append(b)});
+  [["avatar","Аватары тренеров"],["logo","Эмблемы команд"],["coachTitle","Звания тренеров"],["teamTitle","Звания команд"]].forEach(([k,label])=>{const b=document.createElement("button");b.type="button";b.className="shop-tab"+(kind===k?" active":"");b.setAttribute("aria-pressed",String(kind===k));b.textContent=label;b.addEventListener("click",()=>{kind=k;draw()});kindTabs.append(b)});
+  const raritySource=(kind==="coachTitle"||kind==="teamTitle")?SHOP_TITLE_RARITIES:SHOP_RARITIES;
+  raritySource.forEach(r=>{const b=document.createElement("button");b.type="button";b.className="shop-tab rarity-tab rarity-"+r.key+(rarity===r.key?" active":"");b.setAttribute("aria-pressed",String(rarity===r.key));b.textContent=r.label;b.addEventListener("click",()=>{rarity=r.key;draw()});rarityTabs.append(b)});
   SHOP_CATALOG.filter(x=>x.kind===kind&&x.rarity===rarity).forEach(item=>{
-   const card=document.createElement("article");card.className="shop-item-card rarity-"+item.rarity;
-   const art=document.createElement("div");art.className="shop-item-art";
-   const img=document.createElement("img");img.src=item.image;img.alt=item.name;img.loading="lazy";img.decoding="async";img.onerror=()=>{img.remove();const f=document.createElement("span");f.className="shop-image-fallback";f.textContent="Изображение ожидает загрузки";art.append(f)};art.append(img);
+   const card=document.createElement("article");card.className="shop-item-card rarity-"+item.rarity+(item.kind==="coachTitle"||item.kind==="teamTitle"?" shop-title-card":"");
+   const art=document.createElement("div");art.className="shop-item-art"+(item.kind==="coachTitle"||item.kind==="teamTitle"?" shop-title-art":"");
+   if(item.image){const img=document.createElement("img");img.src=item.image;img.alt=item.name;img.loading="lazy";img.decoding="async";img.onerror=()=>{img.remove();const f=document.createElement("span");f.className="shop-image-fallback";f.textContent="Изображение ожидает загрузки";art.append(f)};art.append(img)}
+   else{const symbol=document.createElement("span");symbol.className="shop-title-symbol";symbol.textContent=item.kind==="coachTitle"?"★":"⚽";const titlePreview=document.createElement("strong");titlePreview.className="shop-title-preview";titlePreview.textContent=item.name;art.append(symbol,titlePreview)}
    const title=safeText("h3",item.name,"shop-item-title"),meta=safeText("p",item.rarityLabel,"shop-item-rarity"),price=safeText("p",item.price.toLocaleString("ru-RU")+" монет","shop-item-price");
    const action=document.createElement("button");action.type="button";action.className="shop-item-action";
    const owned=isShopItemOwned(item.id),equipped=getEquippedShopItem(item.equipSlot)?.id===item.id;
