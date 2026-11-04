@@ -3,7 +3,7 @@
 const cd=3600000,icons=["⚽","🧤","👟","👕","🏆","🥅"];let timer=null,profileBase;
 function playerIdentity(team,player){
  const wrap=document.createElement("div");wrap.className="player-team-identity";
- const portrait=document.createElement("img");portrait.className="player-team-portrait";portrait.src=getPortrait(player?.portraitIndex||1);portrait.alt="Портрет: "+(player?.name||"Футболист");portrait.loading="lazy";portrait.onerror=()=>{portrait.onerror=null;portrait.src=getPortrait(1)};wrap.append(portrait);
+ const portrait=document.createElement("img");portrait.className="player-team-portrait";portrait.src=getPortrait(assignPlayerPortrait(player));portrait.alt="Портрет: "+(player?.name||"Футболист");portrait.loading="lazy";portrait.onerror=()=>{portrait.onerror=null;portrait.removeAttribute("src")};wrap.append(portrait);
  if(team){const src=teamLogoSource(team);if(src){const logo=document.createElement("img");logo.className="player-team-logo";logo.src=src;logo.alt="Эмблема команды";logo.loading="lazy";logo.onerror=()=>logo.remove();wrap.append(logo)}}
  const copy=document.createElement("span");copy.className="player-team-copy";copy.append(safeText("b",player?.name||"Футболист"),safeText("small",(player?.position||"—")+" · "+(team?(team.isUserTeam?state.teamName:team.name):"Свободный двор")));wrap.append(copy);return wrap;
 }
