@@ -355,7 +355,13 @@ function initializeCloudCareer() {
 
 const COACH_AVATAR_COUNT = 4;
 const TEAM_LOGO_COUNT = 6;
-function avatarPath(index) { return "/images/avatartrener/avatartrener" + index + ".jpg"; }
+function avatarPath(index) {
+  if (Number(index) === 4) {
+    const silhouette = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#102d42"/><stop offset="1" stop-color="#071a25"/></linearGradient><linearGradient id="figure" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#70f2bd"/><stop offset="1" stop-color="#2795a5"/></linearGradient></defs><rect width="160" height="160" rx="18" fill="url(#bg)"/><circle cx="80" cy="80" r="68" fill="none" stroke="#70f2bd" stroke-opacity=".45" stroke-width="2"/><circle cx="80" cy="56" r="25" fill="url(#figure)"/><path d="M31 137c4-29 23-45 49-45s45 16 49 45v5H31z" fill="url(#figure)"/><path d="M58 49c2-16 12-25 22-25 15 0 24 11 25 25-8-7-16-10-25-10s-15 4-22 10z" fill="#071a25" opacity=".85"/></svg>';
+    return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(silhouette);
+  }
+  return "/images/avatartrener/avatartrener" + index + ".jpg";
+}
 function teamLogoPath(index) { return "/images/avatarteam/avatarteam" + index + ".jpg"; }
 function makeTeamLogoOptions(containerId, groupName, selectedIndex) {
   const container = $(containerId); container.replaceChildren();
@@ -372,7 +378,7 @@ function makeAvatarOptions(containerId, groupName, selectedIndex) {
   for (let i = 1; i <= COACH_AVATAR_COUNT; i++) {
     const label = document.createElement("label"); label.className = "avatar-option";
     const radio = document.createElement("input"); radio.type = "radio"; radio.name = groupName; radio.value = String(i); radio.checked = i === Number(selectedIndex); radio.setAttribute("aria-label", "Аватар " + i);
-    const img = document.createElement("img"); img.src = avatarPath(i); img.alt = "Аватар " + i; img.loading = "lazy";
+    const img = document.createElement("img"); img.src = avatarPath(i); img.alt = i === 4 ? "Анонимный силуэт тренера" : "Аватар " + i; img.loading = "lazy";
     label.append(radio, img); container.append(label);
   }
 }
