@@ -867,6 +867,7 @@ function renderShopPage(){
  const rarityTabs=document.createElement("div");rarityTabs.className="shop-tabs shop-rarity-tabs";rarityTabs.setAttribute("aria-label","Редкость предметов");
  const grid=document.createElement("div");grid.className="shop-item-grid";let kind="avatar",rarity="uncommon";
  const draw=()=>{
+  const walletValue=balance.querySelector(".shop-wallet-value");if(walletValue)walletValue.textContent=Math.floor(getShopBalance()).toLocaleString("ru-RU")+" монет";
   kindTabs.replaceChildren();rarityTabs.replaceChildren();grid.replaceChildren();
   [["avatar","Аватары тренеров"],["logo","Эмблемы команд"]].forEach(([k,label])=>{const b=document.createElement("button");b.type="button";b.className="shop-tab"+(kind===k?" active":"");b.setAttribute("aria-pressed",String(kind===k));b.textContent=label;b.addEventListener("click",()=>{kind=k;draw()});kindTabs.append(b)});
   SHOP_RARITIES.forEach(r=>{const b=document.createElement("button");b.type="button";b.className="shop-tab rarity-tab rarity-"+r.key+(rarity===r.key?" active":"");b.setAttribute("aria-pressed",String(rarity===r.key));b.textContent=r.label+" · "+r.price.toLocaleString("ru-RU");b.addEventListener("click",()=>{rarity=r.key;draw()});rarityTabs.append(b)});
