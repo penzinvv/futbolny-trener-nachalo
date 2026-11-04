@@ -852,7 +852,11 @@ async function fetchOnlineRatings() {
 }
 function renderOnlineRatings() {
   const wrap=document.createElement("div");wrap.className="online-ratings-page";
-  const intro=document.createElement("p");intro.className="muted";intro.textContent="Отправляй результаты вручную. В онлайн-таблице сохраняется последний отправленный показатель каждой карьеры.";
+  const intro=document.createElement("p");intro.className="muted";intro.textContent="Здесь сравниваются опыт тренера и общий рейтинг. Кнопка отправки обновляет оба показателя за один раз.";
+  const actions=document.createElement("div");actions.className="online-ratings-actions";
+  const send=document.createElement("button");send.type="button";send.className="online-submit-button";send.textContent="ОТПРАВИТЬ РЕЗУЛЬТАТ";
+  const recordsButton=document.createElement("button");recordsButton.type="button";recordsButton.className="online-submit-button";recordsButton.textContent="ОНЛАЙН РЕКОРДЫ";
+  const status=safeText("p","","online-rating-status");status.setAttribute("role","status");status.setAttribute("aria-live","polite");
   const grid=document.createElement("div");grid.className="online-ratings-grid";
   const lists={};const statuses={};
   const configs=[
@@ -865,12 +869,12 @@ function renderOnlineRatings() {
     heading.append(safeText("h2",config.title),safeText("p",config.description,"muted"));
     const list=document.createElement("div");list.className="online-rating-list";
     list.append(placeholder("Загружаю онлайн-таблицу…"));
-    const status=safeText("p","","online-rating-status");status.setAttribute("role","status");status.setAttribute("aria-live","polite");
-    const button=document.createElement("button");button.type="button";button.className="online-submit-button";button.textContent="ОТПРАВИТЬ В ОНЛАЙН";
-    button.addEventListener("click",()=>submitOnlineRating(config.type,button,status,lists));
-    panel.append(heading,list,status,button);grid.append(panel);lists[config.type]=list;statuses[config.type]=status;
+    panel.append(heading,list);grid.append(panel);lists[config.type]=list;statuses[config.type]=status;
   });
-  wrap.append(intro,grid);
+  send.addEventListener("click",()=>submitBothOnlineRatings(send,status,lists));
+  recordsButton.addEventListener("click",()=>openPage("onlineRecords"));
+  actions.append(send,recordsButton);
+  wrap.append(intro,actions,status,grid);
   void loadOnlineRatings(lists,statuses);
   return wrap;
 }
@@ -914,6 +918,73 @@ async function submitOnlineRating(type,button,status,lists) {
   } finally {
     button.disabled=false;button.textContent="ОТПРАВИТЬ В ОНЛАЙН";
   }
+}
+
+
+function buildOnlineCareerRecordCandidates() {
+  const history=Array.isArray(state.careerHistory?.officialMatches)?state.careerHistory.officialMatches:[];
+  const ownId=getUserTeam()?.id||state.careerTeamId;
+  const matches=history.filter(m=>m&&(m.homeId===ownId||m.awayId===ownId)).map(m=>{
+    const home=m.homeId===ownId;
+    const gf=Number(m.goalsFor??(home?m.homeScore:m.awayScore)??0);
+    const ga=Number(m.goalsAgainst??(home?m.awayScore:m.homeScore)??0);
+    return {...m,gf,ga,result:m.result||(gf>ga?"W":gf<ga?"L":"D")};
+  }).sort((a,b)=>(Number(a.season)||1)-(Number(b.season)||1)||(Number(a.day)||0)-(Number(b.day)||0));
+  const dateLabel=m=>"Сезон "+(m.season||1)+" · День "+(m.day||officialRoundDay(m.round||1));
+  const opp=m=>m.homeId===ownId?(leagueData?.teams?.find(t=>t.id===m.awayId)?.name||"Соперник"):(leagueData?.teams?.find(t=>t.id===m.homeId)?.name||"Соперник");
+  const records=[];
+  const wins=matches.filter(m=>m.gf>m.ga).sort((a,b)=>(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf);
+  const losses=matches.filter(m=>m.gf<m.ga).sort((a,b)=>(b.ga-b.gf)-(a.ga-a.gf)||b.ga-a.ga);
+  if(wins[0])records.push({recordType:"biggest_win",metricValue:wins[0].gf-wins[0].ga,snapshot:{value_label:wins[0].gf+" : "+wins[0].ga,detail:(state.teamName||"Команда")+" — "+opp(wins[0]),date_label:dateLabel(wins[0])}});
+  if(losses[0])records.push({recordType:"biggest_loss",metricValue:losses[0].ga-losses[0].gf,snapshot:{value_label:losses[0].gf+" : "+losses[0].ga,detail:(state.teamName||"Команда")+" — "+opp(losses[0]),date_label:dateLabel(losses[0])}});
+  const players=new Map();
+  matches.forEach(m=>(m.events||[]).filter(e=>e.type==="goal").forEach(e=>{
+    const side=e.side==="home"?"home":e.side==="away"?"away":null;if(!side||!e.scorer)return;
+    if((side==="home"?m.homeId:m.awayId)!==ownId)return;
+    const p=players.get(e.scorer)||{name:e.scorer,goals:0,assists:0,lastGoalRecord:m};
+    p.goals++;p.lastGoalRecord=m;players.set(e.scorer,p);
+    if(e.assist){const a=players.get(e.assist)||{name:e.assist,goals:0,assists:0,lastAssistRecord:m};a.assists++;a.lastAssistRecord=m;players.set(e.assist,a);}
+  }));
+  const scorers=[...players.values()].filter(p=>p.goals>0).sort((a,b)=>b.goals-a.goals||b.assists-a.assists||a.name.localeCompare(b.name,"ru"));
+  const assistants=[...players.values()].filter(p=>p.assists>0).sort((a,b)=>b.assists-a.assists||b.goals-a.goals||a.name.localeCompare(b.name,"ru"));
+  if(scorers[0])records.push({recordType:"top_scorer",metricValue:scorers[0].goals,snapshot:{value_label:scorers[0].name+" · "+scorers[0].goals+" гол.",detail:"Лучший бомбардир команды",date_label:dateLabel(scorers[0].lastGoalRecord)}});
+  if(assistants[0])records.push({recordType:"top_assistant",metricValue:assistants[0].assists,snapshot:{value_label:assistants[0].name+" · "+assistants[0].assists,detail:"Голевых передач",date_label:dateLabel(assistants[0].lastAssistRecord)}});
+  const streak=kind=>{let best=0,current=0,end=null;matches.forEach(m=>{if(m.result===kind){current++;if(current>best){best=current;end=m;}}else current=0;});return {count:best,end};};
+  const winning=streak("W"),losing=streak("L");
+  if(winning.count)records.push({recordType:"winning_streak",metricValue:winning.count,snapshot:{value_label:winning.count+" матчей подряд",detail:"Победная серия",date_label:dateLabel(winning.end)}});
+  if(losing.count)records.push({recordType:"losing_streak",metricValue:losing.count,snapshot:{value_label:losing.count+" матчей подряд",detail:"Проигрышная серия",date_label:dateLabel(losing.end)}});
+  const highest=[...matches].sort((a,b)=>(b.gf+b.ga)-(a.gf+a.ga)||b.gf-a.gf)[0];
+  if(highest)records.push({recordType:"highest_scoring_match",metricValue:highest.gf+highest.ga,snapshot:{value_label:highest.gf+" : "+highest.ga,detail:(state.teamName||"Команда")+" — "+opp(highest),date_label:dateLabel(highest)}});
+  const coachTitle=getEquippedCoachTitle(),teamTitle=getEquippedTeamTitle();
+  const base={coach_name:displayedCoachName(),team_name:displayedTeamName(),season_number:Math.max(1,Number(state.seasonNumber)||1),avatar_index:Math.max(1,Math.min(6,Number(state.avatarIndex)||1)),team_logo_index:Math.max(1,Math.min(6,Number(state.teamLogoIndex)||1)),coach_title:coachTitle?.name||"",coach_title_rarity:coachTitle?.rarity||null,team_title:teamTitle?.name||"",team_title_rarity:teamTitle?.rarity||null};
+  return records.map(record=>({...record,snapshot:{...base,...record.snapshot}}));
+}
+function renderOnlineCareerRecords() {
+  const wrap=document.createElement("div");wrap.className="online-career-records-page";
+  const actions=document.createElement("div");actions.className="online-ratings-actions";
+  const home=document.createElement("button");home.type="button";home.className="back-button";home.textContent="НА ГЛАВНУЮ";home.addEventListener("click",returnToDashboard);
+  const send=document.createElement("button");send.type="button";send.className="online-submit-button";send.textContent="ОТПРАВИТЬ ОНЛАЙН";
+  const status=safeText("p","","online-rating-status");status.setAttribute("role","status");status.setAttribute("aria-live","polite");
+  const list=document.createElement("div");list.className="online-career-records-list";list.append(placeholder("Загружаю онлайн-рекорды…"));
+  const names={biggest_win:"Самая крупная победа",biggest_loss:"Самое крупное поражение",top_scorer:"Лучший бомбардир",top_assistant:"Лучший ассистент",winning_streak:"Победная серия",losing_streak:"Проигрышная серия",highest_scoring_match:"Самый результативный матч"};
+  const renderRows=rows=>{list.replaceChildren();if(!rows.length){list.append(placeholder("Пока нет отправленных рекордов. Отправь свою историю команды!"));return;}
+    const grouped=new Map();rows.forEach(row=>{const key=row.record_type;(grouped.get(key)||grouped.set(key,[]).get(key)).push(row);});
+    Object.keys(names).forEach(type=>{const entries=grouped.get(type)||[];if(!entries.length)return;const panel=document.createElement("section");panel.className="online-record-panel";panel.append(safeText("h2",names[type]));entries.slice(0,100).forEach((entry,index)=>{const snap=entry.record_snapshot||{};const row=document.createElement("article");row.className="online-record-entry";row.append(safeText("span",String(index+1),"online-rating-place"));const identity=document.createElement("div");identity.className="online-rating-identity";const avatar=document.createElement("img");avatar.className="online-rating-avatar";avatar.src=avatarPath(snap.avatar_index||1);avatar.alt="Аватар тренера";const coach=safeText("b",snap.coach_name||"Тренер","online-rating-coach-name");const coachLine=document.createElement("div");coachLine.className="online-rating-coach-line";coachLine.append(avatar,coach);const coachTitle=snap.coach_title?safeText("span",snap.coach_title,"equipped-title-badge rarity-"+(snap.coach_title_rarity||"uncommon")):null;identity.append(coachLine);if(coachTitle)identity.append(coachTitle);const teamLine=document.createElement("div");teamLine.className="online-rating-team-line";const logo=document.createElement("img");logo.className="online-rating-team-logo";logo.src=teamLogoPath(snap.team_logo_index||1);logo.alt="Эмблема команды";teamLine.append(logo,safeText("span",snap.team_name||"Команда"));identity.append(teamLine);if(snap.team_title)identity.append(safeText("span",snap.team_title,"equipped-title-badge rarity-"+(snap.team_title_rarity||"uncommon")));if(snap.detail)identity.append(safeText("small",snap.detail));const score=document.createElement("div");score.className="online-rating-score";score.append(safeText("b",snap.value_label||String(entry.metric_value)),safeText("small",snap.date_label||"Рекорд"));row.append(identity,score);panel.append(row);});list.append(panel);});
+  };
+  send.addEventListener("click",async()=>{if(send.disabled)return;if(!state.coachName||!state.teamName){status.textContent="Сначала создай тренера и команду.";return;}send.disabled=true;send.textContent="ОТПРАВКА…";status.textContent="";try{ensureCareerIdentity();const records=buildOnlineCareerRecordCandidates();if(!records.length){status.textContent="Сначала сыграй официальные матчи — пока нечего отправлять.";return;}const result=await cloudRequest("POST",{action:"submit-online-career-records",records});const changed=(result.results||[]).filter(x=>x.updated).length;status.textContent=changed?"Обновлено рекордов: "+changed+". Равные и худшие результаты не заменяют прежние.":"Новых рекордов нет: сохранены прежние лучшие результаты.";await loadRecords();}catch(error){status.textContent="Не удалось отправить рекорды: "+(error?.message||"проверь подключение и попробуй снова.");}finally{send.disabled=false;send.textContent="ОТПРАВИТЬ ОНЛАЙН";}});
+  async function loadRecords(){try{const result=await cloudRequest("POST",{action:"get-online-career-records"});renderRows(result.records||[]);}catch(error){list.replaceChildren(placeholder("Не удалось загрузить онлайн-рекорды. Попробуй обновить страницу."));status.textContent="Ошибка загрузки: "+(error?.message||"неизвестная ошибка");}}
+  actions.append(home,send);wrap.append(actions,status,list);void loadRecords();return wrap;
+}
+async function submitBothOnlineRatings(button,status,lists) {
+  if(button.disabled)return;if(!state.coachName||!state.teamName){status.textContent="Сначала создай тренера и команду.";return;}
+  const team=getUserTeam();if(!team){status.textContent="Не удалось определить команду тренера.";return;}
+  button.disabled=true;button.textContent="ОТПРАВКА…";status.textContent="";
+  try{ensureCareerIdentity();const awards=careerAwardsFor("coach",team.id).map(item=>({icon:item.icon,label:item.label||"Награда",caption:item.caption||"",season:Number(item.season)||Number(state.seasonNumber)||1,round:Number(item.round)||0})).filter(item=>/^[a-z0-9_-]{1,80}$/i.test(String(item.icon||""))).slice(0,80);
+    const common={coachName:state.coachName,teamName:state.teamName,seasonNumber:Math.max(1,Math.floor(Number(state.seasonNumber)||1)),avatarIndex:Math.max(1,Math.min(6,Math.floor(Number(state.avatarIndex)||1))),teamLogoIndex:Math.max(1,Math.min(6,Math.floor(Number(state.teamLogoIndex)||1))),awards};
+    await Promise.all([cloudRequest("POST",{action:"submit-online-rating",ratingType:"xp",...common,xp:Math.max(0,Math.floor(Number(state.xp)||0))}),cloudRequest("POST",{action:"submit-online-rating",ratingType:"general",...common,generalRating:Math.max(0,Math.floor(Number(state.permanentRating)||0))})]);
+    await loadOnlineRatings(lists,{});status.textContent="Опыт и общий рейтинг отправлены."; 
+  }catch(error){status.textContent="Не удалось отправить оба показателя: "+(error?.message||"проверь подключение и попробуй снова.");}
+  finally{button.disabled=false;button.textContent="ОТПРАВИТЬ РЕЗУЛЬТАТ";}
 }
 
 
@@ -1111,6 +1182,7 @@ const pages = {
   matchSummary: {title:"Итоги встречи", eyebrow:"ПОСЛЕ МАТЧА", render: renderMatchSummaryPage},
   goals: {title:"Цели тренера", eyebrow:"ПРОГРЕСС", render: () => placeholder("Система уникальных и периодических целей будет добавлена после согласования чисел и списка целей.")},
   ratings: {title:"Тренерский рейтинг", eyebrow:"РЕЙТИНГИ ТРЕНЕРОВ", render: renderOnlineRatings},
+  onlineRecords: {title:"Онлайн рекорды", eyebrow:"ЛУЧШИЕ РЕЗУЛЬТАТЫ КОМАНД", render: renderOnlineCareerRecords},
   shop: {title:"Магазин", eyebrow:"МАГАЗИН НАГРАД", render: renderShopPage},
   help: {title:"FAQ / Помощь", eyebrow:"РУКОВОДСТВО ИГРОКА", render: renderFaqPage},
   support: {title:"Ваша поддержка", eyebrow:"ПОДДЕРЖКА ИГРЫ", render: renderSupportPage},
