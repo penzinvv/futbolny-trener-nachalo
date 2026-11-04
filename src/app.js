@@ -355,7 +355,13 @@ function initializeCloudCareer() {
 
 const COACH_AVATAR_COUNT = 4;
 const TEAM_LOGO_COUNT = 6;
-function avatarPath(index) { return "/images/avatartrener/avatartrener" + index + ".jpg"; }
+function avatarPath(index) {
+  if (Number(index) === 4) {
+    const silhouette = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#102d42"/><stop offset="1" stop-color="#071a25"/></linearGradient><linearGradient id="figure" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#70f2bd"/><stop offset="1" stop-color="#2795a5"/></linearGradient></defs><rect width="160" height="160" rx="18" fill="url(#bg)"/><circle cx="80" cy="80" r="68" fill="none" stroke="#70f2bd" stroke-opacity=".45" stroke-width="2"/><circle cx="80" cy="56" r="25" fill="url(#figure)"/><path d="M31 137c4-29 23-45 49-45s45 16 49 45v5H31z" fill="url(#figure)"/><path d="M58 49c2-16 12-25 22-25 15 0 24 11 25 25-8-7-16-10-25-10s-15 4-22 10z" fill="#071a25" opacity=".85"/></svg>';
+    return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(silhouette);
+  }
+  return "/images/avatartrener/avatartrener" + index + ".jpg";
+}
 function teamLogoPath(index) { return "/images/avatarteam/avatarteam" + index + ".jpg"; }
 function makeTeamLogoOptions(containerId, groupName, selectedIndex) {
   const container = $(containerId); container.replaceChildren();
@@ -372,7 +378,7 @@ function makeAvatarOptions(containerId, groupName, selectedIndex) {
   for (let i = 1; i <= COACH_AVATAR_COUNT; i++) {
     const label = document.createElement("label"); label.className = "avatar-option";
     const radio = document.createElement("input"); radio.type = "radio"; radio.name = groupName; radio.value = String(i); radio.checked = i === Number(selectedIndex); radio.setAttribute("aria-label", "Аватар " + i);
-    const img = document.createElement("img"); img.src = avatarPath(i); img.alt = "Аватар " + i; img.loading = "lazy";
+    const img = document.createElement("img"); img.src = avatarPath(i); img.alt = i === 4 ? "Анонимный силуэт тренера" : "Аватар " + i; img.loading = "lazy";
     label.append(radio, img); container.append(label);
   }
 }
@@ -671,6 +677,7 @@ if (musicToggle) { setMusicButtonLabel("Нажми для запуска муз�
 void playNextTrack();
 
 const STARTING_ROSTER_RULES_VERSION = "2.8.1";
+const PORTRAIT_ASSIGNMENT_RULES_VERSION = "2.8.13";
 function shuffledCopy(items) {
   const copy = items.slice();
   for (let i = copy.length - 1; i > 0; i--) {
@@ -679,11 +686,88 @@ function shuffledCopy(items) {
   }
   return copy;
 }
+function portraitPlayerKey(player) {
+  return String(player?.careerId || player?.id || player?.name || "");
+}
+function collectPortraitPlayers(extraPlayers = []) {
+  const result = [], seen = new Set();
+  const add = player => {
+    if (!player || typeof player !== "object") return;
+    const key = portraitPlayerKey(player);
+    if (!key || seen.has(key)) return;
+    seen.add(key); result.push(player);
+  };
+  (leagueData?.teams || []).forEach(team => (team.players || []).forEach(add));
+  (state.leagueReservePlayers || []).forEach(add);
+  (state.freeYardPlayers || []).forEach(add);
+  extraPlayers.forEach(add);
+  return result;
+}
+function buildPortraitQueue(players) {
+  const counts = Array(78).fill(0);
+  players.forEach(player => {
+    const index = Number(player?.portraitIndex);
+    if (Number.isInteger(index) && index >= 1 && index <= 77) counts[index]++;
+  });
+  const maxCount = Math.max(0, ...counts.slice(1));
+  const queue = [];
+  if (maxCount === 0) queue.push(...Array.from({length:77}, (_,i)=>i+1));
+  else {
+    for (let round = 0; round < maxCount; round++) {
+      const missing = [];
+      for (let index = 1; index <= 77; index++) if (counts[index] <= round) missing.push(index);
+      queue.push(...shuffledCopy(missing));
+    }
+  }
+  // The current incomplete round is completed before any portrait enters its next round.
+  queue.push(...shuffledCopy(Array.from({length:77}, (_,i)=>i+1)));
+  return queue;
+}
+function ensurePortraitQueue(extraPlayers = []) {
+  if (!Array.isArray(state.portraitAssignmentQueue)) {
+    state.portraitAssignmentQueue = buildPortraitQueue(collectPortraitPlayers(extraPlayers));
+  }
+  return state.portraitAssignmentQueue;
+}
+function assignPlayerPortrait(player, extraPlayers = []) {
+  if (!player || typeof player !== "object") return 1;
+  state.portraitAssignments = state.portraitAssignments && typeof state.portraitAssignments === "object" ? state.portraitAssignments : {};
+  const key = portraitPlayerKey(player);
+  const saved = Number(state.portraitAssignments[key]);
+  if (Number.isInteger(saved) && saved >= 1 && saved <= 77) {
+    player.portraitIndex = saved;
+    return saved;
+  }
+  const current = Number(player.portraitIndex);
+  if (Number.isInteger(current) && current >= 1 && current <= 77) {
+    if (key) state.portraitAssignments[key] = current;
+    return current;
+  }
+  const queue = ensurePortraitQueue(extraPlayers);
+  if (!queue.length) queue.push(...shuffledCopy(Array.from({length:77}, (_,i)=>i+1)));
+  const index = queue.shift();
+  player.portraitIndex = index;
+  if (key) state.portraitAssignments[key] = index;
+  return index;
+}
+function ensurePortraitAssignments() {
+  const players = collectPortraitPlayers();
+  ensurePortraitQueue(players);
+  let changed = false;
+  players.forEach(player => {
+    const before = Number(player.portraitIndex);
+    const index = assignPlayerPortrait(player, players);
+    if (before !== index) changed = true;
+  });
+  if (changed) saveState();
+}
 function createInitialLeagueForNewCareer() {
   if (!leagueData || state.initialRosterDistributionApplied) return false;
   const teams = leagueData.teams || [];
   if (teams.length !== 12) throw new Error("Ожидалось 12 команд для стартового распределения.");
   const allPlayers = teams.flatMap(team => (team.players || []).map(player => ({ ...player, skills: { ...(player.skills || {}) } })));
+  // Assign portraits to the complete 120-player pool before the players are shuffled into teams/reserve.
+  allPlayers.forEach(player => assignPlayerPortrait(player, allPlayers));
   if (allPlayers.length < 120) throw new Error("В исходном справочнике недостаточно футболистов для распределения 99 + 21.");
   // Start each team with 7 players, then randomly add 15 places (up to 9 per team): 12*7 + 15 = 99.
   const counts = teams.map(() => 7);
@@ -1268,6 +1352,7 @@ function makeCareerId() {
 }
 function ensureCareerIdentity() {
   if (!state.coachName || !state.teamName) return;
+  ensurePortraitAssignments();
   let changed=false;
   if (!state.careerCoachId) { state.careerCoachId=makeCareerId(); changed=true; }
   if (!state.careerTeamId) { state.careerTeamId=makeCareerId(); changed=true; }
