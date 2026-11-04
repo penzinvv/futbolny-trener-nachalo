@@ -251,7 +251,9 @@ Deno.serve(async (req: Request) => {
           continue;
         }
         const now = new Date().toISOString();
-        const row = { owner_user_id: userId, record_type: recordType, metric_value: metricValue, record_snapshot: snapshot, recorded_at: existing ? undefined : now, updated_at: now };
+        const row: Record<string, unknown> = { owner_user_id: userId, record_type: recordType, metric_value: metricValue, record_snapshot: snapshot, updated_at: now };
+        // Preserve the original timestamp when improving a record; only set it on first insert.
+        if (!existing) row.recorded_at = now;
         const { error: saveError } = await admin.from("online_career_records").upsert(row, { onConflict: "owner_user_id,record_type" });
         if (saveError) throw saveError;
         submitted.push({ recordType, updated: true });
