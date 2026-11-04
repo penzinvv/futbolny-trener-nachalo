@@ -2419,7 +2419,41 @@ function createMatchEvent(session,home,away,minute){
  if(["goal","save","chance","penalty"].includes(event.type)){session.matchStats[side].shots++;if(["goal","save"].includes(event.type)||event.onTarget===true)session.matchStats[side].onTarget++}
  return event;
 }
-function autoAdvanceOfficialMatch(session,home,away){if(session.autoPlaying||session.finished||session.halfTime)return;session.autoPlaying=true;const step=()=>{if(state.officialMatchSession!==session||session.finished||session.halfTime){session.autoPlaying=false;saveState();if(!document.getElementById("pageView")?.classList.contains("hidden"))openPage("match");return}if(session.minute===0)session.events.push({minute:0,type:"play",text:"Судья даёт стартовый свисток. Начинается матч."});session.minute++;applyMatchMinuteFatigue(session);session.events.push(createMatchEvent(session,home,away,session.minute));if(session.minute===20){session.halfTime=true;session.events.push({minute:20,type:"halftime",text:"Свисток на перерыв. Тренер может разобрать ключевые эпизоды и сделать до трёх замен."});session.autoPlaying=false}if(session.minute>=40){session.events.push({minute:40,type:"fulltime",text:"Финальный свисток! Итоговый счёт "+session.score.home+":"+session.score.away+"."});session.autoPlaying=false;applyOfficialMatchResult(session,home,away);return}state.officialMatchSession=session;saveState();openPage("match");if(session.autoPlaying)setTimeout(step,7500)};setTimeout(step,400)}
+function applyNpcHalftimeSubstitutions(session,home,away){
+ if(session.npcHalftimeSubsApplied)return [];
+ session.npcHalftimeSubsApplied=true;
+ session.npcSubstitutions=session.npcSubstitutions||{home:0,away:0};
+ session.npcSubstitutedOut=session.npcSubstitutedOut||{home:[],away:[]};
+ const made=[];
+ ["home","away"].forEach(side=>{
+  const team=side==="home"?home:away;
+  if(!team||team.isUserTeam||team.id===getUserTeam()?.id)return;
+  const lineup=session.lineups?.[side]||[];
+  const roster=Array.isArray(team.players)?team.players:[];
+  const usedOut=new Set(session.npcSubstitutedOut[side]||[]);
+  for(const entry of lineup){
+   if(session.npcSubstitutions[side]>=3)break;
+   if(entry.sentOff||!entry.player||usedOut.has(entry.player.name))continue;
+   const current=entry.player;
+   const condition=getPlayerCondition(current);
+   if(condition>70)continue;
+   const currentScore=matchEffectivePlayerScore(current,entry.role)+(current.position===entry.role?2:0);
+   const bench=roster.filter(p=>p&&p.name!==current.name&&!usedOut.has(p.name)&&!lineup.some(x=>x.player?.name===p.name)&&!isPlayerUnavailable(team,p));
+   bench.sort((a,b)=>(matchEffectivePlayerScore(b,entry.role)+(b.position===entry.role?2:0))-(matchEffectivePlayerScore(a,entry.role)+(a.position===entry.role?2:0)));
+   const incoming=bench[0];
+   if(!incoming)continue;
+   const incomingScore=matchEffectivePlayerScore(incoming,entry.role)+(incoming.position===entry.role?2:0);
+   if(incomingScore-currentScore<2)continue;
+   usedOut.add(current.name);session.npcSubstitutedOut[side].push(current.name);
+   entry.player=incoming;session.npcSubstitutions[side]++;
+   const message=matchTeamLabel(team)+": "+current.name+" заменён на "+incoming.name+" ("+entry.role+"). Эффективность амплуа улучшена с "+currentScore+" до "+incomingScore+".";
+   session.events.push({minute:20,type:"substitution",side,text:message,playerOut:current.name,playerIn:incoming.name,role:entry.role,reason:"Усталость и более высокий эффективный показатель запасного"});
+   made.push({side,team:team.name,out:current.name,incoming:incoming.name,role:entry.role,before:currentScore,after:incomingScore});
+  }
+ });
+ return made;
+}
+function autoAdvanceOfficialMatch(session,home,away){if(session.autoPlaying||session.finished||session.halfTime)return;session.autoPlaying=true;const step=()=>{if(state.officialMatchSession!==session||session.finished||session.halfTime){session.autoPlaying=false;saveState();if(!document.getElementById("pageView")?.classList.contains("hidden"))openPage("match");return}if(session.minute===0)session.events.push({minute:0,type:"play",text:"Судья даёт стартовый свисток. Начинается матч."});session.minute++;applyMatchMinuteFatigue(session);session.events.push(createMatchEvent(session,home,away,session.minute));if(session.minute===20){session.halfTime=true;applyNpcHalftimeSubstitutions(session,home,away);session.events.push({minute:20,type:"halftime",text:"Свисток на перерыв. NPC-тренеры автоматически оценили состояние игроков; ты можешь сделать до трёх замен своей команды."});session.autoPlaying=false}if(session.minute>=40){session.events.push({minute:40,type:"fulltime",text:"Финальный свисток! Итоговый счёт "+session.score.home+":"+session.score.away+"."});session.autoPlaying=false;applyOfficialMatchResult(session,home,away);return}state.officialMatchSession=session;saveState();openPage("match");if(session.autoPlaying)setTimeout(step,7500)};setTimeout(step,400)}
 function calculateOfficialMatchRelations(session,home,away,result){
  const userTeam=getUserTeam();
  if(!userTeam)return {changes:[],ratings:[]};
