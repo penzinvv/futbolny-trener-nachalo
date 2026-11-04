@@ -1892,3 +1892,21 @@ body[data-page-bg] .onboarding {
 .shop-title-card.rarity-epic{--rarity-glow:#bf83ff}
 .shop-title-card.rarity-legendary{--rarity-glow:#ffd45a}
 @media(prefers-reduced-motion:reduce){.shop-title-card .shop-item-art::after{animation:none!important}}
+
+
+/* 2.8.19 — compact equipped-title badges, with rarity-specific animated trim. */
+.equipped-title-badge[hidden]{display:none!important}
+.equipped-title-badge{position:relative;isolation:isolate;display:inline-flex;align-items:center;gap:5px;max-width:min(100%,340px);width:max-content;margin:5px 0 3px;padding:4px 10px 4px 7px;overflow:hidden;border:1px solid var(--title-color,#76e5a5);border-radius:7px;background:linear-gradient(110deg,color-mix(in srgb,var(--title-color,#76e5a5) 20%,#061b14),#071d16 55%,color-mix(in srgb,var(--title-color,#76e5a5) 16%,#061b14));color:#f4fff8;font-size:clamp(10px,1vw,12px);font-weight:800;line-height:1.25;letter-spacing:.015em;text-wrap:balance;overflow-wrap:anywhere;box-shadow:0 0 9px color-mix(in srgb,var(--title-color,#76e5a5) 22%,transparent),inset 0 0 0 1px #ffffff08;animation:title-badge-glow 3.2s ease-in-out infinite}
+.equipped-title-badge::before{content:"♛";position:relative;z-index:1;flex:0 0 auto;color:var(--title-color,#76e5a5);font-size:12px;text-shadow:0 0 8px var(--title-color,#76e5a5)}
+.equipped-title-badge::after{content:"";position:absolute;z-index:-1;inset:-50% auto -50% -45%;width:35%;transform:skewX(-22deg);background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--title-color,#76e5a5) 28%,transparent),transparent);animation:title-badge-shine 4.4s ease-in-out infinite;pointer-events:none}
+.equipped-title-badge.rarity-uncommon{--title-color:#65e59b}
+.equipped-title-badge.rarity-rare{--title-color:#77caff}
+.equipped-title-badge.rarity-epic{--title-color:#c184ff}
+.equipped-title-badge.rarity-legendary{--title-color:#ffd45b;border-width:1.5px;box-shadow:0 0 12px #ffd45b44,inset 0 0 0 1px #ffd45b22}
+.coach-chip-info .equipped-title-badge{display:flex;max-width:210px;font-size:10px;padding:3px 7px}
+.team-heading>div{min-width:0}
+.team-heading .equipped-title-badge{display:flex;max-width:min(100%,360px);font-size:clamp(10px,1.15vw,12px)}
+@keyframes title-badge-shine{0%,55%{left:-45%;opacity:0}65%{opacity:.9}100%{left:130%;opacity:0}}
+@keyframes title-badge-glow{0%,100%{filter:brightness(1);border-color:color-mix(in srgb,var(--title-color) 75%,#ffffff)}50%{filter:brightness(1.12);border-color:var(--title-color)}}
+@media(max-width:600px){.equipped-title-badge{max-width:100%;font-size:10px}.team-heading .equipped-title-badge{max-width:100%}}
+@media(prefers-reduced-motion:reduce){.equipped-title-badge,.equipped-title-badge::after{animation:none!important}}
