@@ -10,11 +10,11 @@
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <div class="brand"><span class="brand-mark">ДФ</span><div><strong>ДВОРОВЫЙ ФУТБОЛ</strong><small>НАЧАЛО · ВЕРСИЯ 2.8.18</small></div></div>
+      <div class="brand"><span class="brand-mark">ДФ</span><div><strong>ДВОРОВЫЙ ФУТБОЛ</strong><small>НАЧАЛО · ВЕРСИЯ 2.8.19</small></div></div>
       <div class="topbar-actions">
         <button id="fullscreenToggle" class="fullscreen-toggle" type="button" aria-pressed="false" title="Развернуть игру на весь экран">⛶ НА ВЕСЬ ЭКРАН</button>
         <button id="musicToggle" class="music-toggle" type="button" aria-pressed="true"><span class="radio-disc" aria-hidden="true">♫</span><span class="radio-copy"><strong>РАДИО ДВОРА</strong><small>Нажми для запуска музыки</small></span><span class="radio-equalizer" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></button>
-        <div class="coach-chip"><img id="coachAvatar" class="avatar avatar-image" src="/images/avatarteam/avatarteam1.jpg" alt="Аватар тренера"><div class="coach-chip-info"><b id="coachNameLabel">Тренер</b><small>Уровень <span id="coachLevel">1</span></small><button id="changeAvatarButton" class="text-button hidden" type="button">Сменить аватар</button></div></div>
+        <div class="coach-chip"><img id="coachAvatar" class="avatar avatar-image" src="/images/avatarteam/avatarteam1.jpg" alt="Аватар тренера"><div class="coach-chip-info"><b id="coachNameLabel">Тренер</b><span id="coachTitleBadge" class="equipped-title-badge" hidden></span><small>Уровень <span id="coachLevel">1</span></small><button id="changeAvatarButton" class="text-button hidden" type="button">Сменить аватар</button></div></div>
       </div>
     </header>
 
@@ -54,7 +54,7 @@
         <div class="pitch-lines"></div>
         <div class="hero-content">
           <p class="eyebrow">ТВОЙ ДВОР · ТВОЯ КОМАНДА</p>
-          <div class="team-heading"><span id="teamEmblem" class="team-emblem"><img src="/images/avatarteam/avatarteam1.jpg" alt="Логотип команды"></span><div><h1 id="teamName">Дворовые</h1><p>Начинаем путь с нуля</p></div></div>
+          <div class="team-heading"><span id="teamEmblem" class="team-emblem"><img src="/images/avatarteam/avatarteam1.jpg" alt="Логотип команды"></span><div><h1 id="teamName">Дворовые</h1><span id="teamTitleBadge" class="equipped-title-badge" hidden></span><p>Начинаем путь с нуля</p></div></div>
           <div class="hero-stats">
             <div><small>ИГРОВАЯ ДАТА</small><b id="gameDate">День 1</b></div>
             <div><small>СЛЕДУЮЩИЙ МАТЧ</small><b id="nextMatchDate">День 7</b></div>
