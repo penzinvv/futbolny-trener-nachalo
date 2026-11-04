@@ -112,8 +112,8 @@ Deno.serve(async (req: Request) => {
 
     if (payload?.action === "get-online-ratings") {
       const [xpResult, generalResult] = await Promise.all([
-        admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,awards,xp,general_rating,updated_at").order("xp", { ascending: false }).order("xp_submitted_at", { ascending: true, nullsFirst: false }).limit(50),
-        admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,awards,xp,general_rating,updated_at").order("general_rating", { ascending: false }).order("general_rating_submitted_at", { ascending: true, nullsFirst: false }).limit(50)
+        admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,avatar_path,team_logo_path,coach_title,coach_title_rarity,team_title,team_title_rarity,awards,xp,general_rating,updated_at").order("xp", { ascending: false }).order("xp_submitted_at", { ascending: true, nullsFirst: false }).limit(50),
+        admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,avatar_path,team_logo_path,coach_title,coach_title_rarity,team_title,team_title_rarity,awards,xp,general_rating,updated_at").order("general_rating", { ascending: false }).order("general_rating_submitted_at", { ascending: true, nullsFirst: false }).limit(50)
       ]);
       if (xpResult.error) throw xpResult.error;
       if (generalResult.error) throw generalResult.error;
@@ -138,6 +138,19 @@ Deno.serve(async (req: Request) => {
           (ratingType === "xp" && xp === null) || (ratingType === "general" && generalRating === null)) {
         return respond({ ok: false, error: "Некорректные данные рейтинга. Обнови игру и попробуй снова." }, 400);
       }
+      const safeAssetPath = (value: unknown, kind: "avatar" | "logo") => {
+        const path = String(value || "");
+        const allowed = kind === "avatar"
+          ? /^\/(?:images\/avatarteam\/avatarteam[1-6]\.jpg|assets\/shop\/avatars\/(?:common|uncommon|rare|epic|legendary)\/[^/]{1,100}\.jpg)$/
+          : /^\/(?:images\/avatarteam\/avatarteam[1-6]\.jpg|assets\/shop\/logos\/(?:common|uncommon|rare|epic|legendary)\/[^/]{1,100}\.jpg)$/;
+        return allowed.test(path) ? path : null;
+      };
+      const coachTitle = String(payload.coachTitle || "").trim().slice(0, 80);
+      const teamTitle = String(payload.teamTitle || "").trim().slice(0, 80);
+      const coachTitleRarity = ["common", "uncommon", "rare", "epic", "legendary"].includes(payload.coachTitleRarity) ? payload.coachTitleRarity : null;
+      const teamTitleRarity = ["common", "uncommon", "rare", "epic", "legendary"].includes(payload.teamTitleRarity) ? payload.teamTitleRarity : null;
+      const avatarPath = safeAssetPath(payload.avatarPath, "avatar");
+      const teamLogoPath = safeAssetPath(payload.teamLogoPath, "logo");
       const incomingAwards = Array.isArray(payload.awards) ? payload.awards.slice(0, 80) : [];
       const awards = incomingAwards.filter((item: any) =>
         item && typeof item.icon === "string" && /^[a-z0-9_-]{1,80}$/i.test(item.icon)
@@ -160,6 +173,12 @@ Deno.serve(async (req: Request) => {
         season_number: seasonNumber,
         avatar_index: avatarIndex,
         team_logo_index: teamLogoIndex,
+        avatar_path: avatarPath,
+        team_logo_path: teamLogoPath,
+        coach_title: coachTitle,
+        coach_title_rarity: coachTitleRarity,
+        team_title: teamTitle,
+        team_title_rarity: teamTitleRarity,
         awards,
         xp: ratingType === "xp" ? xp : Number(existing?.xp || 0),
         general_rating: ratingType === "general" ? generalRating : Number(existing?.general_rating || 0),
