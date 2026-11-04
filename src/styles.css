@@ -235,8 +235,8 @@
 .defender-ball-target{position:absolute;z-index:2;min-width:54px;min-height:54px;border-radius:50%;font-size:30px;background:rgba(255,255,255,.12);border:2px solid #b4f4c9;box-shadow:0 0 18px #b4f4c977}
 .defender-round{position:absolute;left:0;right:0;bottom:8px;text-align:center;pointer-events:none;font-weight:700;text-shadow:0 2px 4px #052c1b}
 .snake-training-field{display:flex;flex-direction:column;align-items:center;gap:10px;background:linear-gradient(135deg,#187247,#0e5536)}
-.snake-training-field .snake-grid{max-width:360px;width:min(100%,360px);aspect-ratio:1;display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:2px;background:#0c4a2e;padding:7px;border:2px solid #a3dcb3;border-radius:10px}
-.snake-training-field .snake-cell{display:flex;align-items:center;justify-content:center;min-width:0;aspect-ratio:1;background:#278252;border-radius:3px;font-size:clamp(12px,2.8vw,21px)}
+.snake-training-field .snake-grid{box-sizing:border-box;max-width:360px;width:min(100%,360px);aspect-ratio:1;min-width:0;min-height:0;display:grid;grid-template-columns:repeat(20,minmax(0,1fr));grid-template-rows:repeat(20,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:2px;overflow:hidden;background:#0c4a2e;padding:7px;border:2px solid #a3dcb3;border-radius:10px}
+.snake-training-field .snake-cell{box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-width:0;min-height:0;aspect-ratio:auto;overflow:hidden;line-height:1;font-size:clamp(9px,2.2vw,16px);white-space:nowrap;background:#278252;border-radius:3px}
 .snake-training-field .snake-cell:nth-child(odd){background:#216f47}
 .snake-training-field .snake-body{background:#f2d24e!important;border:1px solid #fff0a0}
 .snake-training-field .snake-food{background:#f7f7f0!important}
@@ -901,8 +901,8 @@
 .defender-ball-target{position:absolute;z-index:2;min-width:54px;min-height:54px;border-radius:50%;font-size:30px;background:rgba(255,255,255,.12);border:2px solid #b4f4c9;box-shadow:0 0 18px #b4f4c977}
 .defender-round{position:absolute;left:0;right:0;bottom:8px;text-align:center;pointer-events:none;font-weight:700;text-shadow:0 2px 4px #052c1b}
 .snake-training-field{display:flex;flex-direction:column;align-items:center;gap:10px;background:linear-gradient(135deg,#187247,#0e5536)}
-.snake-training-field .snake-grid{max-width:360px;width:min(100%,360px);aspect-ratio:1;display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:2px;background:#0c4a2e;padding:7px;border:2px solid #a3dcb3;border-radius:10px}
-.snake-training-field .snake-cell{display:flex;align-items:center;justify-content:center;min-width:0;aspect-ratio:1;background:#278252;border-radius:3px;font-size:clamp(12px,2.8vw,21px)}
+.snake-training-field .snake-grid{box-sizing:border-box;max-width:360px;width:min(100%,360px);aspect-ratio:1;min-width:0;min-height:0;display:grid;grid-template-columns:repeat(20,minmax(0,1fr));grid-template-rows:repeat(20,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:2px;overflow:hidden;background:#0c4a2e;padding:7px;border:2px solid #a3dcb3;border-radius:10px}
+.snake-training-field .snake-cell{box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-width:0;min-height:0;aspect-ratio:auto;overflow:hidden;line-height:1;font-size:clamp(9px,2.2vw,16px);white-space:nowrap;background:#278252;border-radius:3px}
 .snake-training-field .snake-cell:nth-child(odd){background:#216f47}
 .snake-training-field .snake-body{background:#f2d24e!important;border:1px solid #fff0a0}
 .snake-training-field .snake-food{background:#f7f7f0!important}
