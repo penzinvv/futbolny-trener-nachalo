@@ -1148,11 +1148,20 @@ async function resetCareerFromDeveloper(button) {
 
 function renderDeveloperPage(){
  const wrap=document.createElement("section");wrap.className="feature-panel developer-page";
- const p=document.createElement("p");p.textContent="Разработчик: Валерий DOS. Музыка: DOSLER, LERDOS.";
+ const p=document.createElement("p");p.textContent="Разработчик: DOSPlay. Музыка: DOSLER, LERDOS.";
+ const community=document.createElement("p");
+ community.append(document.createTextNode("Переходи в ТГ группу для обсуждения и рекомендаций: "));
+ const communityLink=document.createElement("a");
+ communityLink.href="https://t.me/dosplayoff";
+ communityLink.target="_blank";
+ communityLink.rel="noopener noreferrer";
+ communityLink.textContent="t.me/dosplayoff";
+ communityLink.style.color="var(--accent, #8bd3ff)";
+ community.append(communityLink);
  const warning=document.createElement("p");warning.className="muted";warning.textContent="Здесь можно начать новую карьеру. Сброс затронет только вашу карьеру и её облачное сохранение; публичные рейтинги, сообщения чата и данные других игроков останутся нетронутыми.";
  const reset=document.createElement("button");reset.type="button";reset.id="resetCareerButton";reset.className="reset-career-button";reset.textContent="НАЧАТЬ КАРЬЕРУ С НУЛЯ";
  reset.addEventListener("click",()=>void resetCareerFromDeveloper(reset));
- wrap.append(p,warning,reset);return wrap
+ wrap.append(p,community,warning,reset);return wrap
 }
 
 function renderCupPage(){
