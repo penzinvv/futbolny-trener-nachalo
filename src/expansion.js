@@ -1,6 +1,12 @@
 (function(){
 "use strict";
 const cd=3600000,icons=["⚽","🧤","👟","👕","🏆","🥅"];let timer=null,profileBase;
+function playerIdentity(team,player){
+ const wrap=document.createElement("div");wrap.className="player-team-identity";
+ const portrait=document.createElement("img");portrait.className="player-team-portrait";portrait.src=getPortrait(player?.portraitIndex||1);portrait.alt="Портрет: "+(player?.name||"Футболист");portrait.loading="lazy";portrait.onerror=()=>{portrait.onerror=null;portrait.src=getPortrait(1)};wrap.append(portrait);
+ if(team){const src=teamLogoSource(team);if(src){const logo=document.createElement("img");logo.className="player-team-logo";logo.src=src;logo.alt="Эмблема команды";logo.loading="lazy";logo.onerror=()=>logo.remove();wrap.append(logo)}}
+ const copy=document.createElement("span");copy.className="player-team-copy";copy.append(safeText("b",player?.name||"Футболист"),safeText("small",(player?.position||"—")+" · "+(team?(team.isUserTeam?state.teamName:team.name):"Свободный двор")));wrap.append(copy);return wrap;
+}
 const B=(s,fn,c="secondary")=>{const b=document.createElement("button");b.type="button";b.className=c;b.textContent=s;b.onclick=fn;return b},T=(s)=>safeText("p",s,"muted"),P=(a,b)=>{const e=document.createElement("section");e.className="feature-panel";e.append(safeText("h2",a),T(b));return e},F=n=>(Math.round(n*100)/100).toLocaleString("ru-RU",{maximumFractionDigits:2})+"%",own=()=>getUserTeam()?.players||[];
 function rel(t,p,n){state.relationships||={};let k=playerRelationKey(t,p),before=Number(state.relationships[k]||0),v=Math.max(0,Math.min(100,before+n/100));state.relationships[k]=v;if(v>before){state.relationshipHistory=Array.isArray(state.relationshipHistory)?state.relationshipHistory:[];state.relationshipHistory.push({team:t.id,playerId:p.careerId||p.id||p.name,player:p.name,after:v,at:Date.now()});if(typeof publishCoachEventOnce==="function"&&t.id!==getUserTeam()?.id&&before<50&&v>=50)publishCoachEventOnce("relation-milestone:"+t.id+":"+(p.careerId||p.id||p.name),"player","Налажены отношения с футболистом","Отношения с "+p.name+" из команды «"+t.name+"» достигли "+Math.floor(v)+"%. Теперь можно проверить возможность обмена.",{priority:"high",important:true})}if(typeof updateCoachRespect==="function")updateCoachRespect();return v}
 function transfer(){openPage("transfers")}
@@ -184,7 +190,7 @@ function training(){
  teamPanel.append(tb,T("Правило распределения: один случайный игрок тренируется по своей основной позиции; у всех остальных случайно выбирается одна из трёх неподходящих основной позиции характеристик. Каждый игрок получает ровно +1, без повторов и без превышения 100."));
  const listPanel=P("Индивидуальная тренировка","ВР — поймай мяч (+5, конец после 10 пропущенных); ЗЩ — перехват мяча (+5, бесконечная игра, конец после 3 промахов или по кнопке сохранения); ПЗ/НП — змейка (+5 за мяч). Повтор раз в 1 час.");
  const list=document.createElement("div");list.className="feature-player-list";
- t.players.forEach(player=>{const row=document.createElement("div");row.className="feature-player-row";row.append(safeText("b",player.name+" · "+player.position));const id=t.id+"::"+player.name,left=cd-(Date.now()-Number(state.trainingCooldowns[id]||0));const b=B(left>0?"Доступно через "+Math.ceil(left/60000)+" мин.":"Начать тренировку",()=>playTraining(t,player,id),left>0?"secondary":"primary");b.disabled=left>0;row.append(b);list.append(row)});listPanel.append(list);
+ t.players.forEach(player=>{const row=document.createElement("div");row.className="feature-player-row";row.append(playerIdentity(t,player));const id=t.id+"::"+player.name,left=cd-(Date.now()-Number(state.trainingCooldowns[id]||0));const b=B(left>0?"Доступно через "+Math.ceil(left/60000)+" мин.":"Начать тренировку",()=>playTraining(t,player,id),left>0?"secondary":"primary");b.disabled=left>0;row.append(b);list.append(row)});listPanel.append(list);
  w.append(teamPanel,listPanel,P("Расчёт наград индивидуальной тренировки","Каждые 100 итоговых очков = 1 п.п. отношений без округления. Каждые 200 положительных очков дают +1 к основной характеристике, остаток сгорает. Опыт тренера растёт на положительный итоговый счёт."));
  return w
 }
@@ -335,12 +341,13 @@ function transfersPage(){
   team.players.forEach(player=>{
    const relation=Number(getPlayerRelation(team,player));
    const row=document.createElement("div");row.className="feature-player-row";
-   const label=safeText("span",player.name+" · "+player.position+" · "+F(relation));
+   const identity=playerIdentity(team,player);identity.classList.add("transfer-player-identity");
+   const label=safeText("span",F(relation),"transfer-player-relation");
    const profile=B("Профиль",()=>openPlayerProfile(team,player,teamsPlayerIndex(team,player)));
    const exchangeLabel=relation<50?"Обмен закрыт — нужно 50%":relation<70?"Попробовать обмен (отказ до 70%)":relation<90?"Попробовать обмен (50/50)":"Обмен гарантирован";
    const exchange=B(exchangeLabel,()=>{if(relation<50)return;state.transferTarget={team:team.id,name:player.name};saveState();openPage("transfers")},relation>=50?"primary":"secondary");
    exchange.disabled=relation<50;
-   row.append(label,profile,exchange);panel.append(row);
+   row.append(identity,label,profile,exchange);panel.append(row);
   });
   w.append(panel);
  });
