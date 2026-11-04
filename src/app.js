@@ -1539,17 +1539,17 @@ function getPlayerCondition(player){state.playerConditions=state.playerCondition
 function setPlayerCondition(player,value){state.playerConditions=state.playerConditions||{};state.playerConditions[conditionPlayerKey(player)]=Math.max(0,Math.min(100,Math.round(Number(value)*100)/100))}
 function matchConditionPenalty(player){return Math.floor((100-getPlayerCondition(player))/5)}
 function matchEffectivePlayerScore(player,role){return Math.max(0,matchPlayerScore(player,role)-matchConditionPenalty(player))}
-function applyMatchMinuteFatigue(session){["home","away"].forEach(side=>(session.lineups?.[side]||[]).filter(entry=>!entry.sentOff).forEach(entry=>{const player=entry.player||entry;const mainSkill=matchPlayerScore(player,entry.role||player.position);const loss=Math.max(0,5-mainSkill*.05);setPlayerCondition(player,getPlayerCondition(player)-loss)}))}
+function applyMatchMinuteFatigue(session){["home","away"].forEach(side=>(session.lineups?.[side]||[]).filter(entry=>!entry.sentOff).forEach(entry=>{const player=entry.player||entry;const mainSkill=matchPlayerScore(player,player.position||entry.role);const loss=Math.max(0,5-mainSkill*.05);setPlayerCondition(player,getPlayerCondition(player)-loss)}))}
 function recoverPlayerConditionForDay(){state.playerConditions=state.playerConditions||{};const seen=new Set(),all=[...(getUserTeam()?.players||[]),...(leagueData?.teams||[]).flatMap(team=>team.players||[])];all.forEach(player=>{const key=conditionPlayerKey(player);if(seen.has(key))return;seen.add(key);setPlayerCondition(player,getPlayerCondition(player)+11)})}
 function buildOfficialLineup(team,formation,optimize=false){
  const roster=(team?.players||[]).filter(player=>!(team?.isUserTeam||team?.id===getUserTeam()?.id)||!isPlayerUnavailable(team,player)).slice();if(!roster.length)return [];
- const used=new Set(),take=(role)=>{let pool=roster.filter(x=>!used.has(x));pool.sort((a,b)=>{const sa=matchPlayerScore(a,role)+(a.position===role?3:0),sb=matchPlayerScore(b,role)+(b.position===role?3:0);return optimize?sb-sa:(Number(b.position===role)-Number(a.position===role))||(sb-sa)});const p=pool[0];if(p)used.add(p);return p};
+ const used=new Set(),take=(role)=>{let pool=roster.filter(x=>!used.has(x));pool.sort((a,b)=>{const sa=(optimize?matchEffectivePlayerScore(a,role):matchPlayerScore(a,role))+(a.position===role?3:0),sb=(optimize?matchEffectivePlayerScore(b,role):matchPlayerScore(b,role))+(b.position===role?3:0);return optimize?sb-sa:(Number(b.position===role)-Number(a.position===role))||(sb-sa)});const p=pool[0];if(p)used.add(p);return p};
  const keeper=take("ВР");const roles=MATCH_FORMATIONS[formation]||MATCH_FORMATIONS["2–2–1"];
  const lineup=[];if(keeper)lineup.push({player:keeper,role:"ВР",sentOff:false});
  roles.forEach(role=>{const player=take(role);if(player)lineup.push({player,role,sentOff:false})});
  return lineup;
 }
-function chooseNpcFormation(team){let best={formation:"2–2–1",lineup:[],score:-Infinity};Object.keys(MATCH_FORMATIONS).forEach(formation=>{const lineup=buildOfficialLineup(team,formation,true);const score=lineup.reduce((sum,entry)=>sum+matchPlayerScore(entry.player,entry.role)+(entry.player.position===entry.role?2:0),0);if(lineup.length>best.lineup.length||lineup.length===best.lineup.length&&score>best.score)best={formation,lineup,score}});return best}
+function chooseNpcFormation(team){let best={formation:"2–2–1",lineup:[],score:-Infinity};Object.keys(MATCH_FORMATIONS).forEach(formation=>{const lineup=buildOfficialLineup(team,formation,true);const score=lineup.reduce((sum,entry)=>sum+matchEffectivePlayerScore(entry.player,entry.role)+(entry.player.position===entry.role?2:0),0);if(lineup.length>best.lineup.length||lineup.length===best.lineup.length&&score>best.score)best={formation,lineup,score}});return best}
 function roundFixtureKey(round,fixture){return officialMatchKey(round,fixture.home,fixture.away)}
 function scoreRandomTeam(team){
  const roster=(team?.players||[]).filter(player=>!(team?.isUserTeam||team?.id===getUserTeam()?.id)||!isPlayerUnavailable(team,player));const first=roster.find(p=>p.position==="ВР")||roster[0];
