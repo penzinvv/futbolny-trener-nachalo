@@ -539,12 +539,14 @@ function render() {
   if ($("pageView")?.classList.contains("hidden")) setPageBackground($("onboarding") && !$("onboarding").classList.contains("hidden") ? "createTeam" : "home");
   ensureCareerIdentity();
   $("coachNameLabel").textContent = displayedCoachName();
+  renderEquippedTitleBadge($("coachTitleBadge"),getEquippedCoachTitle());
   $("coachAvatar").src = displayedAvatarPath();
   $("changeAvatarButton").classList.remove("hidden");
   $("changeAvatarButton").disabled = Number(state.avatarChangeUsedSeason || 0) >= Number(state.seasonNumber || 1);
   $("changeAvatarButton").textContent = $("changeAvatarButton").disabled ? "Аватар уже менялся в этом сезоне" : "Сменить аватар";
   $("coachLevel").textContent = Math.max(1, Math.floor(Math.sqrt(state.xp / 100)) + 1);
   $("teamName").textContent = displayedTeamName();
+  renderEquippedTitleBadge($("teamTitleBadge"),getEquippedTeamTitle());
   $("teamEmblem").innerHTML = '<img src="' + displayedTeamLogoPath() + '" alt="Логотип команды">';
   $("gameDate").textContent = calendarDateText();
   const nextRound = Array.from({length:20},(_,i)=>i+1).find(r=>officialRoundDay(r)>Number(state.gameDay||1)||(officialRoundDay(r)===Number(state.gameDay||1)&&!canAdvanceCoachDay()));
@@ -969,8 +971,9 @@ function displayedTeamLogoPath(){return getEquippedShopItem("logo")?.image||team
 function equipShopItem(item){if(!item||!isShopItemOwned(item.id)||!item.equipSlot)return false;state.shopEquippedItems=state.shopEquippedItems&&typeof state.shopEquippedItems==="object"?state.shopEquippedItems:{};state.shopEquippedItems[item.equipSlot]=item.id;saveState();render();return true}
 function getEquippedCoachTitle(){return getEquippedShopItem("coachTitle")}
 function getEquippedTeamTitle(){return getEquippedShopItem("teamTitle")}
-function displayedCoachName(){const title=getEquippedCoachTitle();return (state.coachName||"Тренер")+(title?" · "+title.name:"")}
-function displayedTeamName(){const title=getEquippedTeamTitle();return (state.teamName||"Дворовые")+(title?" · "+title.name:"")}
+function displayedCoachName(){return state.coachName||"Тренер"}
+function displayedTeamName(){return state.teamName||"Дворовые"}
+function renderEquippedTitleBadge(element,item){if(!element)return;element.className="equipped-title-badge";if(!item){element.textContent="";element.hidden=true;return}element.textContent=item.name;element.classList.add("rarity-"+item.rarity);element.hidden=false}
 function renderShopPage(){
  const wrap=document.createElement("section");wrap.className="shop-page-stack";
  const balance=document.createElement("section");balance.className="feature-panel shop-wallet";
