@@ -1885,7 +1885,7 @@ body[data-page-bg] .onboarding {
 /* 2.8.18 — title items in the existing shop; reuse the rarity shine and responsive card grid. */
 .shop-title-art{display:flex;flex-direction:column;justify-content:center;gap:10px;text-align:center;padding:12px;background:radial-gradient(ellipse at center,color-mix(in srgb,var(--rarity-glow),#10291e 72%),#071b14 78%)}
 .shop-title-symbol{font-size:clamp(22px,3vw,34px);line-height:1;color:var(--rarity-glow);text-shadow:0 0 16px color-mix(in srgb,var(--rarity-glow),transparent 40%)}
-.shop-title-preview{display:block;max-width:100%;font-size:clamp(12px,1.2vw,16px);line-height:1.35;color:#f3fff6;text-wrap:balance;overflow-wrap:anywhere;text-shadow:0 1px 10px #0008}
+.shop-title-preview{position:relative;z-index:3;display:block;max-width:100%;font-size:clamp(12px,1.2vw,16px);line-height:1.35;color:#f3fff6;text-wrap:balance;overflow-wrap:anywhere;text-shadow:0 1px 10px #0008}
 .shop-title-card .shop-item-art::after{opacity:.6}
 .shop-title-card.rarity-uncommon{--rarity-glow:#76e5a5}
 .shop-title-card.rarity-rare{--rarity-glow:#e5efff}
