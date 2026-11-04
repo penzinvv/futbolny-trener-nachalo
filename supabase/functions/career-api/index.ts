@@ -194,14 +194,18 @@ Deno.serve(async (req: Request) => {
     if (payload?.action === "get-online-career-records") {
       const allowedTypes = ["biggest_win", "biggest_loss", "top_scorer", "top_assistant", "winning_streak", "losing_streak", "highest_scoring_match"];
       const requestedType = typeof payload.recordType === "string" && allowedTypes.includes(payload.recordType) ? payload.recordType : null;
-      let query = admin.from("online_career_records")
-        .select("record_type,metric_value,record_snapshot,recorded_at")
-        .order("metric_value", { ascending: false })
-        .order("recorded_at", { ascending: true });
-      if (requestedType) query = query.eq("record_type", requestedType);
-      const { data, error } = await query.limit(requestedType ? 100 : 700);
-      if (error) throw error;
-      return respond({ ok: true, records: data || [] });
+      const types = requestedType ? [requestedType] : allowedTypes;
+      const results = await Promise.all(types.map(async (type) => {
+        const { data, error } = await admin.from("online_career_records")
+          .select("record_type,metric_value,record_snapshot,recorded_at")
+          .eq("record_type", type)
+          .order("metric_value", { ascending: false })
+          .order("recorded_at", { ascending: true })
+          .limit(100);
+        if (error) throw error;
+        return data || [];
+      }));
+      return respond({ ok: true, records: results.flat() });
     }
 
     if (payload?.action === "submit-online-career-records") {
