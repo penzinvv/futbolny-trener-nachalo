@@ -10,13 +10,43 @@
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <div class="brand"><span class="brand-mark">ДФ</span><div><strong>ДВОРОВЫЙ ФУТБОЛ</strong><small>НАЧАЛО · ВЕРСИЯ 2.8.23</small></div></div>
+      <div class="brand"><span class="brand-mark">ДФ</span><div><strong>ДВОРОВЫЙ ФУТБОЛ</strong><small>НАЧАЛО · ВЕРСИЯ 2.0</small></div></div>
       <div class="topbar-actions">
+        <button id="accountToggle" class="account-toggle" type="button" aria-expanded="false">АККАУНТ</button>
         <button id="fullscreenToggle" class="fullscreen-toggle" type="button" aria-pressed="false" title="Развернуть игру на весь экран">⛶ НА ВЕСЬ ЭКРАН</button>
         <button id="musicToggle" class="music-toggle" type="button" aria-pressed="true"><span class="radio-disc" aria-hidden="true">♫</span><span class="radio-copy"><strong>РАДИО ДВОРА</strong><small>Нажми для запуска музыки</small></span><span class="radio-equalizer" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></button>
         <div class="coach-chip"><img id="coachAvatar" class="avatar avatar-image" src="/images/avatarteam/avatarteam1.jpg" alt="Аватар тренера"><div class="coach-chip-info"><b id="coachNameLabel">Тренер</b><span id="coachTitleBadge" class="equipped-title-badge" hidden></span><small>Уровень <span id="coachLevel">1</span></small><button id="changeAvatarButton" class="text-button hidden" type="button">Сменить аватар</button></div></div>
       </div>
     </header>
+
+    <section id="accountPanel" class="panel account-panel hidden" aria-labelledby="accountPanelTitle">
+      <div class="section-title"><div><p class="eyebrow">ОБЛАЧНОЕ СОХРАНЕНИЕ</p><h2 id="accountPanelTitle">Аккаунт тренера</h2></div><button id="accountClose" class="back-button" type="button">Закрыть</button></div>
+      <p id="accountStatus" class="muted" aria-live="polite">Можно играть без регистрации. Аккаунт поможет переносить карьеру между устройствами.</p>
+      <div id="accountSignedIn" class="account-signed-in hidden">
+        <p>Выполнен вход: <strong id="accountEmailLabel"></strong></p>
+        <button id="accountSignOut" class="secondary" type="button">Выйти из аккаунта</button>
+      </div>
+      <form id="accountForm" class="account-form">
+        <label for="accountEmail">Электронная почта</label>
+        <input id="accountEmail" type="email" autocomplete="email" maxlength="254" placeholder="name@example.com" required>
+        <label for="accountPassword">Пароль</label>
+        <input id="accountPassword" type="password" autocomplete="current-password" minlength="8" placeholder="Не менее 8 символов" required>
+        <label id="accountConfirmWrap" class="hidden" for="accountPasswordConfirm">Повтори пароль</label>
+        <input id="accountPasswordConfirm" class="hidden" type="password" autocomplete="new-password" minlength="8" placeholder="Повтори пароль">
+        <button id="accountSubmit" class="primary" type="submit">ВОЙТИ</button>
+      </form>
+      <div id="accountActions" class="account-actions">
+        <button id="accountModeLogin" class="text-button" type="button">У меня уже есть аккаунт</button>
+        <button id="accountModeRegister" class="text-button" type="button">Создать аккаунт и сохранить карьеру</button>
+        <button id="accountForgot" class="text-button" type="button">Забыли пароль?</button>
+      </div>
+      <form id="accountNewPasswordForm" class="account-form hidden">
+        <label for="accountNewPassword">Новый пароль</label>
+        <input id="accountNewPassword" type="password" autocomplete="new-password" minlength="8" required>
+        <button class="primary" type="submit">СОХРАНИТЬ НОВЫЙ ПАРОЛЬ</button>
+      </form>
+      <p class="account-footnote">Регистрация не обязательна для игры. Не сообщай пароль другим людям.</p>
+    </section>
 
     <section id="onboarding" class="panel onboarding hidden">
       <p class="eyebrow">ПЕРВЫЙ ВЫХОД НА ПОЛЕ</p>
@@ -81,7 +111,7 @@
           <div class="match-preview-footer"><span>⚽ <b id="nextMatchRoundLabel">Матч по расписанию</b></span><span>📅 <b id="nextMatchDayLabel">День 7</b></span></div>
           <section class="home-roster" aria-label="Состав команды и статистика футболистов">
             <div class="home-roster-heading"><h2>СОСТАВ КОМАНДЫ</h2><span id="homeRosterCount">0 / 10</span><button id="homeRosterFullButton" type="button">Полный состав ›</button></div>
-            <div class="home-roster-columns" aria-hidden="true"><span>ФУТБОЛИСТ</span><span>М</span><span>Г</span><span>А</span><span>ЖК</span><span>КК</span><span>СР. ОЦ.</span></div>
+            <div class="home-roster-columns" aria-hidden="true"><span>ФУТБОЛИСТ</span><span>М</span><span>Г</span><span>А</span><span>СР. ОЦ.</span></div>
             <div id="homeRosterList" class="home-roster-list" aria-live="polite"><p class="home-roster-empty">Состав появится после создания команды.</p></div>
           </section>
         </section>
@@ -132,7 +162,7 @@
           </div>
         </section>
       </div>
-      <footer>Дворовый футбол. Начало · Версия 2.8.20</footer>
+      <footer>Дворовый футбол. Начало · Версия 2.0</footer>
         </div>
       </div>
     </section>

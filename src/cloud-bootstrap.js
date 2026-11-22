@@ -14,9 +14,9 @@
       typeof state !== "undefined"
     ) {
       window.clearInterval(timer);
-      if (state.coachName && state.teamName) {
-        void initializeCloudCareer();
-      }
+      // Always initialize: a fresh browser may have no local career but a
+      // signed-in account can still have a cloud snapshot to restore.
+      void initializeCloudCareer();
       return;
     }
     if (attempts >= 100) window.clearInterval(timer);

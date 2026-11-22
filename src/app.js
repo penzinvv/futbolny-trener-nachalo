@@ -64,6 +64,194 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_uEoHSnOBVXtlJm--cZF_IQ_IRXmG55x
 const cloudClient = window.supabase?.createClient
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
   : null;
+
+// Account controls: guest play remains available; linking a guest preserves its Supabase user ID.
+let accountMode = "login";
+let accountRecoveryMode = false;
+const CLOUD_FORCE_RESTORE_KEY = "football-coach-force-cloud-restore-once";
+const LOCAL_CAREER_BACKUP_KEY = STORAGE_KEY + "-before-account-login";
+
+function setAccountStatus(message, type = "") {
+  const el = $("accountStatus");
+  if (!el) return;
+  el.textContent = message;
+  el.classList.toggle("account-status-error", type === "error");
+  el.classList.toggle("account-status-success", type === "success");
+}
+
+function setAccountMode(mode) {
+  accountMode = mode;
+  accountRecoveryMode = false;
+  $("accountForm")?.classList.remove("hidden");
+  $("accountNewPasswordForm")?.classList.add("hidden");
+  $("accountConfirmWrap")?.classList.toggle("hidden", mode !== "register");
+  $("accountPasswordConfirm")?.classList.toggle("hidden", mode !== "register");
+  $("accountPassword")?.setAttribute("autocomplete", mode === "register" ? "new-password" : "current-password");
+  $("accountPassword")?.setAttribute("placeholder", mode === "register" ? "Не менее 8 символов" : "Твой пароль");
+  $("accountPassword").required = true;
+  $("accountPasswordConfirm").required = mode === "register";
+  $("accountSubmit").textContent = mode === "register" ? "СОЗДАТЬ АККАУНТ" : "ВОЙТИ";
+  $("accountActions")?.classList.remove("hidden");
+  setAccountStatus(mode === "register"
+    ? "Создай аккаунт: текущая гостевая карьера будет привязана к электронной почте."
+    : "Войди, чтобы загрузить карьеру, сохранённую в твоём аккаунте.");
+}
+
+function openAccountPanel() {
+  $("accountPanel")?.classList.remove("hidden");
+  $("accountToggle")?.setAttribute("aria-expanded", "true");
+}
+function closeAccountPanel() {
+  $("accountPanel")?.classList.add("hidden");
+  $("accountToggle")?.setAttribute("aria-expanded", "false");
+}
+
+async function refreshAccountUI(userOverride = null) {
+  let user = userOverride;
+  if (!user && cloudClient) {
+    const { data, error } = await cloudClient.auth.getUser();
+    if (error) console.warn("Не удалось получить статус аккаунта:", error.message);
+    user = data?.user || null;
+  }
+  const signedIn = Boolean(user && user.email && !user.is_anonymous);
+  $("accountForm")?.classList.toggle("hidden", signedIn || accountRecoveryMode);
+  $("accountActions")?.classList.toggle("hidden", signedIn || accountRecoveryMode);
+  $("accountSignedIn")?.classList.toggle("hidden", !signedIn);
+  if (signedIn) {
+    $("accountEmailLabel").textContent = user.email;
+    $("accountToggle").textContent = "АККАУНТ · ВХОД";
+    setAccountStatus("Аккаунт подключён. Прогресс сохраняется в облаке.", "success");
+  } else {
+    $("accountToggle").textContent = "АККАУНТ";
+    if (!accountRecoveryMode) {
+      $("accountForm")?.classList.remove("hidden");
+      $("accountActions")?.classList.remove("hidden");
+    }
+  }
+}
+
+async function initializeAccountControls() {
+  if (!cloudClient) {
+    setAccountStatus("Не удалось загрузить Supabase. Проверь интернет-соединение и попробуй ещё раз.", "error");
+    $("accountSubmit").disabled = true;
+    return;
+  }
+  $("accountToggle")?.addEventListener("click", async () => {
+    if ($( "accountPanel").classList.contains("hidden")) openAccountPanel();
+    else closeAccountPanel();
+    await refreshAccountUI();
+  });
+  $("accountClose")?.addEventListener("click", closeAccountPanel);
+  $("accountModeLogin")?.addEventListener("click", () => setAccountMode("login"));
+  $("accountModeRegister")?.addEventListener("click", () => setAccountMode("register"));
+  $("accountForgot")?.addEventListener("click", async () => {
+    const email = $("accountEmail").value.trim();
+    if (!email) { setAccountStatus("Сначала введи электронную почту.", "error"); $("accountEmail").focus(); return; }
+    try {
+      const { error } = await cloudClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
+      if (error) throw error;
+      setAccountStatus("Если для этой почты существует аккаунт, придёт письмо со ссылкой для сброса пароля. Проверь также папку «Спам».", "success");
+    } catch (error) { setAccountStatus("Не удалось отправить письмо: " + (error.message || "неизвестная ошибка"), "error"); }
+  });
+  $("accountForm")?.addEventListener("submit", async event => {
+    event.preventDefault();
+    const email = $("accountEmail").value.trim();
+    const password = $("accountPassword").value;
+    const button = $("accountSubmit");
+    if (accountMode === "register" && password !== $("accountPasswordConfirm").value) {
+      setAccountStatus("Пароли не совпадают.", "error"); return;
+    }
+    if (password.length < 8) { setAccountStatus("Пароль должен содержать не менее 8 символов.", "error"); return; }
+    button.disabled = true;
+    try {
+      if (accountMode === "register") {
+        const sessionResult = await cloudClient.auth.getSession();
+        if (sessionResult.error) throw sessionResult.error;
+        let user = sessionResult.data.session?.user;
+        if (!user) {
+          const created = await cloudClient.auth.signInAnonymously();
+          if (created.error) throw created.error;
+          user = created.data.user;
+        }
+        if (user?.is_anonymous) {
+          const { data, error } = await cloudClient.auth.updateUser({ email, password });
+          if (error) throw error;
+          setAccountStatus("Данные аккаунта добавлены. Если включено подтверждение почты, открой письмо от Supabase и подтверди адрес. Текущая карьера привязана к этому аккаунту.", "success");
+          await refreshAccountUI(data?.user);
+          if (data?.user?.email && !data.user.is_anonymous) {
+            setAccountStatus("Аккаунт создан, гостевая карьера сохранена за ним.", "success");
+          }
+        } else {
+          const { data, error } = await cloudClient.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin + window.location.pathname } });
+          if (error) throw error;
+          setAccountStatus(data.session ? "Аккаунт создан и выполнен вход." : "Регистрация принята. Проверь почту и подтверди адрес, затем войди в аккаунт.", "success");
+          await refreshAccountUI(data.user);
+        }
+      } else {
+        // Keep a recoverable local copy before switching to an existing account.
+        if (state.coachName && state.teamName) {
+          localStorage.setItem(LOCAL_CAREER_BACKUP_KEY, JSON.stringify({ savedAt: new Date().toISOString(), state }));
+        }
+        const { error } = await cloudClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        sessionStorage.setItem(CLOUD_FORCE_RESTORE_KEY, "1");
+        setAccountStatus("Вход выполнен. Загружаю карьеру из облака…", "success");
+        window.location.reload();
+      }
+    } catch (error) {
+      const message = error?.message || "неизвестная ошибка";
+      setAccountStatus("Не удалось выполнить действие: " + message, "error");
+    } finally { button.disabled = false; }
+  });
+  $("accountSignOut")?.addEventListener("click", async () => {
+    const { error } = await cloudClient.auth.signOut();
+    if (error) { setAccountStatus("Не удалось выйти: " + error.message, "error"); return; }
+    setAccountStatus("Вы вышли из аккаунта. Можно продолжить играть в гостевом режиме.", "success");
+    await refreshAccountUI(null);
+    window.location.reload();
+  });
+  $("accountNewPasswordForm")?.addEventListener("submit", async event => {
+    event.preventDefault();
+    const password = $("accountNewPassword").value;
+    if (password.length < 8) { setAccountStatus("Пароль должен содержать не менее 8 символов.", "error"); return; }
+    try {
+      const { error } = await cloudClient.auth.updateUser({ password });
+      if (error) throw error;
+      accountRecoveryMode = false;
+      $("accountNewPasswordForm").classList.add("hidden");
+      setAccountStatus("Пароль изменён. Теперь можно войти с новым паролем.", "success");
+      await refreshAccountUI();
+    } catch (error) { setAccountStatus("Не удалось изменить пароль: " + (error.message || "неизвестная ошибка"), "error"); }
+  });
+  cloudClient.auth.onAuthStateChange((event, session) => {
+    if (event === "PASSWORD_RECOVERY") {
+      accountRecoveryMode = true;
+      openAccountPanel();
+      $("accountForm")?.classList.add("hidden");
+      $("accountActions")?.classList.add("hidden");
+      $("accountNewPasswordForm")?.classList.remove("hidden");
+      setAccountStatus("Укажи новый пароль для своего аккаунта.");
+    } else if (event === "SIGNED_IN" || event === "USER_UPDATED" || event === "SIGNED_OUT") {
+      void refreshAccountUI(session?.user || null);
+    }
+  });
+  const { data } = await cloudClient.auth.getSession();
+  if (data?.session?.user?.recovery_sent_at || window.location.hash.includes("type=recovery")) {
+    accountRecoveryMode = true;
+    openAccountPanel();
+    $("accountForm")?.classList.add("hidden");
+    $("accountActions")?.classList.add("hidden");
+    $("accountNewPasswordForm")?.classList.remove("hidden");
+    setAccountStatus("Укажи новый пароль для своего аккаунта.");
+  } else {
+    setAccountMode("login");
+    await refreshAccountUI(data?.session?.user || null);
+  }
+}
+
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => { void initializeAccountControls(); });
+else void initializeAccountControls();
+
 let cloudSyncPromise = null;
 let cloudSnapshotReady = false;
 let cloudSnapshotBlocked = false;
@@ -183,9 +371,23 @@ function stableStateString(value) {
 async function performCloudSnapshotInitialization() {
   const response = await cloudSnapshotRequest("GET");
   const snapshot = response.snapshot;
+  const forceCloudRestore = sessionStorage.getItem(CLOUD_FORCE_RESTORE_KEY) === "1";
+  if (forceCloudRestore) sessionStorage.removeItem(CLOUD_FORCE_RESTORE_KEY);
   const hasLocalCareer = Boolean(state.coachName && state.teamName);
   if (!snapshot) {
     cloudSnapshotRevision = 0;
+    // Signing into a different account must never silently upload this browser's
+    // guest career into an empty account. The login handler keeps a local backup.
+    // Registration from guest mode does not set forceCloudRestore, so the current
+    // career can still become the first snapshot for its newly linked account.
+    if (forceCloudRestore && hasLocalCareer) {
+      state = { ...defaultState };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      cloudSnapshotReady = true;
+      setAccountStatus("В этом аккаунте пока нет облачной карьеры. Локальная карьера сохранена в резервной копии и не перенесена автоматически. Можно начать новую карьеру.", "success");
+      if (leagueData) render();
+      return;
+    }
     cloudSnapshotReady = true;
     if (hasLocalCareer) scheduleCloudSnapshotSave();
     return;
@@ -199,58 +401,22 @@ async function performCloudSnapshotInitialization() {
     return;
   }
 
-  if (hasLocalCareer && stableStateString(state) === stableStateString({ ...defaultState, ...cloudState })) {
-    cloudSnapshotRevision = Number(snapshot.revision) || 0;
-    cloudSnapshotReady = true;
-    return;
-  }
+  cloudSnapshotRevision = Number(snapshot.revision) || 0;
 
-  if (!hasLocalCareer) {
-    const restore = confirm("Найдена облачная карьера «" + cloudState.coachName + "» — «" + cloudState.teamName + "». Восстановить её в этом браузере?");
-    if (!restore) {
-      cloudSnapshotBlocked = true;
-      return;
-    }
+  // При явном входе в существующий аккаунт облачная карьера имеет приоритет.
+  // Перед входом локальная карьера сохраняется в отдельной резервной копии.
+  if (forceCloudRestore || !hasLocalCareer) {
     state = { ...defaultState, ...cloudState };
-    cloudSnapshotRevision = Number(snapshot.revision) || 0;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     cloudSnapshotReady = true;
     if (leagueData) render();
     return;
   }
 
-  const restoreCloud = confirm(
-    "Для этой сессии найдена облачная карьера «" + cloudState.coachName + "» — «" + cloudState.teamName + "».\n\n" +
-    "ОК — сохранить текущую локальную карьеру в резервную копию и восстановить облачную.\n" +
-    "Отмена — оставить карьеру из этого браузера."
-  );
-  if (restoreCloud) {
-    try {
-      localStorage.setItem(CLOUD_SNAPSHOT_BACKUP_PREFIX + Date.now(), JSON.stringify(state));
-    } catch (error) {
-      alert("Не удалось создать резервную копию локальной карьеры. Восстановление из облака отменено, локальная карьера сохранена.");
-      cloudSnapshotBlocked = true;
-      return;
-    }
-    state = { ...defaultState, ...cloudState };
-    cloudSnapshotRevision = Number(snapshot.revision) || 0;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    cloudSnapshotReady = true;
-    if (leagueData) render();
-    return;
-  }
-
-  const uploadLocal = confirm(
-    "Оставить локальную карьеру и заменить ею облачную?\n\n" +
-    "Это действие заменит облачный снимок текущей карьерой из этого браузера. Локальное сохранение останется на месте."
-  );
-  if (uploadLocal) {
-    cloudSnapshotRevision = Number(snapshot.revision) || 0;
-    cloudSnapshotReady = true;
+  cloudSnapshotReady = true;
+  if (stableStateString(state) !== stableStateString({ ...defaultState, ...cloudState })) {
+    // Без диалогов подтверждения синхронизируем текущую карьеру из этого браузера в облако.
     scheduleCloudSnapshotSave();
-  } else {
-    cloudSnapshotBlocked = true;
-    alert("Автоматическая синхронизация приостановлена. Локальная карьера сохранена в браузере; облачная версия не изменена.");
   }
 }
 
@@ -331,6 +497,13 @@ async function syncCareerToCloud(bootstrap = false) {
 
 async function performCloudCareerInitialization() {
   try {
+    // On an explicit account switch, restore the account snapshot first; do not
+    // bootstrap a different browser's local guest career into the account API.
+    if (sessionStorage.getItem(CLOUD_FORCE_RESTORE_KEY) === "1") {
+      await initializeCloudSnapshot();
+      if (state.coachName && state.teamName) render();
+      return;
+    }
     const result = await syncCareerToCloud(false);
     if (!result.initialized && state.coachName && state.teamName && leagueData) {
       await syncCareerToCloud(true);
@@ -508,7 +681,8 @@ function renderHomeRoster() {
       const entry=lineup.find(item=>(item.player||item).name===player.name);
       if(!entry)return;
       stats.played++;
-      const rating=Number(entry.rating ?? entry.matchRating ?? entry.averageRating);
+      const ratingEntry=(Array.isArray(match.playerRatings)?match.playerRatings:[]).find(item=>item.playerName===player.name&&item.side===(isHome?"home":"away"));
+      const rating=Number(entry.rating ?? entry.matchRating ?? entry.averageRating ?? ratingEntry?.rating);
       if(Number.isFinite(rating)&&rating>0){stats.ratingTotal+=rating;stats.ratingCount++;}
       if(player.position==="ВР"&&Number(isHome?match.awayScore:match.homeScore)===0)stats.cleanSheets++;
       const events=Array.isArray(match.events)?match.events:Array.isArray(match.timeline)?match.timeline:[];
@@ -527,7 +701,7 @@ function renderHomeRoster() {
     img.onerror=()=>{img.onerror=null;img.src="/images/portretplayers/portret1.jpg";};
     const name=document.createElement("div");name.className="home-roster-name";
     name.append(safeText("b",player.name||("Футболист "+(index+1))),safeText("small",player.position||"—"));identity.append(img,name);row.append(identity);
-    [["М",stats.played],["Г",stats.goals],["А",stats.assists],["ЖК",stats.yellow],["КК",stats.red],["СР. ОЦ.",stats.ratingCount?(stats.ratingTotal/stats.ratingCount).toFixed(2):"—"]].forEach(([label,value])=>{
+    [["М",stats.played],["Г",stats.goals],["А",stats.assists],["СР. ОЦ.",stats.ratingCount?(stats.ratingTotal/stats.ratingCount).toFixed(2):"—"]].forEach(([label,value])=>{
       const cell=document.createElement("span");cell.className="home-roster-stat";cell.setAttribute("data-label",label);cell.textContent=String(value);row.append(cell);
     });
     if(player.position==="ВР"){const clean=document.createElement("span");clean.className="home-roster-clean-sheets";clean.textContent="Сухие матчи: "+stats.cleanSheets;clean.title="Матчи без пропущенных голов";row.append(clean);}
@@ -580,20 +754,29 @@ function render() {
 
 /* Фоновая музыка: случайный порядок без повторов до конца текущего круга.
    Браузеры требуют первого нажатия пользователя перед воспроизведением со звуком. */
-let musicTracks = ["/music/footmusic1.mp3","/music/footmusic2.mp3","/music/footmusic3.mp3","/music/footmusic4.mp3","/music/footmusic5.mp3","/music/footmusic6.mp3","/music/footmusic7.mp3","/music/footmusic8.mp3","/music/footmusic9.mp3","/music/footmusic10.mp3","/music/footmusic11.mp3","/music/footmusic12.mp3"];
+// Список радио хранится рядом с файлами в /music/playlist.json.
+// Чтобы добавить песню, загрузите MP3 в папку /music/ и добавьте имя в playlist.json.
+let musicTracks = Array.from({ length: 20 }, (_, i) => `/music/footmusic${i + 1}.mp3`);
 let musicTracksLoaded = false;
-async function loadMusicTracksFromGitHub() {
+async function loadMusicTracks() {
   if (musicTracksLoaded) return;
   musicTracksLoaded = true;
   try {
-    const response = await fetch("https://api.github.com/repos/penzinvv/futbolny-trener-nachalo/contents/music?ref=main");
-    if (!response.ok) throw new Error("GitHub music listing unavailable");
-    const files = await response.json();
-    const tracks = files.filter(file => file.type === "file" && /\.mp3$/i.test(file.name))
-      .map(file => "/music/" + encodeURIComponent(file.name));
-    if (tracks.length) musicTracks = tracks;
+    const response = await fetch("/music/playlist.json", { cache: "no-cache" });
+    if (!response.ok) throw new Error(`Не удалось загрузить плейлист: HTTP ${response.status}`);
+    const playlist = await response.json();
+    const entries = Array.isArray(playlist) ? playlist : playlist.tracks;
+    if (!Array.isArray(entries)) throw new Error("Неверный формат music/playlist.json");
+    const tracks = entries
+      .filter(name => typeof name === "string" && name.trim())
+      .map(name => name.startsWith("/") ? name : "/music/" + encodeURIComponent(name.trim()))
+      .filter(path => /\.mp3(?:$|[?#])/i.test(path));
+    if (!tracks.length) throw new Error("В плейлисте нет MP3-композиций");
+    musicTracks = [...new Set(tracks)];
+    shuffledTracks = [];
+    currentTrackIndex = -1;
   } catch (error) {
-    console.warn("Не удалось обновить список музыки из GitHub; используется встроенный список.", error);
+    console.warn("Не удалось загрузить music/playlist.json; используется резервный список footmusic1–20.", error);
   }
   renderCoachChronicle();
 }
@@ -624,7 +807,7 @@ function shuffleTracks() {
 
 async function playNextTrack() {
   if (!musicEnabled) return;
-  await loadMusicTracksFromGitHub();
+  await loadMusicTracks();
   if (currentTrackIndex + 1 >= shuffledTracks.length) shuffleTracks();
   currentTrackIndex += 1;
   musicPlayer.src = shuffledTracks[currentTrackIndex];
@@ -824,71 +1007,65 @@ $("setupForm").addEventListener("submit", async (event) => {
 });
 
 
-function onlineRatingEntry(item, place, type) {
-  const row=document.createElement("article");row.className="online-rating-entry";
+function onlineRatingEntry(item, place) {
+  const row=document.createElement("article");row.className="online-rating-entry online-rating-entry-unified";
   const rank=safeText("span",String(place),"online-rating-place");row.append(rank);
   const identity=document.createElement("div");identity.className="online-rating-identity";
   const coachLine=document.createElement("div");coachLine.className="online-rating-coach-line";
-  const avatar=document.createElement("img");avatar.className="online-rating-avatar";avatar.src=item.avatar_path||avatarPath(item.avatar_index||1);avatar.alt="Аватар тренера";avatar.loading="lazy";
-  coachLine.append(avatar,safeText("b",item.coach_name||"Тренер","online-rating-coach-name"));
+  const avatarRarity=validShopRarity(item.avatar_rarity)||rarityFromShopPath(item.avatar_path,"avatars")||"uncommon";
+  const avatarWrap=document.createElement("span");avatarWrap.className="online-rating-art online-rating-avatar-art rarity-"+avatarRarity;
+  const avatar=document.createElement("img");avatar.className="online-rating-avatar";avatar.src=item.avatar_path||avatarPath(item.avatar_index||1);avatar.alt="Аватар тренера";avatar.loading="lazy";avatar.onerror=()=>{avatar.src=avatarPath(item.avatar_index||1)};
+  avatarWrap.append(avatar);
+  coachLine.append(avatarWrap,safeText("b",item.coach_name||"Тренер","online-rating-coach-name"));
   const teamLine=document.createElement("div");teamLine.className="online-rating-team-line";
-  const logo=document.createElement("img");logo.className="online-rating-team-logo";logo.src=item.team_logo_path||teamLogoPath(item.team_logo_index||1);logo.alt="Эмблема команды";logo.loading="lazy";
-  teamLine.append(logo,safeText("span",item.team_name||"Команда"));
-  identity.append(coachLine);
-  if(item.coach_title)identity.append(safeText("span",item.coach_title,"equipped-title-badge rarity-"+(item.coach_title_rarity||"uncommon")));
-  identity.append(teamLine);
-  if(item.team_title)identity.append(safeText("span",item.team_title,"equipped-title-badge rarity-"+(item.team_title_rarity||"uncommon")));
-  if(type==="general")identity.append(safeText("small","Сезон "+Math.max(1,Number(item.season_number)||1),"online-rating-season"));
+  const logoRarity=validShopRarity(item.team_logo_rarity)||rarityFromShopPath(item.team_logo_path,"logos")||"uncommon";
+  const logoWrap=document.createElement("span");logoWrap.className="online-rating-art online-rating-logo-art rarity-"+logoRarity;
+  const logo=document.createElement("img");logo.className="online-rating-team-logo";logo.src=item.team_logo_path||teamLogoPath(item.team_logo_index||1);logo.alt="Эмблема команды";logo.loading="lazy";logo.onerror=()=>{logo.src=teamLogoPath(item.team_logo_index||1)};
+  logoWrap.append(logo);teamLine.append(logoWrap,safeText("span",item.team_name||"Команда"));
+  identity.append(coachLine,teamLine);
+  if(item.coach_title)identity.append(safeText("span",item.coach_title,"equipped-title-badge rarity-"+(validShopRarity(item.coach_title_rarity)||"uncommon")));
+  if(item.team_title)identity.append(safeText("span",item.team_title,"equipped-title-badge rarity-"+(validShopRarity(item.team_title_rarity)||"uncommon")));
   const awards=Array.isArray(item.awards)?item.awards:[];
-  if(awards.length){
-    const shelf=document.createElement("div");shelf.className="online-rating-awards";shelf.setAttribute("aria-label","Награды тренера");
-    awards.slice(0,80).forEach(award=>{if(!award||!award.icon)return;const icon=awardIconPath(award.icon);icon.className="online-rating-award-icon";icon.alt=award.label||"Награда";icon.title=award.label||"Награда";shelf.append(icon)});
-    if(shelf.childElementCount)identity.append(shelf);
-  }
-  const scoreBox=document.createElement("div");scoreBox.className="online-rating-score";
-  const score=type==="xp"?Number(item.xp)||0:Number(item.general_rating)||0;
-  scoreBox.append(safeText("b",score.toLocaleString("ru-RU")),safeText("small",type==="xp"?"XP":"ОЧКОВ"));
-  row.append(identity,scoreBox);return row;
+  if(awards.length){const shelf=document.createElement("div");shelf.className="online-rating-awards";shelf.setAttribute("aria-label","Награды тренера");awards.slice(0,80).forEach(award=>{if(!award||!award.icon)return;const icon=awardIconPath(award.icon);icon.className="online-rating-award-icon";icon.alt=award.label||"Награда";icon.title=award.label||"Награда";shelf.append(icon)});if(shelf.childElementCount)identity.append(shelf)}
+  const metrics=document.createElement("div");metrics.className="online-rating-metrics";
+  const xp=Number(item.xp)||0, permanent=Number(item.general_rating)||0, season=Number(item.season_rating)||0, respect=Number(item.respect)||0;
+  [["ОПЫТ АККАУНТА",xp.toLocaleString("ru-RU")+" XP"],["ПОСТОЯННЫЙ РЕЙТИНГ",permanent.toLocaleString("ru-RU")],["СЕЗОННЫЙ РЕЙТИНГ",season.toLocaleString("ru-RU")],["УВАЖЕНИЕ",respect.toLocaleString("ru-RU",{maximumFractionDigits:2})]].forEach(([label,value])=>{const metric=document.createElement("div");metric.className="online-rating-metric";metric.append(safeText("small",label),safeText("b",value));metrics.append(metric)});
+  row.append(identity,metrics);return row;
 }
+function validShopRarity(value){return ["common","uncommon","rare","epic","legendary"].includes(String(value||""))?String(value):null}
+function rarityFromShopPath(path,kind){const match=String(path||"").match(new RegExp("/assets/shop/"+kind+"/(common|uncommon|rare|epic|legendary)/"));return match?match[1]:null}
 async function fetchOnlineRatings() {
   return await cloudRequest("POST",{action:"get-online-ratings"});
 }
 function renderOnlineRatings() {
-  const wrap=document.createElement("div");wrap.className="online-ratings-page";
-  const intro=document.createElement("p");intro.className="muted";intro.textContent="Здесь сравниваются опыт тренера и общий рейтинг. Кнопка отправки обновляет оба показателя за один раз.";
+  const wrap=document.createElement("div");wrap.className="online-ratings-page online-ratings-page-unified";
+  const intro=document.createElement("p");intro.className="muted";intro.textContent="Единый рейтинг тренеров по опыту аккаунта. Рядом показаны постоянный и сезонный рейтинг, а также уважение.";
   const actions=document.createElement("div");actions.className="online-ratings-actions";
   const send=document.createElement("button");send.type="button";send.className="online-submit-button";send.textContent="ОТПРАВИТЬ РЕЗУЛЬТАТ";
   const recordsButton=document.createElement("button");recordsButton.type="button";recordsButton.className="online-submit-button";recordsButton.textContent="ОНЛАЙН РЕКОРДЫ";
   const status=safeText("p","","online-rating-status");status.setAttribute("role","status");status.setAttribute("aria-live","polite");
-  const grid=document.createElement("div");grid.className="online-ratings-grid";
-  const lists={};const statuses={};
-  const configs=[
-    {type:"xp",title:"ОПЫТ ТРЕНЕРА",description:"Сравнение накопленного опыта аккаунта."},
-    {type:"general",title:"ОБЩИЙ РЕЙТИНГ ТРЕНЕРА",description:"Накопленные очки за всю карьеру. Сезон указывается отдельно."}
-  ];
-  configs.forEach(config=>{
-    const panel=document.createElement("section");panel.className="online-rating-panel";
-    const heading=document.createElement("div");heading.className="online-rating-heading";
-    heading.append(safeText("h2",config.title),safeText("p",config.description,"muted"));
-    const list=document.createElement("div");list.className="online-rating-list";
-    list.append(placeholder("Загружаю онлайн-таблицу…"));
-    panel.append(heading,list);grid.append(panel);lists[config.type]=list;statuses[config.type]=status;
-  });
+  const grid=document.createElement("div");grid.className="online-ratings-grid online-ratings-grid-unified";
+  const panel=document.createElement("section");panel.className="online-rating-panel online-rating-panel-unified";
+  const heading=document.createElement("div");heading.className="online-rating-heading";heading.append(safeText("h2","ОПЫТ АККАУНТА — РЕЙТИНГ ТРЕНЕРОВ"),safeText("p","Сортировка по опыту аккаунта: от большего к меньшему.","muted"));
+  const list=document.createElement("div");list.className="online-rating-list online-rating-list-unified";list.append(placeholder("Загружаю онлайн-рейтинг…"));
+  const lists={unified:list};panel.append(heading,list);grid.append(panel);
   send.addEventListener("click",()=>submitBothOnlineRatings(send,status,lists));
   recordsButton.addEventListener("click",()=>openPage("onlineRecords"));
-  actions.append(send,recordsButton);
-  wrap.append(intro,actions,status,grid);
-  void loadOnlineRatings(lists,statuses);
-  return wrap;
+  actions.append(send,recordsButton);wrap.append(intro,actions,status,grid);
+  void loadOnlineRatings(lists,{unified:status});return wrap;
 }
 async function loadOnlineRatings(lists,statuses={}) {
   try {
     const result=await fetchOnlineRatings();
-    [["xp",result.xpRatings||[]],["general",result.generalRatings||[]]].forEach(([type,rows])=>{
-      const list=lists[type];if(!list)return;list.replaceChildren();
-      if(!rows.length){list.append(placeholder("Пока никто не отправил результат. Будь первым!"));return;}
-      rows.forEach((item,index)=>list.append(onlineRatingEntry(item,index+1,type)));
-    });
+    const list=lists.unified;
+    if(list){
+      list.replaceChildren();
+      const rows=(result.xpRatings||result.ratings||[]).slice().sort((a,b)=>(Number(b.xp)||0)-(Number(a.xp)||0));
+      if(!rows.length)list.append(placeholder("Пока никто не отправил результат. Будь первым!"));
+      else rows.forEach((item,index)=>list.append(onlineRatingEntry(item,index+1)));
+    } else {
+      [["xp",result.xpRatings||[]],["general",result.generalRatings||[]]].forEach(([type,rows])=>{const target=lists[type];if(!target)return;target.replaceChildren();if(!rows.length){target.append(placeholder("Пока никто не отправил результат. Будь первым!"));return;}rows.forEach((item,index)=>target.append(onlineRatingEntry(item,index+1)))});
+    }
   } catch(error) {
     Object.values(lists).forEach(list=>{list.replaceChildren(placeholder("Не удалось загрузить онлайн-рейтинг. Попробуй обновить страницу."))});
     Object.values(statuses).forEach(status=>status.textContent="Ошибка загрузки: "+(error?.message||"неизвестная ошибка"));
@@ -910,6 +1087,8 @@ async function submitOnlineRating(type,button,status,lists) {
       avatarIndex:Math.max(1,Math.min(6,Math.floor(Number(state.avatarIndex)||1))),
       teamLogoIndex:Math.max(1,Math.min(6,Math.floor(Number(state.teamLogoIndex)||1))),
       avatarPath:displayedAvatarPath(),teamLogoPath:displayedTeamLogoPath(),
+      avatarRarity:getEquippedShopItem("avatar")?.rarity||rarityFromShopPath(displayedAvatarPath(),"avatars")||"uncommon",teamLogoRarity:getEquippedShopItem("logo")?.rarity||rarityFromShopPath(displayedTeamLogoPath(),"logos")||"uncommon",
+      seasonRating:Math.max(0,Math.floor(Number(state.seasonRating)||0)),respect:Math.max(0,Math.round((Number(updateCoachRespect())||0)*100)/100),
       coachTitle:getEquippedCoachTitle()?.name||"",coachTitleRarity:getEquippedCoachTitle()?.rarity||null,
       teamTitle:getEquippedTeamTitle()?.name||"",teamTitleRarity:getEquippedTeamTitle()?.rarity||null,
       awards
@@ -1014,7 +1193,7 @@ async function submitBothOnlineRatings(button,status,lists) {
   const team=getUserTeam();if(!team){status.textContent="Не удалось определить команду тренера.";return;}
   button.disabled=true;button.textContent="ОТПРАВКА…";status.textContent="";
   try{ensureCareerIdentity();const awards=careerAwardsFor("coach",team.id).map(item=>({icon:item.icon,label:item.label||"Награда",caption:item.caption||"",season:Number(item.season)||Number(state.seasonNumber)||1,round:Number(item.round)||0})).filter(item=>/^[a-z0-9_-]{1,80}$/i.test(String(item.icon||""))).slice(0,80);
-    const coachTitle=getEquippedCoachTitle(),teamTitle=getEquippedTeamTitle();const common={coachName:state.coachName,teamName:state.teamName,seasonNumber:Math.max(1,Math.floor(Number(state.seasonNumber)||1)),avatarIndex:Math.max(1,Math.min(6,Math.floor(Number(state.avatarIndex)||1))),teamLogoIndex:Math.max(1,Math.min(6,Math.floor(Number(state.teamLogoIndex)||1))),avatarPath:displayedAvatarPath(),teamLogoPath:displayedTeamLogoPath(),coachTitle:coachTitle?.name||"",coachTitleRarity:coachTitle?.rarity||null,teamTitle:teamTitle?.name||"",teamTitleRarity:teamTitle?.rarity||null,awards};
+    const coachTitle=getEquippedCoachTitle(),teamTitle=getEquippedTeamTitle();const common={coachName:state.coachName,teamName:state.teamName,seasonNumber:Math.max(1,Math.floor(Number(state.seasonNumber)||1)),avatarIndex:Math.max(1,Math.min(6,Math.floor(Number(state.avatarIndex)||1))),teamLogoIndex:Math.max(1,Math.min(6,Math.floor(Number(state.teamLogoIndex)||1))),avatarPath:displayedAvatarPath(),teamLogoPath:displayedTeamLogoPath(),avatarRarity:getEquippedShopItem("avatar")?.rarity||rarityFromShopPath(displayedAvatarPath(),"avatars")||"uncommon",teamLogoRarity:getEquippedShopItem("logo")?.rarity||rarityFromShopPath(displayedTeamLogoPath(),"logos")||"uncommon",seasonRating:Math.max(0,Math.floor(Number(state.seasonRating)||0)),respect:Math.max(0,Math.round((Number(updateCoachRespect())||0)*100)/100),coachTitle:coachTitle?.name||"",coachTitleRarity:coachTitle?.rarity||null,teamTitle:teamTitle?.name||"",teamTitleRarity:teamTitle?.rarity||null,awards};
     await cloudRequest("POST",{action:"submit-online-rating",ratingType:"both",...common,xp:Math.max(0,Math.floor(Number(state.xp)||0)),generalRating:Math.max(0,Math.floor(Number(state.permanentRating)||0))});
     await loadOnlineRatings(lists,{});status.textContent="Опыт и общий рейтинг отправлены."; 
   }catch(error){status.textContent="Не удалось отправить оба показателя: "+(error?.message||"проверь подключение и попробуй снова.");}
@@ -1041,7 +1220,9 @@ function renderFaqPage(){
  return wrap;
 }
 const SHOP_RARITIES=[{key:"uncommon",label:"Необычные",price:7000},{key:"rare",label:"Редкие",price:10000},{key:"epic",label:"Эпические",price:15000},{key:"legendary",label:"Легендарные",price:23000}];
-const SHOP_ITEM_COUNTS={uncommon:{avatar:6,logo:5},rare:{avatar:4,logo:5},epic:{avatar:6,logo:5},legendary:{avatar:6,logo:5}};
+// Поддерживаем до 100 последовательных изображений каждого типа в каждой редкости.
+// Отсутствующие файлы автоматически скрываются в магазине, поэтому можно добавлять новые JPG без правки кода.
+const SHOP_ITEM_COUNTS={uncommon:{avatar:100,logo:100},rare:{avatar:100,logo:100},epic:{avatar:100,logo:100},legendary:{avatar:100,logo:100}};
 const SHOP_TITLE_RARITIES=[
  {key:"uncommon",label:"Необычные",price:2500},
  {key:"rare",label:"Редкие",price:5000},
@@ -1096,7 +1277,7 @@ function renderShopPage(){
   SHOP_CATALOG.filter(x=>x.kind===kind&&x.rarity===rarity).forEach(item=>{
    const card=document.createElement("article");card.className="shop-item-card rarity-"+item.rarity+(item.kind==="coachTitle"||item.kind==="teamTitle"?" shop-title-card":"");
    const art=document.createElement("div");art.className="shop-item-art"+(item.kind==="coachTitle"||item.kind==="teamTitle"?" shop-title-art":"");
-   if(item.image){const img=document.createElement("img");img.src=item.image;img.alt=item.name;img.loading="lazy";img.decoding="async";img.onerror=()=>{img.remove();const f=document.createElement("span");f.className="shop-image-fallback";f.textContent="Изображение ожидает загрузки";art.append(f)};art.append(img)}
+   if(item.image){const img=document.createElement("img");img.src=item.image;img.alt=item.name;img.loading="lazy";img.decoding="async";img.onerror=()=>{card.remove()};art.append(img)}
    else{const symbol=document.createElement("span");symbol.className="shop-title-symbol";symbol.textContent=item.kind==="coachTitle"?"★":"⚽";const titlePreview=document.createElement("strong");titlePreview.className="shop-title-preview";titlePreview.textContent=item.name;art.append(symbol,titlePreview)}
    const title=safeText("h3",item.name,"shop-item-title"),meta=safeText("p",item.rarityLabel,"shop-item-rarity"),price=safeText("p",item.price.toLocaleString("ru-RU")+" монет","shop-item-price");
    const action=document.createElement("button");action.type="button";action.className="shop-item-action";
@@ -1158,10 +1339,19 @@ function renderDeveloperPage(){
  communityLink.textContent="t.me/dosplayoff";
  communityLink.style.color="var(--accent, #8bd3ff)";
  community.append(communityLink);
+ const browserGame=document.createElement("p");
+ browserGame.append(document.createTextNode("Играть в браузере: "));
+ const browserGameLink=document.createElement("a");
+ browserGameLink.href="https://streetfootballstart.ru/";
+ browserGameLink.target="_blank";
+ browserGameLink.rel="noopener noreferrer";
+ browserGameLink.textContent="streetfootballstart.ru";
+ browserGameLink.style.color="var(--accent, #8bd3ff)";
+ browserGame.append(browserGameLink);
  const warning=document.createElement("p");warning.className="muted";warning.textContent="Здесь можно начать новую карьеру. Сброс затронет только вашу карьеру и её облачное сохранение; публичные рейтинги, сообщения чата и данные других игроков останутся нетронутыми.";
  const reset=document.createElement("button");reset.type="button";reset.id="resetCareerButton";reset.className="reset-career-button";reset.textContent="НАЧАТЬ КАРЬЕРУ С НУЛЯ";
  reset.addEventListener("click",()=>void resetCareerFromDeveloper(reset));
- wrap.append(p,community,warning,reset);return wrap
+ wrap.append(p,community,browserGame,warning,reset);return wrap
 }
 
 function renderCupPage(){
@@ -2462,7 +2652,53 @@ function applyNpcHalftimeSubstitutions(session,home,away){
  });
  return made;
 }
-function autoAdvanceOfficialMatch(session,home,away){if(session.autoPlaying||session.finished||session.halfTime)return;session.autoPlaying=true;const step=()=>{if(state.officialMatchSession!==session||session.finished||session.halfTime){session.autoPlaying=false;saveState();if(!document.getElementById("pageView")?.classList.contains("hidden"))openPage("match");return}if(session.minute===0)session.events.push({minute:0,type:"play",text:"Судья даёт стартовый свисток. Начинается матч."});session.minute++;applyMatchMinuteFatigue(session);session.events.push(createMatchEvent(session,home,away,session.minute));if(session.minute===20){session.halfTime=true;applyNpcHalftimeSubstitutions(session,home,away);session.events.push({minute:20,type:"halftime",text:"Свисток на перерыв. NPC-тренеры автоматически оценили состояние игроков; ты можешь сделать до трёх замен своей команды."});session.autoPlaying=false}if(session.minute>=40){session.events.push({minute:40,type:"fulltime",text:"Финальный свисток! Итоговый счёт "+session.score.home+":"+session.score.away+"."});session.autoPlaying=false;applyOfficialMatchResult(session,home,away);return}state.officialMatchSession=session;saveState();openPage("match");if(session.autoPlaying)setTimeout(step,7500)};setTimeout(step,400)}
+function autoAdvanceOfficialMatch(session,home,away){
+ if(session.autoPlaying||session.finished||session.halfTime)return;
+ session.autoPlaying=true;
+ if(!Number.isFinite(Number(session.nextTickAt))||Number(session.nextTickAt)<=0)session.nextTickAt=Date.now()+400;
+ const step=()=>{
+  if(state.officialMatchSession!==session||session.finished||session.halfTime){
+   session.autoPlaying=false;session.nextTickAt=null;saveState();
+   if(!document.getElementById("pageView")?.classList.contains("hidden")&&document.getElementById("pageTitle")?.textContent==="Матч")openPage("match");
+   return;
+  }
+  if(session.minute===0)session.events.push({minute:0,type:"play",text:"Судья даёт стартовый свисток. Начинается матч."});
+  session.minute++;
+  applyMatchMinuteFatigue(session);
+  session.events.push(createMatchEvent(session,home,away,session.minute));
+  if(session.minute===20){
+   session.halfTime=true;session.autoPlaying=false;session.nextTickAt=null;
+   applyNpcHalftimeSubstitutions(session,home,away);
+   session.events.push({minute:20,type:"halftime",text:"Свисток на перерыв. NPC-тренеры автоматически оценили состояние игроков; ты можешь сделать до трёх замен своей команды."});
+  }
+  if(session.minute>=40){
+   session.events.push({minute:40,type:"fulltime",text:"Финальный свисток! Итоговый счёт "+session.score.home+":"+session.score.away+"."});
+   session.autoPlaying=false;session.nextTickAt=null;applyOfficialMatchResult(session,home,away);return;
+  }
+  state.officialMatchSession=session;
+  if(session.autoPlaying)session.nextTickAt=(Number(session.nextTickAt)||Date.now())+7500;
+  saveState();
+  if(!document.getElementById("pageView")?.classList.contains("hidden")&&document.getElementById("pageTitle")?.textContent==="Матч")openPage("match");
+  if(session.autoPlaying)setTimeout(step,Math.max(0,Number(session.nextTickAt)-Date.now()));
+ };
+ setTimeout(step,Math.max(0,Number(session.nextTickAt)-Date.now()));
+}
+function resumeSavedOfficialMatch(){
+ const tryResume=()=>{
+  const session=state.officialMatchSession;
+  if(!session||session.finished||session.halfTime||!session.autoPlaying)return true;
+  if(!leagueData)return false;
+  const home=getTeamForMatch(session.homeId),away=getTeamForMatch(session.awayId);
+  if(!home||!away)return false;
+  session.autoPlaying=false;
+  autoAdvanceOfficialMatch(session,home,away);
+  return true;
+ };
+ if(!tryResume()){
+  let attempts=0;
+  const timer=setInterval(()=>{attempts++;if(tryResume()||attempts>=40)clearInterval(timer);},250);
+ }
+}
 function calculateOfficialMatchRelations(session,home,away,result){
  const userTeam=getUserTeam();
  if(!userTeam)return {changes:[],ratings:[]};
@@ -2520,7 +2756,8 @@ function applyOfficialMatchResult(session,home,away){
  state.careerHistory.officialMatches.push({season:result.season,round:result.round,day:result.day,at:Date.now(),homeId:home.id,awayId:away.id,homeScore:result.homeScore,awayScore:result.awayScore,goalsFor:home.id===getUserTeam()?.id?result.homeScore:result.awayScore,goalsAgainst:home.id===getUserTeam()?.id?result.awayScore:result.homeScore,result:((home.id===getUserTeam()?.id?result.homeScore-result.awayScore:result.awayScore-result.homeScore)>0)?"W":(result.homeScore===result.awayScore?"D":"L"),events:result.events,substitutions:result.substitutions});
  awardOfficialMatchRating(result,fixture);
  updateCoachRespect();
- state.officialMatchSession=null;saveState();render();openPage("matchSummary");
+ const shouldShowSummary=!document.getElementById("pageView")?.classList.contains("hidden")&&document.getElementById("pageTitle")?.textContent==="Матч";
+ state.officialMatchSession=null;saveState();render();if(shouldShowSummary)openPage("matchSummary");
 }
 function buildPostMatchSpectatorNotes(session,home,away){
  const crowd=[
@@ -2981,6 +3218,7 @@ function renderTraining() {
 
 if (!state.coachName || !state.teamName) showSetup();
 else { $("onboarding").classList.add("hidden"); render(); }
+resumeSavedOfficialMatch();
 if (state.gameDayStartedAt) { updateGameDayTimerUI(); gameDayTimerInterval=setInterval(updateGameDayTimerUI,250); }
 if (leagueData) initializeCloudCareer();
 else {
