@@ -1028,8 +1028,8 @@ function onlineRatingEntry(item, place) {
   const awards=Array.isArray(item.awards)?item.awards:[];
   if(awards.length){const shelf=document.createElement("div");shelf.className="online-rating-awards";shelf.setAttribute("aria-label","Награды тренера");awards.slice(0,80).forEach(award=>{if(!award||!award.icon)return;const icon=awardIconPath(award.icon);icon.className="online-rating-award-icon";icon.alt=award.label||"Награда";icon.title=award.label||"Награда";shelf.append(icon)});if(shelf.childElementCount)identity.append(shelf)}
   const metrics=document.createElement("div");metrics.className="online-rating-metrics";
-  const xp=Number(item.xp)||0, permanent=Number(item.general_rating)||0, season=Number(item.season_rating)||0, respect=Number(item.respect)||0;
-  [["ОПЫТ АККАУНТА",xp.toLocaleString("ru-RU")+" XP"],["ПОСТОЯННЫЙ РЕЙТИНГ",permanent.toLocaleString("ru-RU")],["СЕЗОННЫЙ РЕЙТИНГ",season.toLocaleString("ru-RU")],["УВАЖЕНИЕ",respect.toLocaleString("ru-RU",{maximumFractionDigits:2})]].forEach(([label,value])=>{const metric=document.createElement("div");metric.className="online-rating-metric";metric.append(safeText("small",label),safeText("b",value));metrics.append(metric)});
+  const xp=Number(item.xp)||0, permanent=Number(item.general_rating)||0;
+  [["ОПЫТ АККАУНТА",xp.toLocaleString("ru-RU")+" XP"],["ПОСТОЯННЫЙ РЕЙТИНГ",permanent.toLocaleString("ru-RU")]].forEach(([label,value])=>{const metric=document.createElement("div");metric.className="online-rating-metric";metric.append(safeText("small",label),safeText("b",value));metrics.append(metric)});
   row.append(identity,metrics);return row;
 }
 function validShopRarity(value){return ["common","uncommon","rare","epic","legendary"].includes(String(value||""))?String(value):null}
@@ -1039,7 +1039,7 @@ async function fetchOnlineRatings() {
 }
 function renderOnlineRatings() {
   const wrap=document.createElement("div");wrap.className="online-ratings-page online-ratings-page-unified";
-  const intro=document.createElement("p");intro.className="muted";intro.textContent="Единый рейтинг тренеров по опыту аккаунта. Рядом показаны постоянный и сезонный рейтинг, а также уважение.";
+  const intro=document.createElement("p");intro.className="muted";intro.textContent="Единый рейтинг тренеров по опыту аккаунта. В таблице показаны опыт аккаунта и постоянный рейтинг.";
   const actions=document.createElement("div");actions.className="online-ratings-actions";
   const send=document.createElement("button");send.type="button";send.className="online-submit-button";send.textContent="ОТПРАВИТЬ РЕЗУЛЬТАТ";
   const recordsButton=document.createElement("button");recordsButton.type="button";recordsButton.className="online-submit-button";recordsButton.textContent="ОНЛАЙН РЕКОРДЫ";
