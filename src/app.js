@@ -2188,6 +2188,17 @@ function resolveSpecialMatchWinner(home,away,homeScore,awayScore,seed){
  while(h===a){if(rand()<.5)h++;else a++}
  return h>a?home:away;
 }
+function buildPlayedCupPlayerStats(result){
+ const stats=[];
+ [["home",result.homeId,result.homeName,result.homeLineup||[]],["away",result.awayId,result.awayName,result.awayLineup||[]]].forEach(([side,teamId,teamName,lineup])=>{
+  lineup.forEach(entry=>{const player=entry.player||entry,id=String(player.careerId||player.id||player.name);if(!stats.some(x=>x.teamId===teamId&&x.playerId===id))stats.push({teamId,teamName,playerId:id,playerName:player.name,goals:0,assists:0,appearances:1})});
+  (result.events||[]).filter(event=>event.type==="goal"&&getEventTeamSide(event)===side).forEach(event=>{
+   const scorer=stats.find(x=>x.teamId===teamId&&x.playerName===event.scorer);if(scorer)scorer.goals++;
+   const assist=stats.find(x=>x.teamId===teamId&&x.playerName===event.assist);if(assist)assist.assists++;
+  });
+ });
+ return stats;
+}
 function simulateCupFriendlyRound(season,stage,excluded){
  state.cupFriendlyResults=Array.isArray(state.cupFriendlyResults)?state.cupFriendlyResults:[];
  for(let i=0;i<excluded.length;i+=2){const home=excluded[i],away=excluded[i+1];if(!home||!away)continue;const key=season+":"+stage+":"+home.id+":"+away.id;if(state.cupFriendlyResults.some(x=>x.key===key))continue;if(queuePlayableSpecialMatch("cup-friendly",{season,day:Number(state.gameDay)||1,stage,key,title:"Товарищеский матч перед кубковым этапом"},home,away))continue;const rand=seededCupRandom("friendly:"+key);state.cupFriendlyResults.push({key,season,stage,day:Number(state.gameDay)||1,homeId:home.id,awayId:away.id,homeName:matchTeamLabel(home),awayName:matchTeamLabel(away),homeScore:Math.floor(rand()*4),awayScore:Math.floor(rand()*4),friendly:true,matchType:"cup-friendly"})}
@@ -2910,7 +2921,7 @@ function applyOfficialMatchResult(session,home,away){
   if(type==="cup"){
    state.cupResults=state.cupResults&&typeof state.cupResults==="object"?state.cupResults:{};
    const cup=state.cupResults[result.season]||(state.cupResults[result.season]={matches:[],championId:null,championName:null});
-   const played={...result,bracketIndex:Number(special.matchIndex)||0,winnerId:result.winnerId,winnerName:result.winnerName,playerStats:[]};
+   const played={...result,bracketIndex:Number(special.matchIndex)||0,winnerId:result.winnerId,winnerName:result.winnerName,playerStats:buildPlayedCupPlayerStats(result)};
    cup.matches.push(played);
    const stageName=result.stage==="quarterfinals"?"Четвертьфинал":result.stage==="semifinals"?"Полуфинал":"Финал";
    publishCoachEventOnce("cup-result:"+result.season+":"+result.stage+":"+played.bracketIndex+":"+getUserTeam()?.id,"news","Кубок «ДОСТАТОК»: "+stageName,result.homeName+" "+result.homeScore+":"+result.awayScore+" "+result.awayName+(result.penalties?"; пенальти "+result.penalties.home+":"+result.penalties.away:"")+".",{priority:"high",important:true});
@@ -2966,7 +2977,7 @@ function renderMatchSummaryPage(){
  header.append(safeText("p","СЕЗОН "+result.season+" · "+((result.matchType||"league")==="league"?"ТУР "+result.round:({cup:"КУБОК «ДОСТАТОК»",playoff:"СТЫКОВОЙ МАТЧ","cup-friendly":"ТОВАРИЩЕСКИЙ МАТЧ",friendly:"ТОВАРИЩЕСКИЙ МАТЧ"}[result.matchType]||"МАТЧ"))+" · ДЕНЬ "+result.day,"eyebrow"));
  const scoreline=document.createElement("div");scoreline.className="match-summary-scoreline";
  const side=(team,score)=>{const el=document.createElement("div");el.className="match-summary-team";const src=teamLogoSource(team);if(src){const img=document.createElement("img");img.src=src;img.alt="";img.className="tournament-team-logo";img.onerror=()=>img.remove();el.append(img)}el.append(safeText("b",matchTeamLabel(team)),safeText("strong",String(score)));return el};
- scoreline.append(side(home,result.homeScore),safeText("span","—","match-summary-divider"),side(away,result.awayScore));header.append(scoreline,safeText("p",result.homeScore>result.awayScore?matchTeamLabel(home)+" победили":result.homeScore<result.awayScore?matchTeamLabel(away)+" победили":"Ничья","match-summary-outcome"));
+ scoreline.append(side(home,result.homeScore),safeText("span","—","match-summary-divider"),side(away,result.awayScore));header.append(scoreline,safeText("p",result.winnerName?"Победитель: "+result.winnerName+(result.penalties?" · пенальти "+result.penalties.home+":"+result.penalties.away:""):result.homeScore>result.awayScore?matchTeamLabel(home)+" победили":result.homeScore<result.awayScore?matchTeamLabel(away)+" победили":"Ничья","match-summary-outcome"));
  const goals=(result.events||[]).filter(e=>e.type==="goal");
  const goalsPanel=document.createElement("section");goalsPanel.className="panel match-summary-panel";goalsPanel.append(safeText("h2","Голы и ключевые моменты"));
  if(!goals.length)goalsPanel.append(safeText("p","Встреча завершилась без голов.","muted"));
