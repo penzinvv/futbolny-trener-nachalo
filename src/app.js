@@ -3407,6 +3407,7 @@ function renderTraining() {
 if (!state.coachName || !state.teamName) showSetup();
 else { $("onboarding").classList.add("hidden"); render(); }
 resumeSavedOfficialMatch();
+if(state.pendingSpecialMatch&&!state.officialMatchSession)setTimeout(()=>openPage("match"),100);
 if (state.gameDayStartedAt) { updateGameDayTimerUI(); gameDayTimerInterval=setInterval(updateGameDayTimerUI,250); }
 if (leagueData) initializeCloudCareer();
 else {
