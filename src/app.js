@@ -17,7 +17,7 @@ let gameDayTimerInterval = null;
 let leagueData = null;
 let resolveLeagueDataReady;
 const leagueDataReady = new Promise(resolve => { resolveLeagueDataReady = resolve; });
-fetch("/data/league.json").then(r => { if (!r.ok) throw new Error("Не удалось загрузить данные лиги"); return r.json(); }).then(data => { leagueData = data; resolveLeagueDataReady(data); simulateScheduledLeagueResultsForDay(Number(state.gameDay)||1); if(END_SEASON_FRIENDLIES[Number(state.gameDay)])simulateEndSeasonFriendlyDay(Number(state.gameDay)); deliverScheduledCoachMail(Number(state.gameDay)||1); saveState(); if (state.coachName && state.teamName) render(); setTimeout(showNextGameEventPopup,120); if (!$("pageView")?.classList.contains("hidden") && $("pageTitle")?.textContent === "Тренировка") openPage("training"); }).catch(err => { resolveLeagueDataReady(null); console.error(err); });
+Promise.all([fetch("/data/league.json"), fetch("/data/player-database.json")]).then(async ([leagueResponse, playerDatabaseResponse]) => { if (!leagueResponse.ok || !playerDatabaseResponse.ok) throw new Error("Не удалось загрузить данные лиги или базу футболистов"); const [data, playerDatabase] = await Promise.all([leagueResponse.json(), playerDatabaseResponse.json()]); data.playerDatabase = playerDatabase; return data; }).then(data => { leagueData = data; resolveLeagueDataReady(data); simulateScheduledLeagueResultsForDay(Number(state.gameDay)||1); if(END_SEASON_FRIENDLIES[Number(state.gameDay)])simulateEndSeasonFriendlyDay(Number(state.gameDay)); deliverScheduledCoachMail(Number(state.gameDay)||1); saveState(); if (state.coachName && state.teamName) render(); setTimeout(showNextGameEventPopup,120); if (!$("pageView")?.classList.contains("hidden") && $("pageTitle")?.textContent === "Тренировка") openPage("training"); }).catch(err => { resolveLeagueDataReady(null); console.error(err); });
 
 const $ = (id) => document.getElementById(id);
 function loadState() {
@@ -872,7 +872,7 @@ function shuffledCopy(items) {
   return copy;
 }
 function portraitPlayerKey(player) {
-  return String(player?.careerId || player?.id || player?.name || "");
+  return String(player?.playerId || player?.careerId || player?.id || player?.name || "");
 }
 function collectPortraitPlayers(extraPlayers = []) {
   const result = [], seen = new Set();
@@ -884,28 +884,30 @@ function collectPortraitPlayers(extraPlayers = []) {
   };
   (leagueData?.teams || []).forEach(team => (team.players || []).forEach(add));
   (state.leagueReservePlayers || []).forEach(add);
+  (state.leagueReserveTeams || []).forEach(team => (team.players || []).forEach(add));
+  (state.freeYardPlayerPool || []).forEach(add);
   (state.freeYardPlayers || []).forEach(add);
   extraPlayers.forEach(add);
   return result;
 }
 function buildPortraitQueue(players) {
-  const counts = Array(78).fill(0);
+  const counts = Array(151).fill(0);
   players.forEach(player => {
     const index = Number(player?.portraitIndex);
-    if (Number.isInteger(index) && index >= 1 && index <= 77) counts[index]++;
+    if (Number.isInteger(index) && index >= 1 && index <= 150) counts[index]++;
   });
   const maxCount = Math.max(0, ...counts.slice(1));
   const queue = [];
-  if (maxCount === 0) queue.push(...Array.from({length:77}, (_,i)=>i+1));
+  if (maxCount === 0) queue.push(...Array.from({length:150}, (_,i)=>i+1));
   else {
     for (let round = 0; round < maxCount; round++) {
       const missing = [];
-      for (let index = 1; index <= 77; index++) if (counts[index] <= round) missing.push(index);
+      for (let index = 1; index <= 150; index++) if (counts[index] <= round) missing.push(index);
       queue.push(...shuffledCopy(missing));
     }
   }
   // The current incomplete round is completed before any portrait enters its next round.
-  queue.push(...shuffledCopy(Array.from({length:77}, (_,i)=>i+1)));
+  queue.push(...shuffledCopy(Array.from({length:150}, (_,i)=>i+1)));
   return queue;
 }
 function ensurePortraitQueue(extraPlayers = []) {
@@ -919,17 +921,17 @@ function assignPlayerPortrait(player, extraPlayers = []) {
   state.portraitAssignments = state.portraitAssignments && typeof state.portraitAssignments === "object" ? state.portraitAssignments : {};
   const key = portraitPlayerKey(player);
   const saved = Number(state.portraitAssignments[key]);
-  if (Number.isInteger(saved) && saved >= 1 && saved <= 77) {
+  if (Number.isInteger(saved) && saved >= 1 && saved <= 150) {
     player.portraitIndex = saved;
     return saved;
   }
   const current = Number(player.portraitIndex);
-  if (Number.isInteger(current) && current >= 1 && current <= 77) {
+  if (Number.isInteger(current) && current >= 1 && current <= 150) {
     if (key) state.portraitAssignments[key] = current;
     return current;
   }
   const queue = ensurePortraitQueue(extraPlayers);
-  if (!queue.length) queue.push(...shuffledCopy(Array.from({length:77}, (_,i)=>i+1)));
+  if (!queue.length) queue.push(...shuffledCopy(Array.from({length:150}, (_,i)=>i+1)));
   const index = queue.shift();
   player.portraitIndex = index;
   if (key) state.portraitAssignments[key] = index;
@@ -949,33 +951,44 @@ function ensurePortraitAssignments() {
 function createInitialLeagueForNewCareer() {
   if (!leagueData || state.initialRosterDistributionApplied) return false;
   const teams = leagueData.teams || [];
+  const database = leagueData.playerDatabase;
   if (teams.length !== 12) throw new Error("Ожидалось 12 команд для стартового распределения.");
-  const allPlayers = teams.flatMap(team => (team.players || []).map(player => ({ ...player, skills: { ...(player.skills || {}) } })));
-  // Assign portraits to the complete 120-player pool before the players are shuffled into teams/reserve.
-  allPlayers.forEach(player => assignPlayerPortrait(player, allPlayers));
-  if (allPlayers.length < 120) throw new Error("В исходном справочнике недостаточно футболистов для распределения 99 + 21.");
-  // Start each team with 7 players, then randomly add 15 places (up to 9 per team): 12*7 + 15 = 99.
-  const counts = teams.map(() => 7);
-  let remainingPlaces = 15;
-  while (remainingPlaces > 0) {
-    const eligible = counts.map((count, index) => count < 9 ? index : -1).filter(index => index >= 0);
-    if (!eligible.length) throw new Error("Не удалось распределить 99 стартовых мест.");
-    const index = eligible[Math.floor(Math.random() * eligible.length)];
-    counts[index]++; remainingPlaces--;
-  }
-  const shuffledPlayers = shuffledCopy(allPlayers);
-  const starters = shuffledPlayers.slice(0, 99);
-  const reserve = shuffledPlayers.slice(99, 120);
-  let cursor = 0;
+  if (!database || !Array.isArray(database.players) || !Array.isArray(database.teams)) throw new Error("Не загружена база футболистов.");
+  const careerPlayers = database.players.map(source => ({
+    playerId: source.playerId,
+    careerId: source.playerId,
+    name: source.name,
+    position: source.position,
+    nationality: source.nationality,
+    skills: { ...(source.skills || {}) },
+    portraitIndex: Number(source.portraitIndex) || 1,
+    age: 14 + Math.floor(Math.random() * 7)
+  }));
+  const playerById = new Map(careerPlayers.map(player => [player.playerId, player]));
+  careerPlayers.forEach(player => assignPlayerPortrait(player, careerPlayers));
+  const activeSourceTeams = database.teams.filter(team => team.group === "active");
+  if (activeSourceTeams.length !== 12) throw new Error("В базе должны быть ровно 12 стартовых команд.");
   state.userRoster = [];
   state.externalRosters = {};
-  teams.forEach((team, index) => {
-    team.players = starters.slice(cursor, cursor + counts[index]);
-    cursor += counts[index];
+  teams.forEach(team => {
+    const sourceName = team.isUserTeam || team.name === "{teamName}" ? "(команда тренера)" : team.name;
+    const sourceTeam = activeSourceTeams.find(candidate => candidate.name === sourceName);
+    if (!sourceTeam) throw new Error("В базе не найдена команда: " + sourceName);
+    team.players = sourceTeam.players.map(id => playerById.get(id)).filter(Boolean);
+    if (team.players.length !== sourceTeam.players.length) throw new Error("Не удалось восстановить полный состав команды: " + sourceName);
     if (team.isUserTeam || team.name === "{teamName}") state.userRoster = team.players;
     else state.externalRosters[team.id] = team.players;
   });
-  state.leagueReservePlayers = reserve;
+  const reserveSourceTeams = database.teams.filter(team => team.group === "reserve");
+  state.leagueReserveTeams = reserveSourceTeams.map((team, index) => ({
+    id: "reserve-" + String(index + 1).padStart(2, "0"),
+    name: team.name,
+    coach: team.coach || "",
+    league: "Резерв",
+    players: team.players.map(id => playerById.get(id)).filter(Boolean)
+  }));
+  state.freeYardPlayerPool = database.freeYardPlayers.map(id => playerById.get(id)).filter(Boolean);
+  state.leagueReservePlayers = [];
   state.initialRosterDistributionApplied = true;
   state.initialRosterDistributionVersion = STARTING_ROSTER_RULES_VERSION;
   state.npcTransferHistory = Array.isArray(state.npcTransferHistory) ? state.npcTransferHistory : [];
@@ -1718,7 +1731,7 @@ function getUserTeam() {
   if (team) { team.name = state.teamName || "Моя команда"; team.coach = state.coachName || "Тренер"; }
   return team || null;
 }
-function getPortrait(index) { const n=Math.max(1,Number(index)||1); return "/images/portretplayers/portret" + (((n - 1) % 77) + 1) + ".jpg"; }
+function getPortrait(index) { const n=Math.max(1,Number(index)||1); return "/images/portretplayers/portret" + (((n - 1) % 150) + 1) + ".jpg"; }
 function getFlag(nationality) {
   const flags = {"Россия":"russia","Беларусь":"belarus","Индия":"india","Казахстан":"kazahstan","Кыргызстан":"kirgizstan","Узбекистан":"uzbekistan","Вьетнам":"vietnam","Южная Корея":"southkorea"};
   return flags[nationality] ? "/images/flags/" + flags[nationality] + ".jpg" : "";
@@ -3072,7 +3085,7 @@ function openPlayerProfile(team,p,index) {
   const bio=document.createElement("div");
   const teamName=team.name===" {teamName}"||team.name==="{teamName}"?state.teamName:team.name;
   bio.append(safeText("h2",p.name),safeText("p",teamName,"player-team-name"));
-  const nation=document.createElement("div");nation.className="player-nationality";const flag=getFlag(p.nationality);if(flag){const f=document.createElement("img");f.src=flag;f.alt="";nation.append(f);}nation.append(safeText("span",p.nationality+" · "+p.position));
+  const nation=document.createElement("div");nation.className="player-nationality";const flag=getFlag(p.nationality);if(flag){const f=document.createElement("img");f.src=flag;f.alt="";nation.append(f);}nation.append(safeText("span",p.nationality+" · "+p.position+(Number.isFinite(Number(p.age)) && Number(p.age)>0 ? " · "+Number(p.age)+" лет" : "")));
   bio.append(nation,safeText("p","Тренер: "+(team.coach==="(имя тренера)"?state.coachName:team.coach),"muted"));head.append(bio);wrap.append(head);
   const relation=getPlayerRelation(team,p);
   wrap.append(makeRelationBadge(team,p));
