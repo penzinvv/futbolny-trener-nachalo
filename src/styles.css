@@ -1997,3 +1997,8 @@ body[data-page-bg] .onboarding {
 .player-profile-overview .player-profile-actions{grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap}
 .player-profile-overview .player-profile-actions button{margin:0}
 @media(max-width:700px){.player-profile-overview{grid-template-columns:minmax(0,1fr);gap:12px}.player-profile-overview .player-profile-head,.player-profile-overview .player-profile-career,.player-profile-overview .player-profile-actions{grid-column:1}.player-profile-overview .player-profile-portrait{width:100px;height:124px}.player-profile-overview .relationship-thresholds{grid-template-columns:repeat(3,minmax(0,1fr))}.player-profile-overview .player-career-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.player-profile-overview .player-profile-panel{padding:13px}}
+
+/* Compact coach cabinet overview */
+.coach-overview-squad{margin-top:18px}.coach-overview-squad>p{margin:4px 0 10px}.coach-overview-squad .cabinet-player-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:10px}.coach-overview-squad .cabinet-player-card{padding:10px;min-height:82px}.coach-overview-stats{margin-top:16px}.coach-position-metrics{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.coach-position-metrics .cabinet-metric{padding:10px}.coach-position-metrics .team-stat-track{margin-top:8px}.coach-skill-list{margin-top:12px}.coach-skill-list .team-stat-player{margin:7px 0}
+@media(max-width:900px){.coach-overview-squad .cabinet-player-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.coach-overview-squad .cabinet-player-grid{grid-template-columns:1fr}.coach-position-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
