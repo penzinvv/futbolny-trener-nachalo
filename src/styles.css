@@ -1975,3 +1975,25 @@ body[data-page-bg] .onboarding {
 @media(max-width:900px){.online-rating-entry-unified{grid-template-columns:28px minmax(0,1fr)}.online-rating-entry-unified .online-rating-metrics{grid-column:2;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}}
 @media(max-width:520px){.online-rating-entry-unified{padding:8px;gap:7px}.online-rating-metric{padding:6px}.online-rating-metric small{font-size:.58rem}.online-rating-metric b{font-size:.8rem}}
 @media(prefers-reduced-motion:reduce){.online-rating-art::after{animation:none;transform:translateX(0);opacity:.15}}
+
+
+/* Player profile: all key information visible without tabs */
+.player-profile-overview{max-width:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px 20px;align-items:start}
+.player-profile-overview .player-profile-head{grid-column:1/-1;margin:12px 0 0;gap:18px}
+.player-profile-overview .player-profile-portrait{width:126px;height:154px;flex:none}
+.player-profile-overview .player-profile-panel{min-width:0;padding:16px;border:1px solid var(--line);border-radius:14px;background:rgba(7,34,25,.28)}
+.player-profile-overview .player-profile-panel h3{margin:0 0 14px;font-size:17px}
+.player-profile-overview .player-profile-panel h4{margin:18px 0 10px;font-size:14px}
+.player-profile-overview .player-profile-skills{gap:12px;margin:10px 0 16px}
+.player-profile-overview .skill-line{grid-template-columns:34px 36px minmax(50px,1fr);gap:8px}
+.player-profile-overview .skill-line small{grid-column:2/-1}
+.player-profile-overview .player-profile-relations .player-relationship{max-width:none;margin:0 0 14px}
+.player-profile-overview .relationship-thresholds{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.player-profile-overview .relationship-threshold{min-width:0;display:flex;flex-direction:column;gap:5px;padding:8px 6px;border-radius:8px;background:#ffffff08}
+.player-profile-overview .relationship-threshold b{font-size:12px}
+.player-profile-overview .relationship-threshold span{font-size:10px;line-height:1.25;color:var(--muted)}
+.player-profile-overview .player-profile-career{grid-column:1/-1}
+.player-profile-overview .player-career-metrics{grid-template-columns:repeat(4,minmax(0,1fr));margin:8px 0}
+.player-profile-overview .player-profile-actions{grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap}
+.player-profile-overview .player-profile-actions button{margin:0}
+@media(max-width:700px){.player-profile-overview{grid-template-columns:minmax(0,1fr);gap:12px}.player-profile-overview .player-profile-head,.player-profile-overview .player-profile-career,.player-profile-overview .player-profile-actions{grid-column:1}.player-profile-overview .player-profile-portrait{width:100px;height:124px}.player-profile-overview .relationship-thresholds{grid-template-columns:repeat(3,minmax(0,1fr))}.player-profile-overview .player-career-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.player-profile-overview .player-profile-panel{padding:13px}}

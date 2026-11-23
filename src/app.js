@@ -3265,58 +3265,47 @@ function renderLeague() {
  return wrap
 }
 function openPlayerProfile(team,p,index) {
-  const wrap=document.createElement("div");wrap.className="player-profile";
+  const wrap=document.createElement("div");wrap.className="player-profile player-profile-overview";
+  const head=document.createElement("div");head.className="player-profile-head";
   const portrait=document.createElement("img");portrait.className="player-profile-portrait";portrait.src=getPortrait(p.portraitIndex || teamsPlayerIndex(team,p));portrait.alt=p.name;
-  const head=document.createElement("div");head.className="player-profile-head";head.append(portrait);
   const bio=document.createElement("div");
   const teamName=team.name===" {teamName}"||team.name==="{teamName}"?state.teamName:team.name;
   bio.append(safeText("h2",p.name),safeText("p",teamName,"player-team-name"));
   const nation=document.createElement("div");nation.className="player-nationality";const flag=getFlag(p.nationality);if(flag){const f=document.createElement("img");f.src=flag;f.alt="";nation.append(f);}nation.append(safeText("span",p.nationality+" · "+p.position+(Number.isFinite(Number(p.age)) && Number(p.age)>0 ? " · "+Number(p.age)+" лет" : "")));
-  bio.append(nation,safeText("p","Тренер: "+(team.coach==="(имя тренера)"?state.coachName:team.coach),"muted"));head.append(bio);wrap.append(head);
+  bio.append(nation,safeText("p","Тренер: "+(team.coach==="(имя тренера)"?state.coachName:team.coach),"muted"));
+  head.append(portrait,bio);
   const relation=getPlayerRelation(team,p);
-  wrap.append(makeRelationBadge(team,p));
-  const tabs=document.createElement("div");tabs.className="player-profile-tabs";tabs.setAttribute("role","tablist");
-  const body=document.createElement("div");body.className="player-profile-tab-content";
-  const tabItems=[["player","Футболист"],["training","Тренировка"],["relations","Отношения"],["career","Карьера"]];
-  const renderTab=(key)=>{
-    body.replaceChildren();
-    tabs.querySelectorAll("button").forEach(b=>{const active=b.dataset.tab===key;b.classList.toggle("active",active);b.setAttribute("aria-selected",String(active));});
-    if(key==="player"){
-      const stats=document.createElement("div");stats.className="skill-bars";
-      const unlocked=getUnlockedSkills(p,relation);
-      ["ВР","ЗЩ","ПЗ","НП"].forEach(k=>{
-        const known=unlocked.includes(k);const line=document.createElement("div");line.className="skill-line"+(known?"":" skill-line-locked");
-        line.append(safeText("span",k),safeText("b",known?String(p.skills[k]):"???"));
-        if(known){const track=document.createElement("div");track.className="skill-track";const fill=document.createElement("div");fill.className="skill-fill";fill.style.width=Math.max(0,Math.min(100,p.skills[k]))+"%";track.append(fill);line.append(track);}
-        else line.append(safeText("small","Откроется при росте отношений"));
-        stats.append(line);
-      });
-      body.append(safeText("h3","Игровые характеристики"),stats);
-      if(relation<50)body.append(safeText("p","При 50% отношений откроется главная характеристика по позиции футболиста.","muted"));
-      else if(relation<80)body.append(safeText("p","Следующие скрытые характеристики открываются при достижении 60%, 70% и 80% отношений.","muted"));
-      if(relation>=90)body.append(safeText("p","Порог потенциала достигнут. Значение потенциала пока не задано в игровых данных.","muted"));
-      else body.append(safeText("p","Потенциал откроется при 90% отношений. Само раскрытие не повышает навыки.","muted"));
-    } else if(key==="training"){
-      body.append(safeText("h3","История индивидуальных тренировок"));const trainingKey=trainingPlayerKey(team,p,index),historySource=state.trainingHistory||[],trainingHistory=Array.isArray(historySource)?historySource.filter(item=>item&&item.team===team.id&&item.player===p.name&&(item.type==="individual"||item.type==="match3-relations")):(historySource[trainingKey]||[]);if(!trainingHistory.length){body.append(safeText("p","В этой локальной карьере тренировок пока нет.","muted"));}else{trainingHistory.slice().reverse().forEach(item=>{const label=item.type==="match3-relations"?"Три в ряд: "+item.score+" очков; отношения +"+Number(item.delta||0).toFixed(2)+" п. п.":(item.stat||"Характеристика")+": "+(item.before??"—")+" → "+(item.after??"—")+"; очки "+(item.score??0);body.append(safeText("p",new Date(item.at).toLocaleString("ru-RU")+" · "+label));});}body.append(safeText("p","Новую тренировку можно провести в разделе «Тренировка». История хранится в этом браузере.","muted"));
-    } else if(key==="relations"){
-      body.append(safeText("h3","Отношения с тренером"),makeRelationBadge(team,p));
-      const next=relation<50?50:relation<60?60:relation<70?70:relation<80?80:relation<90?90:null;
-      body.append(safeText("p",next===null?"Все пороги отношений достигнуты.":"До следующего порога: "+(next-relation)+" п. п. — "+next+"%.","muted"));
-      const thresholds=document.createElement("div");thresholds.className="relationship-thresholds";
-      [[50,"Главная характеристика"],[60,"Вторая характеристика"],[70,"Третья характеристика"],[80,"Все характеристики"],[90,"Потенциал"]].forEach(([value,label])=>{
-        const item=document.createElement("div");item.className="relationship-threshold"+(relation>=value?" reached":"");
-        item.append(safeText("b",value+"%"),safeText("span",label));thresholds.append(item);
-      });
-      body.append(thresholds);
-    } else {
-      body.append(makeCareerAwardShelf(careerAwardsFor("player",team.id,p.name),"Награды футболиста"));body.append(safeText("h3","Официальная статистика футболиста"));let played=0,goals=0,assists=0,cleanSheets=0;Object.values(state.leagueResults||{}).filter(m=>Number(m.season||state.seasonNumber)===Number(state.seasonNumber||1)).forEach(m=>{const isHome=m.homeId===team.id,isAway=m.awayId===team.id;if(!isHome&&!isAway)return;const lineup=isHome?(m.homeLineup||[]):(m.awayLineup||[]);if(!lineup.some(x=>(x.player||x).name===p.name))return;played++;(m.events||[]).forEach(ev=>{if(ev.type==="goal"&&ev.scorer===p.name)goals++;if(ev.type==="goal"&&ev.assist===p.name)assists++});if(p.position==="ВР"&&((isHome&&m.awayScore===0)||(isAway&&m.homeScore===0)))cleanSheets++});const grid=document.createElement("div");grid.className="cabinet-metrics";[["Матчи",played],["Голы",goals],["Ассисты",assists],["Матчи на ноль",cleanSheets]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",String(value)));grid.append(card)});body.append(grid);if(!played)body.append(safeText("p","Официальной статистики пока нет. Она появится после сохранения официальных матчей; тестовые матчи не учитываются.","muted"));
-    }
-  };
-  tabItems.forEach(([key,label])=>{const b=document.createElement("button");b.type="button";b.className="player-profile-tab";b.dataset.tab=key;b.setAttribute("role","tab");b.textContent=label;b.addEventListener("click",()=>renderTab(key));tabs.append(b);});
-  wrap.append(tabs,body);
-  const back=document.createElement("button");back.className="back-button";back.textContent="← К составу";back.addEventListener("click",()=>{openPage("cabinet");setTimeout(()=>{const tab=[...document.querySelectorAll(".cabinet-tab")].find(b=>b.textContent.trim()==="Футболисты");if(tab)tab.click();},0);});wrap.append(back);
+  const relationBlock=document.createElement("section");relationBlock.className="player-profile-panel player-profile-relations";
+  relationBlock.append(safeText("h3","Отношения с тренером"),makeRelationBadge(team,p));
+  const next=relation<50?50:relation<60?60:relation<70?70:relation<80?80:relation<90?90:null;
+  relationBlock.append(safeText("p",next===null?"Все пороги отношений достигнуты.":"До следующего порога: "+(next-relation)+" п. п. — "+next+"%.","muted"));
+  const thresholds=document.createElement("div");thresholds.className="relationship-thresholds";
+  [[50,"Главная характеристика"],[60,"Вторая характеристика"],[70,"Третья характеристика"],[80,"Все характеристики"],[90,"Потенциал"]].forEach(([value,label])=>{const item=document.createElement("div");item.className="relationship-threshold"+(relation>=value?" reached":"");item.append(safeText("b",value+"%"),safeText("span",label));thresholds.append(item);});
+  relationBlock.append(thresholds);
+  const statsPanel=document.createElement("section");statsPanel.className="player-profile-panel";
+  statsPanel.append(safeText("h3","Игровые характеристики"));
+  const stats=document.createElement("div");stats.className="skill-bars player-profile-skills";
+  const unlocked=getUnlockedSkills(p,relation);
+  ["ВР","ЗЩ","ПЗ","НП"].forEach(k=>{const known=unlocked.includes(k);const line=document.createElement("div");line.className="skill-line"+(known?"":" skill-line-locked");line.append(safeText("span",k),safeText("b",known?String(p.skills[k]):"???"));if(known){const track=document.createElement("div");track.className="skill-track";const fill=document.createElement("div");fill.className="skill-fill";fill.style.width=Math.max(0,Math.min(100,p.skills[k]))+"%";track.append(fill);line.append(track);}else line.append(safeText("small","Откроется при росте отношений"));stats.append(line);});
+  statsPanel.append(stats);
+  if(relation<50)statsPanel.append(safeText("p","При 50% отношений откроется главная характеристика по позиции футболиста.","muted"));
+  else if(relation<80)statsPanel.append(safeText("p","Следующие скрытые характеристики открываются при достижении 60%, 70% и 80% отношений.","muted"));
+  if(relation>=90)statsPanel.append(safeText("p","Порог потенциала достигнут. Значение потенциала пока не задано в игровых данных.","muted"));
+  else statsPanel.append(safeText("p","Потенциал откроется при 90% отношений. Само раскрытие не повышает навыки.","muted"));
+  const careerPanel=document.createElement("section");careerPanel.className="player-profile-panel player-profile-career";
+  careerPanel.append(safeText("h3","Карьера"));
+  careerPanel.append(makeCareerAwardShelf(careerAwardsFor("player",team.id,p.name),"Награды футболиста"));
+  careerPanel.append(safeText("h4","Официальная статистика футболиста"));
+  let played=0,goals=0,assists=0,cleanSheets=0;
+  Object.values(state.leagueResults||{}).filter(m=>Number(m.season||state.seasonNumber)===Number(state.seasonNumber||1)).forEach(m=>{const isHome=m.homeId===team.id,isAway=m.awayId===team.id;if(!isHome&&!isAway)return;const lineup=isHome?(m.homeLineup||[]):(m.awayLineup||[]);if(!lineup.some(x=>(x.player||x).name===p.name))return;played++;(m.events||[]).forEach(ev=>{if(ev.type==="goal"&&ev.scorer===p.name)goals++;if(ev.type==="goal"&&ev.assist===p.name)assists++});if(p.position==="ВР"&&((isHome&&m.awayScore===0)||(isAway&&m.homeScore===0)))cleanSheets++});
+  const grid=document.createElement("div");grid.className="cabinet-metrics player-career-metrics";[["Матчи",played],["Голы",goals],["Ассисты",assists],["Матчи на ноль",cleanSheets]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",String(value)));grid.append(card);});
+  careerPanel.append(grid);if(!played)careerPanel.append(safeText("p","Официальной статистики пока нет. Она появится после сохранения официальных матчей; тестовые матчи не учитываются.","muted"));
+  const actions=document.createElement("div");actions.className="player-profile-actions";
+  const train=document.createElement("button");train.type="button";train.className="primary-button";train.textContent="Тренировка";train.addEventListener("click",()=>openPage("training"));actions.append(train);
+  const back=document.createElement("button");back.type="button";back.className="back-button";back.textContent="← К составу";back.addEventListener("click",()=>{openPage("cabinet");setTimeout(()=>{const tab=[...document.querySelectorAll(".cabinet-tab")].find(b=>b.textContent.trim()==="Футболисты");if(tab)tab.click();},0);});actions.append(back);
+  wrap.append(head,statsPanel,relationBlock,careerPanel,actions);
   setPageBackground("playerCard");
-  $("pageTitle").textContent=p.name;$("pageEyebrow").textContent="КАРТОЧКА ФУТБОЛИСТА";const content=$("pageContent");content.replaceChildren(wrap);renderTab("player");
+  $("pageTitle").textContent=p.name;$("pageEyebrow").textContent="КАРТОЧКА ФУТБОЛИСТА";const content=$("pageContent");content.replaceChildren(wrap);
 }
 function trainingPlayerKey(team,player,index) {
   return String(player.careerId || playerRelationKey(team,player) || (team.id+"::"+index));
