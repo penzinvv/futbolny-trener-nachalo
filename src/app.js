@@ -1416,6 +1416,17 @@ function renderCupPage(){
  wrap.append(history);return wrap;
 }
 
+function renderGooglePlayTestPage(){
+ const wrap=document.createElement("div");wrap.className="feature-panel google-play-test-page";
+ wrap.append(safeText("p","ТЕСТИРОВАНИЕ · GOOGLE PLAY","eyebrow"),safeText("h2","Помоги дворовому футболу выйти на новый уровень"),safeText("p","Собирай команду, развивай футболистов, проводи матчи и погружайся в мир дворового футбола."));
+ const notice=document.createElement("section");notice.className="google-play-test-notice";notice.append(safeText("h3","🚧 Игра проходит тестирование"),safeText("p","Сейчас игра проходит тестирование, а готовится к выпуску в Google Play. Чтобы подключиться, выполни шаги ниже."));
+ const steps=document.createElement("ol");steps.className="google-play-test-steps";
+ const group=document.createElement("li");group.append(safeText("b","Вступи в группу Google"),safeText("p","Открой страницу группы и присоединись к программе тестирования."));const groupLink=document.createElement("a");groupLink.href="https://groups.google.com/g/dosplay/";groupLink.target="_blank";groupLink.rel="noopener noreferrer";groupLink.className="google-play-test-link";groupLink.textContent="Вступить в группу Google ↗";group.append(groupLink);
+ const store=document.createElement("li");store.append(safeText("b","Открой страницу игры в Google Play"),safeText("p","Перейди по ссылке и установи приложение, когда оно станет доступно для твоего аккаунта."));const storeLink=document.createElement("a");storeLink.href="https://play.google.com/store/apps/details?id=ru.doskanal.streetfootballstart";storeLink.target="_blank";storeLink.rel="noopener noreferrer";storeLink.className="google-play-test-link";storeLink.textContent="Открыть игру в Google Play ↗";store.append(storeLink);
+ const account=document.createElement("li");account.append(safeText("b","Используй один Google-аккаунт"),safeText("p","Все действия — вступление в группу, переход в Google Play и установка — выполняй под одним Google-аккаунтом, который используется в Google Play на телефоне."));
+ steps.append(group,store,account);notice.append(steps,safeText("p","После установки пользуйся приложением минимум 14 дней. Оставайся в программе тестирования и по возможности не удаляй приложение.","google-play-test-duration"));wrap.append(notice,safeText("p","Каждый игрок помогает сделать игру лучше!","google-play-test-thanks"));return wrap;
+}
+
 const pages = {
   cabinet: {title:"Кабинет тренера", eyebrow:"УПРАВЛЕНИЕ КОМАНДОЙ", render: renderCabinet},
   players: {title:"Футболисты во дворе", eyebrow:"СОСТАВ КОМАНДЫ", render: renderPlayers},
@@ -1431,6 +1442,7 @@ const pages = {
   ratings: {title:"Тренерский рейтинг", eyebrow:"РЕЙТИНГИ ТРЕНЕРОВ", render: renderOnlineRatings},
   onlineRecords: {title:"Онлайн рекорды", eyebrow:"ЛУЧШИЕ РЕЗУЛЬТАТЫ КОМАНД", render: renderOnlineCareerRecords},
   shop: {title:"Магазин", eyebrow:"МАГАЗИН НАГРАД", render: renderShopPage},
+  googlePlayTest: {title:"Тест на Google Play", eyebrow:"ПОДКЛЮЧАЙСЯ К ТЕСТИРОВАНИЮ", render: renderGooglePlayTestPage},
   help: {title:"FAQ / Помощь", eyebrow:"РУКОВОДСТВО ИГРОКА", render: renderFaqPage},
   support: {title:"Ваша поддержка", eyebrow:"ПОДДЕРЖКА ИГРЫ", render: renderSupportPage},
   developer: {title:"О разработчике", eyebrow:"СОЗДАТЕЛИ ИГРЫ", render: renderDeveloperPage}
