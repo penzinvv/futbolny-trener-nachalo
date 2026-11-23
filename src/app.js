@@ -2213,7 +2213,9 @@ function runCupRound(stage,matchIndex=0){
  saveState();
 }
 function getStandingsForLeague(leagueName,season){
- const teams=allCurrentLeagueTeams(leagueName).map(team=>({team,played:0,w:0,d:0,l:0,gf:0,ga:0,pts:0})),byId=Object.fromEntries(teams.map(x=>[x.team.id,x]));
+ const seasonKey=String(Number(season)||1),membership=state.leagueMembershipHistory?.[seasonKey];
+ const source=membership?(leagueData?.teams||[]).filter(team=>membership[team.id]===leagueName).map(team=>team.isUserTeam?getUserTeam():team).filter(Boolean):allCurrentLeagueTeams(leagueName);
+ const teams=source.map(team=>({team,played:0,w:0,d:0,l:0,gf:0,ga:0,pts:0})),byId=Object.fromEntries(teams.map(x=>[x.team.id,x]));
  Object.values(state.leagueResults||{}).filter(r=>Number(r.season||state.seasonNumber)===Number(season)&&isCanonicalLeagueResult(r,leagueName)).forEach(r=>{const h=byId[r.homeId],a=byId[r.awayId];if(!h||!a)return;h.played++;a.played++;h.gf+=Number(r.homeScore)||0;h.ga+=Number(r.awayScore)||0;a.gf+=Number(r.awayScore)||0;a.ga+=Number(r.homeScore)||0;if(r.homeScore>r.awayScore){h.w++;a.l++;h.pts+=3}else if(r.homeScore<r.awayScore){a.w++;h.l++;a.pts+=3}else{h.d++;a.d++;h.pts++;a.pts++}});
  return teams.sort((x,y)=>y.pts-x.pts||(y.gf-y.ga)-(x.gf-x.ga)||y.gf-x.gf||x.team.name.localeCompare(y.team.name,"ru"));
 }
