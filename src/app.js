@@ -2872,22 +2872,69 @@ function calculateOfficialMatchRelations(session,home,away,result){
 function applyOfficialMatchResult(session,home,away){
  if(session.finished)return;
  session.finished=true;session.finishedAtDay=Number(state.gameDay)||1;
- const fixture={home,away};const result={season:Number(state.seasonNumber)||1,round:session.round,day:session.day,homeId:home.id,awayId:away.id,homeScore:session.score.home,awayScore:session.score.away,events:session.events,homeLineup:session.lineups.home,awayLineup:session.lineups.away,substitutions:session.substitutions,finished:true};
+ const type=session.matchType||"league",special=session.specialMatch||state.pendingSpecialMatch||{};
+ const fixture={home,away};
+ const result={season:Number(session.season||state.seasonNumber)||1,round:Number(session.round)||0,day:Number(session.day||state.gameDay)||1,matchType:type,stage:special.stage||null,homeId:home.id,awayId:away.id,homeScore:session.score.home,awayScore:session.score.away,events:session.events,homeLineup:session.lineups.home,awayLineup:session.lineups.away,substitutions:session.substitutions,finished:true};
  result.stats=deriveMatchStats(session);
  result.spectatorNotes=buildPostMatchSpectatorNotes(session,home,away);
  const relationshipReport=calculateOfficialMatchRelations(session,home,away,result);
  result.relationshipChanges=relationshipReport.changes;
- result.playerRatings=calculateMatchPlayerRatings(session);const ownSide=home.id===getUserTeam()?.id?"home":"away";result.skillGrowth=applyPostMatchSkillGrowth(session,ownSide,result);state.leagueResults=state.leagueResults||{};state.leagueResults[roundFixtureKey(session.round,fixture)]=result;
+ result.playerRatings=calculateMatchPlayerRatings(session);
+ const ownSide=home.id===getUserTeam()?.id?"home":"away";
+ result.skillGrowth=applyPostMatchSkillGrowth(session,ownSide,result);
+ if(type==="cup"||type==="playoff"){
+  const winner=resolveSpecialMatchWinner(home,away,result.homeScore,result.awayScore,type+":"+result.season+":"+special.stage+":"+special.matchIndex);
+  result.winnerId=winner.id;result.winnerName=matchTeamLabel(winner);
+  if(result.homeScore===result.awayScore){const rand=seededCupRandom("special-penalties:"+type+":"+result.season+":"+special.stage+":"+special.matchIndex);let ph=0,pa=0;for(let i=0;i<5;i++){if(rand()<.72)ph++;if(rand()<.72)pa++}while(ph===pa){if(rand()<.5)ph++;else pa++}if((ph>pa?home:away).id!==winner.id){if(winner.id===home.id)ph=Math.max(ph,pa+1);else pa=Math.max(pa,ph+1)}result.penalties={home:ph,away:pa};result.penaltyWinnerId=winner.id;result.events.push({minute:40,type:"play",text:"Победитель определён в серии послематчевых пенальти: "+matchTeamLabel(winner)+" победили "+ph+":"+pa+"."})}
+ }
+ if(type==="league"){
+  state.leagueResults=state.leagueResults||{};
+  state.leagueResults[roundFixtureKey(session.round,fixture)]=result;
+  publishCoachEventOnce("match:"+result.season+":"+result.round+":"+getUserTeam()?.id,"news","Матч завершён",matchTeamLabel(getUserTeam())+" сыграли "+(getUserTeam()?.id===result.homeId?result.homeScore+" : "+result.awayScore:result.awayScore+" : "+result.homeScore)+". Отчёт матча сохранён.",{priority:"high",important:true});
+  ensureAllLeagueRoundResults(session.round,fixture,result);
+  state.careerHistory=state.careerHistory||{officialMatches:[],seasons:{}};
+  state.careerHistory.officialMatches=Array.isArray(state.careerHistory.officialMatches)?state.careerHistory.officialMatches:[];
+  state.careerHistory.officialMatches.push({season:result.season,round:result.round,day:result.day,at:Date.now(),homeId:home.id,awayId:away.id,homeScore:result.homeScore,awayScore:result.awayScore,goalsFor:home.id===getUserTeam()?.id?result.homeScore:result.awayScore,goalsAgainst:home.id===getUserTeam()?.id?result.awayScore:result.homeScore,result:((home.id===getUserTeam()?.id?result.homeScore-result.awayScore:result.awayScore-result.homeScore)>0)?"W":(result.homeScore===result.awayScore?"D":"L"),events:result.events,substitutions:result.substitutions});
+  awardOfficialMatchRating(result,fixture);
+ }else{
+  state.careerHistory=state.careerHistory||{officialMatches:[],seasons:{}};
+  state.careerHistory.specialMatches=Array.isArray(state.careerHistory.specialMatches)?state.careerHistory.specialMatches:[];
+  state.careerHistory.specialMatches.push({season:result.season,day:result.day,matchType:type,stage:result.stage,homeId:home.id,awayId:away.id,homeScore:result.homeScore,awayScore:result.awayScore,winnerId:result.winnerId||null,penalties:result.penalties||null});
+  if(type==="cup"){
+   state.cupResults=state.cupResults&&typeof state.cupResults==="object"?state.cupResults:{};
+   const cup=state.cupResults[result.season]||(state.cupResults[result.season]={matches:[],championId:null,championName:null});
+   const played={...result,bracketIndex:Number(special.matchIndex)||0,winnerId:result.winnerId,winnerName:result.winnerName,playerStats:[]};
+   cup.matches.push(played);
+   const stageName=result.stage==="quarterfinals"?"Четвертьфинал":result.stage==="semifinals"?"Полуфинал":"Финал";
+   publishCoachEventOnce("cup-result:"+result.season+":"+result.stage+":"+played.bracketIndex+":"+getUserTeam()?.id,"news","Кубок «ДОСТАТОК»: "+stageName,result.homeName+" "+result.homeScore+":"+result.awayScore+" "+result.awayName+(result.penalties?"; пенальти "+result.penalties.home+":"+result.penalties.away:"")+".",{priority:"high",important:true});
+   if(result.stage==="finals"){
+    cup.championId=result.winnerId;cup.championName=result.winnerName;
+    const winner=cupBracketTeam(result.winnerId),caption="КУБОК «ДОСТАТОК» · СЕЗОН "+result.season,score=matchTeamLabel(home)+" "+result.homeScore+":"+result.awayScore+" "+matchTeamLabel(away)+(result.penalties?" · пенальти "+result.penalties.home+":"+result.penalties.away:"");
+    if(winner){addCareerAward({key:"cup-dostatoch:team:"+result.season,recipientType:"team",recipientId:winner.id,icon:"awardcupdostatok",label:"Кубок «Достаток»",caption,result:score,season:result.season});addCareerAward({key:"cup-dostatoch:coach:"+result.season,recipientType:"coach",recipientId:winner.id,icon:"awardcupdostatok",label:"Кубок «Достаток»",caption,result:score,season:result.season});(winner.players||[]).forEach(p=>addCareerAward({key:"cup-dostatoch:player:"+result.season+":"+winner.id+":"+p.name,recipientType:"player",recipientId:winner.id,recipientName:p.name,icon:"awardcupdostatok",label:"Кубок «Достаток»",caption,result:score,season:result.season}))}
+    publishCoachEventOnce("cup-champion:"+result.season,"news","Обладатель кубка «ДОСТАТОК»","Кубок «ДОСТАТОК» сезона "+result.season+" выиграла команда "+result.winnerName+". Финальный результат: "+score+".",{priority:"high",important:true});
+   }
+  }else if(type==="playoff"){
+   state.leagueTransitions=state.leagueTransitions&&typeof state.leagueTransitions==="object"?state.leagueTransitions:{};
+   const seasonKey=String(result.season),transition=state.leagueTransitions[seasonKey]||{season:result.season,pending:true};
+   transition.pending=false;transition.playoff={season:result.season,day:result.day,type:"promotion-playoff",homeId:home.id,homeName:matchTeamLabel(home),awayId:away.id,awayName:matchTeamLabel(away),homeScore:result.homeScore,awayScore:result.awayScore,penalties:result.penalties||null,penaltyWinnerId:result.penaltyWinnerId||null,winnerId:result.winnerId,winnerName:result.winnerName,loserId:result.winnerId===home.id?away.id:home.id,loserName:result.winnerId===home.id?matchTeamLabel(away):matchTeamLabel(home)};
+   state.leagueTransitions[seasonKey]=transition;
+   publishCoachEventOnce("promotion-playoff:"+result.season,"news","Стыковой матч завершён",matchTeamLabel(home)+" "+result.homeScore+":"+result.awayScore+" "+matchTeamLabel(away)+". Победитель: "+result.winnerName+".",{priority:"high",important:true});
+  }else{
+   const key=type==="cup-friendly"?(result.season+":"+special.stage+":"+home.id+":"+away.id):(result.season+":"+result.day+":"+home.id+":"+away.id);
+   const record={key,season:result.season,day:result.day,stage:special.stage||"season-friendly",homeId:home.id,awayId:away.id,homeName:matchTeamLabel(home),awayName:matchTeamLabel(away),homeScore:result.homeScore,awayScore:result.awayScore,friendly:true,matchType:type};
+   if(type==="cup-friendly"){state.cupFriendlyResults=Array.isArray(state.cupFriendlyResults)?state.cupFriendlyResults:[];state.cupFriendlyResults=state.cupFriendlyResults.filter(x=>x.key!==key);state.cupFriendlyResults.push(record)}
+   else{state.seasonFriendlyResults=Array.isArray(state.seasonFriendlyResults)?state.seasonFriendlyResults:[];state.seasonFriendlyResults=state.seasonFriendlyResults.filter(x=>x.key!==key);state.seasonFriendlyResults.push(record)}
+   publishCoachEventOnce("played-friendly:"+key,"news","Товарищеский матч сыгран",record.homeName+" "+record.homeScore+":"+record.awayScore+" "+record.awayName+". Результат сохранён в истории сезона.",{priority:"normal"});
+  }
+ }
  state.lastMatchReport=result;
- publishCoachEventOnce("match:"+result.season+":"+result.round+":"+getUserTeam()?.id,"news","Матч завершён",matchTeamLabel(getUserTeam())+" сыграли "+(getUserTeam()?.id===result.homeId?result.homeScore+" : "+result.awayScore:result.awayScore+" : "+result.homeScore)+". Отчёт матча сохранён.",{priority:"high",important:true});
- ensureAllLeagueRoundResults(session.round,fixture,result);
- state.careerHistory=state.careerHistory||{officialMatches:[],seasons:{}};
- state.careerHistory.officialMatches=Array.isArray(state.careerHistory.officialMatches)?state.careerHistory.officialMatches:[];
- state.careerHistory.officialMatches.push({season:result.season,round:result.round,day:result.day,at:Date.now(),homeId:home.id,awayId:away.id,homeScore:result.homeScore,awayScore:result.awayScore,goalsFor:home.id===getUserTeam()?.id?result.homeScore:result.awayScore,goalsAgainst:home.id===getUserTeam()?.id?result.awayScore:result.homeScore,result:((home.id===getUserTeam()?.id?result.homeScore-result.awayScore:result.awayScore-result.homeScore)>0)?"W":(result.homeScore===result.awayScore?"D":"L"),events:result.events,substitutions:result.substitutions});
- awardOfficialMatchRating(result,fixture);
  updateCoachRespect();
  const shouldShowSummary=!document.getElementById("pageView")?.classList.contains("hidden")&&document.getElementById("pageTitle")?.textContent==="Матч";
- state.officialMatchSession=null;saveState();render();if(shouldShowSummary)openPage("matchSummary");
+ state.officialMatchSession=null;
+ const completedPlayoff=type==="playoff";
+ if(state.pendingSpecialMatch&&state.pendingSpecialMatch.type===type)state.pendingSpecialMatch=null;
+ saveState();render();if(shouldShowSummary)openPage("matchSummary");
+ if(completedPlayoff)setTimeout(()=>advanceCoachDay(),0);
 }
 function buildPostMatchSpectatorNotes(session,home,away){
  const crowd=[
