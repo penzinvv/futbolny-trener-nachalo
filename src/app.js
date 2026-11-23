@@ -17,7 +17,7 @@ let gameDayTimerInterval = null;
 let leagueData = null;
 let resolveLeagueDataReady;
 const leagueDataReady = new Promise(resolve => { resolveLeagueDataReady = resolve; });
-Promise.all([fetch("/data/league.json"), fetch("/data/player-database.json")]).then(async ([leagueResponse, playerDatabaseResponse]) => { if (!leagueResponse.ok || !playerDatabaseResponse.ok) throw new Error("Не удалось загрузить данные лиги или базу футболистов"); const [data, playerDatabase] = await Promise.all([leagueResponse.json(), playerDatabaseResponse.json()]); data.playerDatabase = playerDatabase; return data; }).then(data => { leagueData = data; resolveLeagueDataReady(data); simulateScheduledLeagueResultsForDay(Number(state.gameDay)||1); if(END_SEASON_FRIENDLIES[Number(state.gameDay)])simulateEndSeasonFriendlyDay(Number(state.gameDay)); deliverScheduledCoachMail(Number(state.gameDay)||1); saveState(); if (state.coachName && state.teamName) render(); setTimeout(showNextGameEventPopup,120); if (!$("pageView")?.classList.contains("hidden") && $("pageTitle")?.textContent === "Тренировка") openPage("training"); }).catch(err => { resolveLeagueDataReady(null); console.error(err); });
+Promise.all([fetch("/data/league.json"), fetch("/data/player-database.json")]).then(async ([leagueResponse, playerDatabaseResponse]) => { if (!leagueResponse.ok || !playerDatabaseResponse.ok) throw new Error("Не удалось загрузить данные лиги или базу футболистов"); const [data, playerDatabase] = await Promise.all([leagueResponse.json(), playerDatabaseResponse.json()]); data.playerDatabase = playerDatabase; return data; }).then(data => { leagueData = data; if(state.coachName && state.teamName){ applySavedLeagueStructure(); ensureLeagueMembershipSnapshot(Number(state.seasonNumber)||1); } resolveLeagueDataReady(data); simulateScheduledLeagueResultsForDay(Number(state.gameDay)||1); if(END_SEASON_FRIENDLIES[Number(state.gameDay)])simulateEndSeasonFriendlyDay(Number(state.gameDay)); deliverScheduledCoachMail(Number(state.gameDay)||1); saveState(); if (state.coachName && state.teamName) render(); setTimeout(showNextGameEventPopup,120); if (!$("pageView")?.classList.contains("hidden") && $("pageTitle")?.textContent === "Тренировка") openPage("training"); }).catch(err => { resolveLeagueDataReady(null); console.error(err); });
 
 const $ = (id) => document.getElementById(id);
 function loadState() {
@@ -1014,6 +1014,7 @@ $("setupForm").addEventListener("submit", async (event) => {
   state.avatarIndex = Number(document.querySelector('input[name="coachAvatarInitial"]:checked')?.value || 1);
   state.selectedLeague = "Нижняя лига";
   if (!state.seasonNumber) state.seasonNumber = 1;
+  ensureLeagueMembershipSnapshot(Number(state.seasonNumber)||1);
   saveState(); $("onboarding").classList.add("hidden"); $("dashboard").classList.remove("hidden"); render();
   // The first cloud initialization must run after the player creates a coach and team.
   void initializeCloudCareer();
@@ -1867,6 +1868,88 @@ function officialRoundDay(round,leagueName=currentCoachLeague()){return (LEAGUE_
 function officialRoundForDay(day,leagueName=currentCoachLeague()){const index=(LEAGUE_MATCH_DAYS[leagueName]||LEAGUE_MATCH_DAYS["Нижняя лига"]).indexOf(Number(day));return index<0?0:index+1}
 function officialMatchKey(round,home,away){const leagueName=home?.league||away?.league||currentCoachLeague();return String(state.seasonNumber||1)+"-"+String(leagueName).replace(/\s+/g,"-")+"-"+officialRoundDay(round,leagueName)+"-"+round+"-"+home.id+"-"+away.id}
 function allCurrentLeagueTeams(leagueName=currentCoachLeague()){return (leagueData?.teams||[]).filter(t=>t.league===leagueName).map(t=>t.isUserTeam?getUserTeam():t).filter(Boolean)}
+function ensureLeagueMembershipSnapshot(season=Number(state.seasonNumber)||1){
+ if(!leagueData?.teams?.length||!state.coachName||!state.teamName)return;
+ state.leagueMembershipHistory=state.leagueMembershipHistory&&typeof state.leagueMembershipHistory==="object"?state.leagueMembershipHistory:{};
+ const key=String(Number(season)||1);if(state.leagueMembershipHistory[key])return;
+ const membership={};leagueData.teams.forEach(team=>{if(team.league==="Верхняя лига"||team.league==="Нижняя лига")membership[team.id]=team.league});
+ state.leagueMembershipHistory[key]=membership;
+}
+function applySavedLeagueStructure(){
+ if(!leagueData?.teams)return;
+ state.leagueMembership=state.leagueMembership&&typeof state.leagueMembership==="object"?state.leagueMembership:{};
+ state.generatedLeagueTeams=Array.isArray(state.generatedLeagueTeams)?state.generatedLeagueTeams:[];
+ state.generatedLeagueTeams.forEach(saved=>{
+  if(!saved?.id||leagueData.teams.some(team=>team.id===saved.id))return;
+  leagueData.teams.push({...saved,players:Array.isArray(saved.players)?saved.players:[]});
+ });
+ leagueData.teams.forEach(team=>{
+  const membership=state.leagueMembership[team.id];if(membership)team.league=membership;
+  if(team.isUserTeam&&Array.isArray(state.userRoster))team.players=state.userRoster;
+  else if(Array.isArray(state.externalRosters?.[team.id]))team.players=state.externalRosters[team.id];
+ });
+ const own=leagueData.teams.find(team=>team.isUserTeam||team.name==="{teamName}");
+ if(own&&(own.league==="Верхняя лига"||own.league==="Нижняя лига"))state.selectedLeague=own.league;
+}
+function transitionTeamPower(team){
+ const players=Array.isArray(team?.players)?team.players:[];if(!players.length)return 0;
+ return players.reduce((sum,player)=>sum+Math.max(Number(player.skills?.ВР)||0,Number(player.skills?.ЗЩ)||0,Number(player.skills?.ПЗ)||0,Number(player.skills?.НП)||0),0)/players.length;
+}
+function transitionRandom(seed){
+ let h=2166136261;for(const ch of String(seed))h=Math.imul(h^ch.charCodeAt(0),16777619);
+ return ()=>{h+=0x6D2B79F5;let t=h;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296};
+}
+function playPromotionPlayoff(first,second,season){
+ const rand=transitionRandom("promotion-playoff:"+season+":"+first.team.id+":"+second.team.id);
+ const powerA=transitionTeamPower(first.team),powerB=transitionTeamPower(second.team);
+ const scoreA=Math.max(0,Math.min(5,Math.floor(rand()*3+Math.max(0,(powerA-powerB)/35))));
+ const scoreB=Math.max(0,Math.min(5,Math.floor(rand()*3+Math.max(0,(powerB-powerA)/35))));
+ const winner=scoreA===scoreB?(rand()<powerA/Math.max(1,powerA+powerB)?first.team:second.team):(scoreA>scoreB?first.team:second.team);
+ return {season,day:182,type:"promotion-playoff",homeId:first.team.id,homeName:first.team.name,awayId:second.team.id,awayName:second.team.name,homeScore:scoreA,awayScore:scoreB,penalties:scoreA===scoreB,penaltyWinnerId:scoreA===scoreB?winner.id:null,winnerId:winner.id,winnerName:winner.name,loserId:winner.id===first.team.id?second.team.id:first.team.id,loserName:winner.id===first.team.id?second.team.name:first.team.name};
+}
+function createReplacementLeagueTeam(season,slot){
+ state.leagueReserveTeams=Array.isArray(state.leagueReserveTeams)?state.leagueReserveTeams:[];
+ state.generatedLeagueTeams=Array.isArray(state.generatedLeagueTeams)?state.generatedLeagueTeams:[];
+ let reserve=state.leagueReserveTeams.shift();
+ while(reserve&&(!Array.isArray(reserve.players)||reserve.players.length===0))reserve=state.leagueReserveTeams.shift();
+ const id="new-lower-"+season+"-"+slot;
+ let team;
+ if(reserve){team={...reserve,id,league:"Нижняя лига",players:reserve.players.map(player=>({...player}))};}
+ else{
+  const roles=["ВР","ВР","ЗЩ","ЗЩ","ЗЩ","ПЗ","ПЗ","ПЗ","НП","НП"];
+  const rand=transitionRandom("replacement-roster:"+season+":"+slot);
+  const players=roles.map((position,index)=>{const skill=()=>15+Math.floor(rand()*26);return {careerId:makeCareerId(),playerId:"generated-"+season+"-"+slot+"-"+index,name:"Новичок двора "+season+"-"+slot+"-"+(index+1),position,nationality:"Россия",age:14+Math.floor(rand()*7),portraitIndex:1+Math.floor(rand()*150),skills:{ВР:skill(),ЗЩ:skill(),ПЗ:skill(),НП:skill()}}});
+  team={id,name:"НОВЫЙ ДВОР "+season+"-"+slot,coach:"Местный тренер",league:"Нижняя лига",players};
+ }
+ team.id=id;team.league="Нижняя лига";team.isUserTeam=false;
+ state.generatedLeagueTeams.push({...team,players:team.players.map(player=>({...player,skills:{...(player.skills||{})}}))});
+ leagueData.teams.push(team);state.leagueMembership=state.leagueMembership||{};state.leagueMembership[id]="Нижняя лига";
+ return team;
+}
+function completeSeasonLeagueTransitions(season){
+ state.leagueTransitions=state.leagueTransitions&&typeof state.leagueTransitions==="object"?state.leagueTransitions:{};
+ const existing=state.leagueTransitions[String(season)];if(existing?.completed)return existing.summary||"Переходы между лигами уже рассчитаны.";
+ ensureLeagueMembershipSnapshot(season);
+ const upper=getStandingsForLeague("Верхняя лига",season),lower=getStandingsForLeague("Нижняя лига",season);
+ if(upper.length<2||lower.length<3)return "Не удалось рассчитать переходы: в одной из лиг недостаточно команд.";
+ const promoted=[lower[0].team];
+ const playoff=playPromotionPlayoff(lower[1],lower[2],season);const playoffWinner=leagueData.teams.find(team=>team.id===playoff.winnerId);
+ if(playoffWinner)promoted.push(playoffWinner);
+ const relegated=upper.slice(-2).map(row=>row.team);
+ const userId=getUserTeam()?.id;
+ const lowerDepartures=lower.slice().reverse().filter(row=>row.team.id!==userId).slice(0,2).map(row=>row.team);
+ const reserveNames=[];
+ promoted.forEach(team=>team.league="Верхняя лига");
+ relegated.forEach(team=>team.league="Нижняя лига");
+ lowerDepartures.forEach(team=>{team.league="Выбывшие команды";state.retiredLeagueTeamIds=Array.isArray(state.retiredLeagueTeamIds)?state.retiredLeagueTeamIds:[];if(!state.retiredLeagueTeamIds.includes(team.id))state.retiredLeagueTeamIds.push(team.id)});
+ for(let i=0;i<lowerDepartures.length;i++){const replacement=createReplacementLeagueTeam(season,i+1);reserveNames.push(replacement.name)}
+ state.leagueMembership=state.leagueMembership&&typeof state.leagueMembership==="object"?state.leagueMembership:{};
+ leagueData.teams.forEach(team=>{state.leagueMembership[team.id]=team.league});
+ const own=getUserTeam();if(own)state.selectedLeague=own.league;
+ const summary="Повышение: "+promoted.map(team=>team.name).join(", ")+". Стыковой матч: "+playoff.homeName+" "+playoff.homeScore+":"+playoff.awayScore+" "+playoff.awayName+(playoff.penalties?" (победа по пенальти)":"")+". Понижение: "+relegated.map(team=>team.name).join(", ")+". Выбыли из нижней лиги: "+lowerDepartures.map(team=>team.name).join(", ")+". Новые команды: "+reserveNames.join(", ")+".";
+ state.leagueTransitions[String(season)]={completed:true,season,playoff,promotedIds:promoted.map(team=>team.id),relegatedIds:relegated.map(team=>team.id),departedIds:lowerDepartures.map(team=>team.id),replacementNames:reserveNames,summary,completedAt:Date.now()};
+ saveState();return summary;
+}
 function getOfficialRoundFixtures(round,leagueName=currentCoachLeague()){
  const teams=allCurrentLeagueTeams(leagueName);if(teams.length<2)return [];
  let base=teams.slice(),rounds=[];
@@ -2130,7 +2213,9 @@ function runCupRound(stage,matchIndex=0){
  saveState();
 }
 function getStandingsForLeague(leagueName,season){
- const teams=allCurrentLeagueTeams(leagueName).map(team=>({team,played:0,w:0,d:0,l:0,gf:0,ga:0,pts:0})),byId=Object.fromEntries(teams.map(x=>[x.team.id,x]));
+ const seasonKey=String(Number(season)||1),membership=state.leagueMembershipHistory?.[seasonKey];
+ const source=membership?(leagueData?.teams||[]).filter(team=>membership[team.id]===leagueName).map(team=>team.isUserTeam?getUserTeam():team).filter(Boolean):allCurrentLeagueTeams(leagueName);
+ const teams=source.map(team=>({team,played:0,w:0,d:0,l:0,gf:0,ga:0,pts:0})),byId=Object.fromEntries(teams.map(x=>[x.team.id,x]));
  Object.values(state.leagueResults||{}).filter(r=>Number(r.season||state.seasonNumber)===Number(season)&&isCanonicalLeagueResult(r,leagueName)).forEach(r=>{const h=byId[r.homeId],a=byId[r.awayId];if(!h||!a)return;h.played++;a.played++;h.gf+=Number(r.homeScore)||0;h.ga+=Number(r.awayScore)||0;a.gf+=Number(r.awayScore)||0;a.ga+=Number(r.homeScore)||0;if(r.homeScore>r.awayScore){h.w++;a.l++;h.pts+=3}else if(r.homeScore<r.awayScore){a.w++;h.l++;a.pts+=3}else{h.d++;a.d++;h.pts++;a.pts++}});
  return teams.sort((x,y)=>y.pts-x.pts||(y.gf-y.ga)-(x.gf-x.ga)||y.gf-x.gf||x.team.name.localeCompare(y.team.name,"ru"));
 }
@@ -2378,7 +2463,9 @@ function renderCoachChronicle(){
 }
 function isCanonicalLeagueResult(r,leagueName){
  const home=getTeamForMatch(r?.homeId),away=getTeamForMatch(r?.awayId);
- return Boolean(home&&away&&home.league===leagueName&&away.league===leagueName&&Number(r.day)===officialRoundDay(Number(r.round),leagueName));
+ const seasonKey=String(Number(r?.season)||Number(state.seasonNumber)||1),history=state.leagueMembershipHistory?.[seasonKey];
+ const homeLeague=history?.[r?.homeId]||home?.league,awayLeague=history?.[r?.awayId]||away?.league;
+ return Boolean(home&&away&&homeLeague===leagueName&&awayLeague===leagueName&&Number(r.day)===officialRoundDay(Number(r.round),leagueName));
 }
 function getCurrentStandings(leagueName=currentCoachLeague()){
  const teams=allCurrentLeagueTeams(leagueName).map(t=>({team:t,played:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}));
@@ -2471,12 +2558,15 @@ function advanceCoachDay(){
   const completedSeason=Number(state.seasonNumber)||1;
   awardSeasonRatingBonuses(completedSeason);
   finalizeSeasonCareerAwards(completedSeason);
+  const leagueTransitionSummary=completeSeasonLeagueTransitions(completedSeason);
   state.careerHistory=state.careerHistory||{officialMatches:[],seasons:{}};
   state.careerHistory.seasons=state.careerHistory.seasons||{};
   state.careerHistory.seasons[String(completedSeason)]={...(state.careerHistory.seasons[String(completedSeason)]||{}),finalRating:Number(state.seasonRating)||0};
   state.seasonNumber=completedSeason+1;state.gameDay=1;state.seasonRating=0;state.seasonMatchAwards=[];recoverPlayerConditionForDay();
   processPendingScoutDepartures();
-  state.lastCalendarEvent="Начался новый сезон "+state.seasonNumber+". Общий рейтинг сохранён; сезонный рейтинг нового сезона начинается с 0.";publishCoachEventOnce("season-start:"+state.seasonNumber,"news","Новый сезон во дворе",state.lastCalendarEvent,{priority:"high",important:true,day:1,season:state.seasonNumber,popup:true});
+  ensureLeagueMembershipSnapshot(state.seasonNumber);
+  const ownAfterTransition=getUserTeam();if(ownAfterTransition)state.selectedLeague=ownAfterTransition.league;
+  state.lastCalendarEvent="Сезон "+completedSeason+" завершён. "+leagueTransitionSummary+" Начался новый сезон "+state.seasonNumber+". Общий рейтинг сохранён; сезонный рейтинг нового сезона начинается с 0.";publishCoachEventOnce("season-start:"+state.seasonNumber,"news","Итоги сезона и переходы между лигами",state.lastCalendarEvent,{priority:"high",important:true,day:1,season:state.seasonNumber,popup:true});
   updateCoachRespect();saveState();render();alert(state.lastCalendarEvent);return
 }
  state.gameDay=Number(state.gameDay||1)+1;
