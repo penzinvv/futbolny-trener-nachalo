@@ -1,0 +1,3757 @@
+{
+  "schemaVersion": 1,
+  "sourceDocument": "Правила и все данные по ЛИГЕ в игре Футбольный тренер.docx",
+  "ageRange": {
+    "min": 14,
+    "max": 20,
+    "assignedWhen": "newCareerCreated"
+  },
+  "notes": [
+    "Player records are source data; age is assigned per career and must be persisted in the save.",
+    "Portrait references are preserved exactly as listed in the source document; duplicate portrait references are not silently reassigned."
+  ],
+  "teams": [
+    {
+      "name": "(команда тренера)",
+      "coach": "(имя тренера)",
+      "group": "active",
+      "league": "Нижняя лига",
+      "players": [
+        "player-0001",
+        "player-0002",
+        "player-0003",
+        "player-0004",
+        "player-0005",
+        "player-0006",
+        "player-0007"
+      ]
+    },
+    {
+      "name": "КРЕПКИЕ ОРЕШКИ",
+      "coach": "Васильев Глеб",
+      "group": "active",
+      "league": "Верхняя лига",
+      "players": [
+        "player-0008",
+        "player-0009",
+        "player-0010",
+        "player-0011",
+        "player-0012",
+        "player-0013",
+        "player-0014",
+        "player-0015"
+      ]
+    },
+    {
+      "name": "СПАРТАКИШ",
+      "coach": "Лукашин Александр",
+      "group": "active",
+      "league": "Верхняя лига",
+      "players": [
+        "player-0016",
+        "player-0017",
+        "player-0018",
+        "player-0019",
+        "player-0020",
+        "player-0021",
+        "player-0022",
+        "player-0023",
+        "player-0024"
+      ]
+    },
+    {
+      "name": "ДИНАМИТ",
+      "coach": "Влагин Антон",
+      "group": "active",
+      "league": "Верхняя лига",
+      "players": [
+        "player-0025",
+        "player-0026",
+        "player-0027",
+        "player-0028",
+        "player-0029",
+        "player-0030",
+        "player-0031",
+        "player-0032",
+        "player-0033"
+      ]
+    },
+    {
+      "name": "АЛАЯ РОЗА",
+      "coach": "Калугин Степан",
+      "group": "active",
+      "league": "Верхняя лига",
+      "players": [
+        "player-0034",
+        "player-0035",
+        "player-0036",
+        "player-0037",
+        "player-0038",
+        "player-0039",
+        "player-0040",
+        "player-0041"
+      ]
+    },
+    {
+      "name": "ДРОНЫ",
+      "coach": "Пулин Захар",
+      "group": "active",
+      "league": "Верхняя лига",
+      "players": [
+        "player-0042",
+        "player-0043",
+        "player-0044",
+        "player-0045",
+        "player-0046",
+        "player-0047",
+        "player-0048",
+        "player-0049",
+        "player-0050"
+      ]
+    },
+    {
+      "name": "ЛУЧ",
+      "coach": "Тихий Андрей",
+      "group": "active",
+      "league": "Верхняя лига",
+      "players": [
+        "player-0051",
+        "player-0052",
+        "player-0053",
+        "player-0054",
+        "player-0055",
+        "player-0056",
+        "player-0057",
+        "player-0058",
+        "player-0059"
+      ]
+    },
+    {
+      "name": "МОГНЕМ",
+      "coach": "Громный Евгений",
+      "group": "active",
+      "league": "Нижняя лига",
+      "players": [
+        "player-0060",
+        "player-0061",
+        "player-0062",
+        "player-0063",
+        "player-0064",
+        "player-0065",
+        "player-0066",
+        "player-0067"
+      ]
+    },
+    {
+      "name": "ЗЕНИТ ДВОР",
+      "coach": "Дорохов Валерий",
+      "group": "active",
+      "league": "Нижняя лига",
+      "players": [
+        "player-0068",
+        "player-0069",
+        "player-0070",
+        "player-0071",
+        "player-0072",
+        "player-0073",
+        "player-0074",
+        "player-0075",
+        "player-0076"
+      ]
+    },
+    {
+      "name": "ЛОКОЛЕЙТМОТИВ",
+      "coach": "Петухов Никита",
+      "group": "active",
+      "league": "Нижняя лига",
+      "players": [
+        "player-0077",
+        "player-0078",
+        "player-0079",
+        "player-0080",
+        "player-0081",
+        "player-0082",
+        "player-0083",
+        "player-0084"
+      ]
+    },
+    {
+      "name": "НЕВОР",
+      "coach": "Гадюкин Дмитрий",
+      "group": "active",
+      "league": "Нижняя лига",
+      "players": [
+        "player-0085",
+        "player-0086",
+        "player-0087",
+        "player-0088",
+        "player-0089",
+        "player-0090",
+        "player-0091",
+        "player-0092"
+      ]
+    },
+    {
+      "name": "СПАС",
+      "coach": "Кротов Денис",
+      "group": "active",
+      "league": "Нижняя лига",
+      "players": [
+        "player-0093",
+        "player-0094",
+        "player-0095",
+        "player-0096",
+        "player-0097",
+        "player-0098",
+        "player-0099",
+        "player-0100",
+        "player-0101"
+      ]
+    },
+    {
+      "name": "BESTFR",
+      "coach": "Грабилин Федор",
+      "group": "reserve",
+      "league": "Резерв",
+      "players": [
+        "player-0102",
+        "player-0103",
+        "player-0104",
+        "player-0105",
+        "player-0106",
+        "player-0107",
+        "player-0108",
+        "player-0109",
+        "player-0110",
+        "player-0111"
+      ]
+    },
+    {
+      "name": "КИБОРГИ",
+      "coach": "Киряев Даниил",
+      "group": "reserve",
+      "league": "Резерв",
+      "players": [
+        "player-0112",
+        "player-0113",
+        "player-0114",
+        "player-0115",
+        "player-0116",
+        "player-0117",
+        "player-0118",
+        "player-0119",
+        "player-0120",
+        "player-0121"
+      ]
+    },
+    {
+      "name": "РИЯЛ",
+      "coach": "Сапогов Андрей",
+      "group": "reserve",
+      "league": "Резерв",
+      "players": [
+        "player-0122",
+        "player-0123",
+        "player-0124",
+        "player-0125",
+        "player-0126",
+        "player-0127",
+        "player-0128",
+        "player-0129",
+        "player-0130",
+        "player-0131"
+      ]
+    },
+    {
+      "name": "ДРАКОНЫ",
+      "coach": "Шалик Степан",
+      "group": "reserve",
+      "league": "Резерв",
+      "players": [
+        "player-0132",
+        "player-0133",
+        "player-0134",
+        "player-0135",
+        "player-0136",
+        "player-0137",
+        "player-0138",
+        "player-0139",
+        "player-0140"
+      ]
+    },
+    {
+      "name": "ДВОРОВЫЕ ДЖЕНТЫ",
+      "coach": "Мадамин Антон",
+      "group": "reserve",
+      "league": "Резерв",
+      "players": [
+        "player-0141",
+        "player-0142",
+        "player-0143",
+        "player-0144",
+        "player-0145",
+        "player-0146",
+        "player-0147",
+        "player-0148"
+      ]
+    },
+    {
+      "name": "МАФУТЫ",
+      "coach": "Горький Максим",
+      "group": "reserve",
+      "league": "Резерв",
+      "players": [
+        "player-0149",
+        "player-0150",
+        "player-0151",
+        "player-0152",
+        "player-0153",
+        "player-0154",
+        "player-0155",
+        "player-0156",
+        "player-0157",
+        "player-0158"
+      ]
+    },
+    {
+      "name": "ДУНАЙ",
+      "coach": "Новак Евгений",
+      "group": "reserve",
+      "league": "Резерв",
+      "players": [
+        "player-0159",
+        "player-0160",
+        "player-0161",
+        "player-0162",
+        "player-0163",
+        "player-0164",
+        "player-0165",
+        "player-0166",
+        "player-0167",
+        "player-0168"
+      ]
+    },
+    {
+      "name": "РУСЫ",
+      "coach": "Барус Виталий",
+      "group": "reserve",
+      "league": "Резерв",
+      "players": [
+        "player-0169",
+        "player-0170",
+        "player-0171",
+        "player-0172",
+        "player-0173",
+        "player-0174",
+        "player-0175",
+        "player-0176"
+      ]
+    },
+    {
+      "name": "ДОСТАВЩИКИ",
+      "coach": "Быстров Валерий",
+      "group": "reserve",
+      "league": "Резерв",
+      "players": [
+        "player-0177",
+        "player-0178",
+        "player-0179",
+        "player-0180",
+        "player-0181",
+        "player-0182",
+        "player-0183",
+        "player-0184",
+        "player-0185"
+      ]
+    }
+  ],
+  "players": [
+    {
+      "playerId": "player-0001",
+      "name": "Лохматый Захар",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 40,
+        "ЗЩ": 22,
+        "ПЗ": 15,
+        "НП": 4
+      },
+      "portraitIndex": 63,
+      "portraitFile": "/images/portretplayers/portret63.jpg",
+      "initialTeam": "(команда тренера)",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0002",
+      "name": "Гурамонов Олег",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 12,
+        "ЗЩ": 40,
+        "ПЗ": 40,
+        "НП": 23
+      },
+      "portraitIndex": 143,
+      "portraitFile": "/images/portretplayers/portret143.jpg",
+      "initialTeam": "(команда тренера)",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0003",
+      "name": "Ряженка Василий",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 13,
+        "ЗЩ": 40,
+        "ПЗ": 32,
+        "НП": 30
+      },
+      "portraitIndex": 150,
+      "portraitFile": "/images/portretplayers/portret150.jpg",
+      "initialTeam": "(команда тренера)",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0004",
+      "name": "Тыркин Дмитрий",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 28,
+        "ЗЩ": 30,
+        "ПЗ": 12,
+        "НП": 21
+      },
+      "portraitIndex": 145,
+      "portraitFile": "/images/portretplayers/portret145.jpg",
+      "initialTeam": "(команда тренера)",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0005",
+      "name": "Факсов Александр",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 6,
+        "ЗЩ": 22,
+        "ПЗ": 39,
+        "НП": 30
+      },
+      "portraitIndex": 65,
+      "portraitFile": "/images/portretplayers/portret65.jpg",
+      "initialTeam": "(команда тренера)",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0006",
+      "name": "Очкин Глеб",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 8,
+        "ЗЩ": 32,
+        "ПЗ": 34,
+        "НП": 31
+      },
+      "portraitIndex": 66,
+      "portraitFile": "/images/portretplayers/portret66.jpg",
+      "initialTeam": "(команда тренера)",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0007",
+      "name": "Стражников Андрей",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 5,
+        "ЗЩ": 30,
+        "ПЗ": 34,
+        "НП": 40
+      },
+      "portraitIndex": 149,
+      "portraitFile": "/images/portretplayers/portret149.jpg",
+      "initialTeam": "(команда тренера)",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0008",
+      "name": "Курпатов Иван",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 43,
+        "ЗЩ": 35,
+        "ПЗ": 20,
+        "НП": 12
+      },
+      "portraitIndex": 1,
+      "portraitFile": "/images/portretplayers/portret1.jpg",
+      "initialTeam": "КРЕПКИЕ ОРЕШКИ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0009",
+      "name": "Бортник Владислав",
+      "position": "ЗЩ",
+      "nationality": "Беларусь",
+      "skills": {
+        "ВР": 23,
+        "ЗЩ": 46,
+        "ПЗ": 35,
+        "НП": 23
+      },
+      "portraitIndex": 3,
+      "portraitFile": "/images/portretplayers/portret3.jpg",
+      "initialTeam": "КРЕПКИЕ ОРЕШКИ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0010",
+      "name": "Жлобов Василий",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 12,
+        "ЗЩ": 44,
+        "ПЗ": 24,
+        "НП": 24
+      },
+      "portraitIndex": 100,
+      "portraitFile": "/images/portretplayers/portret100.jpg",
+      "initialTeam": "КРЕПКИЕ ОРЕШКИ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0011",
+      "name": "Каналов Сергей",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 4,
+        "ЗЩ": 39,
+        "ПЗ": 29,
+        "НП": 27
+      },
+      "portraitIndex": 101,
+      "portraitFile": "/images/portretplayers/portret101.jpg",
+      "initialTeam": "КРЕПКИЕ ОРЕШКИ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0012",
+      "name": "Юсупов Улугбек",
+      "position": "ПЗ",
+      "nationality": "Узбекистан",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 44,
+        "ПЗ": 50,
+        "НП": 45
+      },
+      "portraitIndex": 4,
+      "portraitFile": "/images/portretplayers/portret4.jpg",
+      "initialTeam": "КРЕПКИЕ ОРЕШКИ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0013",
+      "name": "Ладыгин Андрей",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 7,
+        "ЗЩ": 22,
+        "ПЗ": 43,
+        "НП": 20
+      },
+      "portraitIndex": 5,
+      "portraitFile": "/images/portretplayers/portret5.jpg",
+      "initialTeam": "КРЕПКИЕ ОРЕШКИ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0014",
+      "name": "Батраков Семён",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 9,
+        "ЗЩ": 23,
+        "ПЗ": 44,
+        "НП": 46
+      },
+      "portraitIndex": 6,
+      "portraitFile": "/images/portretplayers/portret6.jpg",
+      "initialTeam": "КРЕПКИЕ ОРЕШКИ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0015",
+      "name": "Гордевич Борис",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 25,
+        "ПЗ": 30,
+        "НП": 44
+      },
+      "portraitIndex": 7,
+      "portraitFile": "/images/portretplayers/portret7.jpg",
+      "initialTeam": "КРЕПКИЕ ОРЕШКИ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0016",
+      "name": "Шевкарин Александр",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 47,
+        "ЗЩ": 30,
+        "ПЗ": 23,
+        "НП": 7
+      },
+      "portraitIndex": 103,
+      "portraitFile": "/images/portretplayers/portret103.jpg",
+      "initialTeam": "СПАРТАКИШ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0017",
+      "name": "Соболев Михаил",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 40,
+        "ЗЩ": 29,
+        "ПЗ": 15,
+        "НП": 2
+      },
+      "portraitIndex": 104,
+      "portraitFile": "/images/portretplayers/portret104.jpg",
+      "initialTeam": "СПАРТАКИШ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0018",
+      "name": "Жилин Валерий",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 17,
+        "ЗЩ": 45,
+        "ПЗ": 32,
+        "НП": 26
+      },
+      "portraitIndex": 9,
+      "portraitFile": "/images/portretplayers/portret9.jpg",
+      "initialTeam": "СПАРТАКИШ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0019",
+      "name": "Южный Антон",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 7,
+        "ЗЩ": 43,
+        "ПЗ": 30,
+        "НП": 23
+      },
+      "portraitIndex": 10,
+      "portraitFile": "/images/portretplayers/portret10.jpg",
+      "initialTeam": "СПАРТАКИШ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0020",
+      "name": "Курпатов Захар",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 35,
+        "ПЗ": 46,
+        "НП": 35
+      },
+      "portraitIndex": 11,
+      "portraitFile": "/images/portretplayers/portret11.jpg",
+      "initialTeam": "СПАРТАКИШ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0021",
+      "name": "Валянов Сергей",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 5,
+        "ЗЩ": 23,
+        "ПЗ": 42,
+        "НП": 30
+      },
+      "portraitIndex": 12,
+      "portraitFile": "/images/portretplayers/portret12.jpg",
+      "initialTeam": "СПАРТАКИШ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0022",
+      "name": "Кровный Савелий",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 3,
+        "ЗЩ": 18,
+        "ПЗ": 41,
+        "НП": 25
+      },
+      "portraitIndex": 14,
+      "portraitFile": "/images/portretplayers/portret14.jpg",
+      "initialTeam": "СПАРТАКИШ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0023",
+      "name": "Кайманов Шахбоз",
+      "position": "НП",
+      "nationality": "Узбекистан",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 30,
+        "ПЗ": 39,
+        "НП": 47
+      },
+      "portraitIndex": 8,
+      "portraitFile": "/images/portretplayers/portret8.jpg",
+      "initialTeam": "СПАРТАКИШ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0024",
+      "name": "Дуров Александр",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 3,
+        "ЗЩ": 22,
+        "ПЗ": 34,
+        "НП": 45
+      },
+      "portraitIndex": 106,
+      "portraitFile": "/images/portretplayers/portret106.jpg",
+      "initialTeam": "СПАРТАКИШ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0025",
+      "name": "Гаврилин Евгений",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 44,
+        "ЗЩ": 25,
+        "ПЗ": 12,
+        "НП": 12
+      },
+      "portraitIndex": 107,
+      "portraitFile": "/images/portretplayers/portret107.jpg",
+      "initialTeam": "ДИНАМИТ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0026",
+      "name": "Аршавин Антон",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 30,
+        "ЗЩ": 27,
+        "ПЗ": 22,
+        "НП": 12
+      },
+      "portraitIndex": 15,
+      "portraitFile": "/images/portretplayers/portret15.jpg",
+      "initialTeam": "ДИНАМИТ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0027",
+      "name": "Греблин Василий",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 47,
+        "ПЗ": 32,
+        "НП": 10
+      },
+      "portraitIndex": 16,
+      "portraitFile": "/images/portretplayers/portret16.jpg",
+      "initialTeam": "ДИНАМИТ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0028",
+      "name": "Савушкин Валерий",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 42,
+        "ПЗ": 38,
+        "НП": 21
+      },
+      "portraitIndex": 17,
+      "portraitFile": "/images/portretplayers/portret17.jpg",
+      "initialTeam": "ДИНАМИТ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0029",
+      "name": "Надин Борис",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 47,
+        "ПЗ": 29,
+        "НП": 15
+      },
+      "portraitIndex": 18,
+      "portraitFile": "/images/portretplayers/portret18.jpg",
+      "initialTeam": "ДИНАМИТ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0030",
+      "name": "Стоянов Сергей",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 9,
+        "ЗЩ": 35,
+        "ПЗ": 43,
+        "НП": 35
+      },
+      "portraitIndex": 108,
+      "portraitFile": "/images/portretplayers/portret108.jpg",
+      "initialTeam": "ДИНАМИТ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0031",
+      "name": "Круглов Александр",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 6,
+        "ЗЩ": 22,
+        "ПЗ": 42,
+        "НП": 12
+      },
+      "portraitIndex": 109,
+      "portraitFile": "/images/portretplayers/portret109.jpg",
+      "initialTeam": "ДИНАМИТ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0032",
+      "name": "Пензин Валерий",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 44,
+        "ПЗ": 22,
+        "НП": 49
+      },
+      "portraitIndex": 121,
+      "portraitFile": "/images/portretplayers/portret121.jpg",
+      "initialTeam": "ДИНАМИТ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0033",
+      "name": "Мазур Алексей",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 13,
+        "ЗЩ": 20,
+        "ПЗ": 37,
+        "НП": 44
+      },
+      "portraitIndex": 110,
+      "portraitFile": "/images/portretplayers/portret110.jpg",
+      "initialTeam": "ДИНАМИТ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0034",
+      "name": "Алиев Азамат",
+      "position": "ВР",
+      "nationality": "Казахстан",
+      "skills": {
+        "ВР": 47,
+        "ЗЩ": 22,
+        "ПЗ": 20,
+        "НП": 15
+      },
+      "portraitIndex": 13,
+      "portraitFile": "/images/portretplayers/portret13.jpg",
+      "initialTeam": "АЛАЯ РОЗА",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0035",
+      "name": "Курагин Константин",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 13,
+        "ЗЩ": 43,
+        "ПЗ": 30,
+        "НП": 11
+      },
+      "portraitIndex": 111,
+      "portraitFile": "/images/portretplayers/portret111.jpg",
+      "initialTeam": "АЛАЯ РОЗА",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0036",
+      "name": "Шах Рохан",
+      "position": "ЗЩ",
+      "nationality": "Индия",
+      "skills": {
+        "ВР": 20,
+        "ЗЩ": 42,
+        "ПЗ": 29,
+        "НП": 19
+      },
+      "portraitIndex": 23,
+      "portraitFile": "/images/portretplayers/portret23.jpg",
+      "initialTeam": "АЛАЯ РОЗА",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0037",
+      "name": "Дарьин Тимофей",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 35,
+        "ПЗ": 44,
+        "НП": 35
+      },
+      "portraitIndex": 112,
+      "portraitFile": "/images/portretplayers/portret112.jpg",
+      "initialTeam": "АЛАЯ РОЗА",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0038",
+      "name": "Хренкин Дмитрий",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 3,
+        "ЗЩ": 25,
+        "ПЗ": 41,
+        "НП": 40
+      },
+      "portraitIndex": 113,
+      "portraitFile": "/images/portretplayers/portret113.jpg",
+      "initialTeam": "АЛАЯ РОЗА",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0039",
+      "name": "Тазов Глеб",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 9,
+        "ЗЩ": 19,
+        "ПЗ": 40,
+        "НП": 26
+      },
+      "portraitIndex": 114,
+      "portraitFile": "/images/portretplayers/portret114.jpg",
+      "initialTeam": "АЛАЯ РОЗА",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0040",
+      "name": "Шатуров Алмаз",
+      "position": "НП",
+      "nationality": "Узбекистан",
+      "skills": {
+        "ВР": 7,
+        "ЗЩ": 40,
+        "ПЗ": 35,
+        "НП": 46
+      },
+      "portraitIndex": 20,
+      "portraitFile": "/images/portretplayers/portret20.jpg",
+      "initialTeam": "АЛАЯ РОЗА",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0041",
+      "name": "Николаев Алексей",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 30,
+        "ПЗ": 32,
+        "НП": 41
+      },
+      "portraitIndex": 115,
+      "portraitFile": "/images/portretplayers/portret115.jpg",
+      "initialTeam": "АЛАЯ РОЗА",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0042",
+      "name": "Носов Тимофей",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 40,
+        "ЗЩ": 26,
+        "ПЗ": 20,
+        "НП": 5
+      },
+      "portraitIndex": 24,
+      "portraitFile": "/images/portretplayers/portret24.jpg",
+      "initialTeam": "ДРОНЫ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0043",
+      "name": "Филатов Дмитрий",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 46,
+        "ЗЩ": 30,
+        "ПЗ": 20,
+        "НП": 20
+      },
+      "portraitIndex": 25,
+      "portraitFile": "/images/portretplayers/portret25.jpg",
+      "initialTeam": "ДРОНЫ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0044",
+      "name": "Хуанг Ван",
+      "position": "ЗЩ",
+      "nationality": "Вьетнам",
+      "skills": {
+        "ВР": 12,
+        "ЗЩ": 45,
+        "ПЗ": 40,
+        "НП": 22
+      },
+      "portraitIndex": 122,
+      "portraitFile": "/images/portretplayers/portret122.jpg",
+      "initialTeam": "ДРОНЫ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0045",
+      "name": "Новик Михаил",
+      "position": "ЗЩ",
+      "nationality": "Беларусь",
+      "skills": {
+        "ВР": 15,
+        "ЗЩ": 44,
+        "ПЗ": 38,
+        "НП": 24
+      },
+      "portraitIndex": 26,
+      "portraitFile": "/images/portretplayers/portret26.jpg",
+      "initialTeam": "ДРОНЫ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0046",
+      "name": "Тувалов Андрей",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 32,
+        "ПЗ": 43,
+        "НП": 34
+      },
+      "portraitIndex": 28,
+      "portraitFile": "/images/portretplayers/portret28.jpg",
+      "initialTeam": "ДРОНЫ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0047",
+      "name": "Килькин Семён",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 35,
+        "ПЗ": 43,
+        "НП": 25
+      },
+      "portraitIndex": 29,
+      "portraitFile": "/images/portretplayers/portret29.jpg",
+      "initialTeam": "ДРОНЫ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0048",
+      "name": "Зубов Вячеслав",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 21,
+        "ЗЩ": 38,
+        "ПЗ": 40,
+        "НП": 22
+      },
+      "portraitIndex": 30,
+      "portraitFile": "/images/portretplayers/portret30.jpg",
+      "initialTeam": "ДРОНЫ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0049",
+      "name": "Исмаилов Нурбек",
+      "position": "НП",
+      "nationality": "Кыргызстан",
+      "skills": {
+        "ВР": 5,
+        "ЗЩ": 21,
+        "ПЗ": 35,
+        "НП": 47
+      },
+      "portraitIndex": 31,
+      "portraitFile": "/images/portretplayers/portret31.jpg",
+      "initialTeam": "ДРОНЫ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0050",
+      "name": "Воробьёв Савелий",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 5,
+        "ЗЩ": 29,
+        "ПЗ": 24,
+        "НП": 43
+      },
+      "portraitIndex": 32,
+      "portraitFile": "/images/portretplayers/portret32.jpg",
+      "initialTeam": "ДРОНЫ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0051",
+      "name": "Усатов Игорь",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 47,
+        "ЗЩ": 23,
+        "ПЗ": 20,
+        "НП": 4
+      },
+      "portraitIndex": 33,
+      "portraitFile": "/images/portretplayers/portret33.jpg",
+      "initialTeam": "ЛУЧ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0052",
+      "name": "Долматов Тимур",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 22,
+        "ЗЩ": 43,
+        "ПЗ": 39,
+        "НП": 21
+      },
+      "portraitIndex": 34,
+      "portraitFile": "/images/portretplayers/portret34.jpg",
+      "initialTeam": "ЛУЧ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0053",
+      "name": "Лохов Денис",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 20,
+        "ЗЩ": 43,
+        "ПЗ": 35,
+        "НП": 20
+      },
+      "portraitIndex": 35,
+      "portraitFile": "/images/portretplayers/portret35.jpg",
+      "initialTeam": "ЛУЧ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0054",
+      "name": "Турин Гавриил",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 19,
+        "ЗЩ": 42,
+        "ПЗ": 26,
+        "НП": 24
+      },
+      "portraitIndex": 36,
+      "portraitFile": "/images/portretplayers/portret36.jpg",
+      "initialTeam": "ЛУЧ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0055",
+      "name": "Шапкин Александр",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 37,
+        "ПЗ": 46,
+        "НП": 32
+      },
+      "portraitIndex": 37,
+      "portraitFile": "/images/portretplayers/portret37.jpg",
+      "initialTeam": "ЛУЧ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0056",
+      "name": "Шаталов Андрей",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 4,
+        "ЗЩ": 30,
+        "ПЗ": 44,
+        "НП": 29
+      },
+      "portraitIndex": 116,
+      "portraitFile": "/images/portretplayers/portret116.jpg",
+      "initialTeam": "ЛУЧ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0057",
+      "name": "Тихомиров Сергей",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 32,
+        "ПЗ": 40,
+        "НП": 30
+      },
+      "portraitIndex": 117,
+      "portraitFile": "/images/portretplayers/portret117.jpg",
+      "initialTeam": "ЛУЧ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0058",
+      "name": "Виталин Константин",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 20,
+        "ПЗ": 42,
+        "НП": 46
+      },
+      "portraitIndex": 118,
+      "portraitFile": "/images/portretplayers/portret118.jpg",
+      "initialTeam": "ЛУЧ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0059",
+      "name": "Стражников Владислав",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 12,
+        "ПЗ": 32,
+        "НП": 43
+      },
+      "portraitIndex": 119,
+      "portraitFile": "/images/portretplayers/portret119.jpg",
+      "initialTeam": "ЛУЧ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0060",
+      "name": "Захаров Тимур",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 42,
+        "ЗЩ": 23,
+        "ПЗ": 12,
+        "НП": 10
+      },
+      "portraitIndex": 120,
+      "portraitFile": "/images/portretplayers/portret120.jpg",
+      "initialTeam": "МОГНЕМ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0061",
+      "name": "Шахатов Тимур",
+      "position": "ВР",
+      "nationality": "Узбекистан",
+      "skills": {
+        "ВР": 39,
+        "ЗЩ": 30,
+        "ПЗ": 12,
+        "НП": 10
+      },
+      "portraitIndex": 128,
+      "portraitFile": "/images/portretplayers/portret128.jpg",
+      "initialTeam": "МОГНЕМ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0062",
+      "name": "Кинчев Семён",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 12,
+        "ЗЩ": 35,
+        "ПЗ": 30,
+        "НП": 16
+      },
+      "portraitIndex": 121,
+      "portraitFile": "/images/portretplayers/portret121.jpg",
+      "initialTeam": "МОГНЕМ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0063",
+      "name": "Голубев Александр",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 20,
+        "ЗЩ": 33,
+        "ПЗ": 23,
+        "НП": 17
+      },
+      "portraitIndex": 123,
+      "portraitFile": "/images/portretplayers/portret123.jpg",
+      "initialTeam": "МОГНЕМ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0064",
+      "name": "Урманов Глеб",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 30,
+        "ПЗ": 39,
+        "НП": 23
+      },
+      "portraitIndex": 40,
+      "portraitFile": "/images/portretplayers/portret40.jpg",
+      "initialTeam": "МОГНЕМ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0065",
+      "name": "Козявин Андрей",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 32,
+        "ПЗ": 36,
+        "НП": 30
+      },
+      "portraitIndex": 41,
+      "portraitFile": "/images/portretplayers/portret41.jpg",
+      "initialTeam": "МОГНЕМ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0066",
+      "name": "Кхан Радж",
+      "position": "НП",
+      "nationality": "Индия",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 22,
+        "ПЗ": 34,
+        "НП": 42
+      },
+      "portraitIndex": 54,
+      "portraitFile": "/images/portretplayers/portret54.jpg",
+      "initialTeam": "МОГНЕМ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0067",
+      "name": "Пулин Владимир",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 20,
+        "ПЗ": 25,
+        "НП": 39
+      },
+      "portraitIndex": 124,
+      "portraitFile": "/images/portretplayers/portret124.jpg",
+      "initialTeam": "МОГНЕМ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0068",
+      "name": "Кержаков Василий",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 44,
+        "ЗЩ": 32,
+        "ПЗ": 23,
+        "НП": 3
+      },
+      "portraitIndex": 126,
+      "portraitFile": "/images/portretplayers/portret126.jpg",
+      "initialTeam": "ЗЕНИТ ДВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0069",
+      "name": "Пелевин Александр",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 33,
+        "ЗЩ": 23,
+        "ПЗ": 13,
+        "НП": 7
+      },
+      "portraitIndex": 42,
+      "portraitFile": "/images/portretplayers/portret42.jpg",
+      "initialTeam": "ЗЕНИТ ДВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0070",
+      "name": "Ватутин Дмитрий",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 15,
+        "ЗЩ": 39,
+        "ПЗ": 22,
+        "НП": 20
+      },
+      "portraitIndex": 43,
+      "portraitFile": "/images/portretplayers/portret43.jpg",
+      "initialTeam": "ЗЕНИТ ДВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0071",
+      "name": "Булбеков Улугбек",
+      "position": "ЗЩ",
+      "nationality": "Кыргызстан",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 40,
+        "ПЗ": 25,
+        "НП": 22
+      },
+      "portraitIndex": 108,
+      "portraitFile": "/images/portretplayers/portret108.jpg",
+      "initialTeam": "ЗЕНИТ ДВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0072",
+      "name": "Дюфалакин Кирилл",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 23,
+        "ЗЩ": 30,
+        "ПЗ": 20,
+        "НП": 17
+      },
+      "portraitIndex": 44,
+      "portraitFile": "/images/portretplayers/portret44.jpg",
+      "initialTeam": "ЗЕНИТ ДВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0073",
+      "name": "Старостин Никита",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 34,
+        "ПЗ": 43,
+        "НП": 23
+      },
+      "portraitIndex": 45,
+      "portraitFile": "/images/portretplayers/portret45.jpg",
+      "initialTeam": "ЗЕНИТ ДВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0074",
+      "name": "Фам Дык",
+      "position": "ПЗ",
+      "nationality": "Вьетнам",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 32,
+        "ПЗ": 33,
+        "НП": 23
+      },
+      "portraitIndex": 146,
+      "portraitFile": "/images/portretplayers/portret146.jpg",
+      "initialTeam": "ЗЕНИТ ДВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0075",
+      "name": "Курочкин Валерий",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 25,
+        "ПЗ": 30,
+        "НП": 39
+      },
+      "portraitIndex": 47,
+      "portraitFile": "/images/portretplayers/portret47.jpg",
+      "initialTeam": "ЗЕНИТ ДВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0076",
+      "name": "Шарин Николай",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 16,
+        "ЗЩ": 22,
+        "ПЗ": 22,
+        "НП": 36
+      },
+      "portraitIndex": 48,
+      "portraitFile": "/images/portretplayers/portret48.jpg",
+      "initialTeam": "ЗЕНИТ ДВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0077",
+      "name": "Граблёв Семён",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 40,
+        "ЗЩ": 33,
+        "ПЗ": 15,
+        "НП": 10
+      },
+      "portraitIndex": 49,
+      "portraitFile": "/images/portretplayers/portret49.jpg",
+      "initialTeam": "ЛОКОЛЕЙТМОТИВ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0078",
+      "name": "Златов Виталий",
+      "position": "ЗЩ",
+      "nationality": "Беларусь",
+      "skills": {
+        "ВР": 9,
+        "ЗЩ": 40,
+        "ПЗ": 34,
+        "НП": 20
+      },
+      "portraitIndex": 129,
+      "portraitFile": "/images/portretplayers/portret129.jpg",
+      "initialTeam": "ЛОКОЛЕЙТМОТИВ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0079",
+      "name": "Царицын Станислав",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 25,
+        "ПЗ": 24,
+        "НП": 20
+      },
+      "portraitIndex": 130,
+      "portraitFile": "/images/portretplayers/portret130.jpg",
+      "initialTeam": "ЛОКОЛЕЙТМОТИВ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0080",
+      "name": "Сажин Вячеслав",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 7,
+        "ЗЩ": 30,
+        "ПЗ": 43,
+        "НП": 32
+      },
+      "portraitIndex": 51,
+      "portraitFile": "/images/portretplayers/portret51.jpg",
+      "initialTeam": "ЛОКОЛЕЙТМОТИВ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0081",
+      "name": "Усладов Марин",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 15,
+        "ЗЩ": 33,
+        "ПЗ": 39,
+        "НП": 25
+      },
+      "portraitIndex": 52,
+      "portraitFile": "/images/portretplayers/portret52.jpg",
+      "initialTeam": "ЛОКОЛЕЙТМОТИВ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0082",
+      "name": "Хасанов Алибек",
+      "position": "ПЗ",
+      "nationality": "Узбекистан",
+      "skills": {
+        "ВР": 6,
+        "ЗЩ": 24,
+        "ПЗ": 45,
+        "НП": 34
+      },
+      "portraitIndex": 84,
+      "portraitFile": "/images/portretplayers/portret84.jpg",
+      "initialTeam": "ЛОКОЛЕЙТМОТИВ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0083",
+      "name": "Нариманов Рашид",
+      "position": "НП",
+      "nationality": "Узбекистан",
+      "skills": {
+        "ВР": 5,
+        "ЗЩ": 15,
+        "ПЗ": 30,
+        "НП": 42
+      },
+      "portraitIndex": 58,
+      "portraitFile": "/images/portretplayers/portret58.jpg",
+      "initialTeam": "ЛОКОЛЕЙТМОТИВ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0084",
+      "name": "Скалатов Владимир",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 22,
+        "ПЗ": 30,
+        "НП": 39
+      },
+      "portraitIndex": 53,
+      "portraitFile": "/images/portretplayers/portret53.jpg",
+      "initialTeam": "ЛОКОЛЕЙТМОТИВ",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0085",
+      "name": "Страх Денис",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 39,
+        "ЗЩ": 30,
+        "ПЗ": 22,
+        "НП": 11
+      },
+      "portraitIndex": 54,
+      "portraitFile": "/images/portretplayers/portret54.jpg",
+      "initialTeam": "НЕВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0086",
+      "name": "Грудков Глеб",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 30,
+        "ЗЩ": 25,
+        "ПЗ": 11,
+        "НП": 5
+      },
+      "portraitIndex": 55,
+      "portraitFile": "/images/portretplayers/portret55.jpg",
+      "initialTeam": "НЕВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0087",
+      "name": "Бабкин Николай",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 37,
+        "ПЗ": 30,
+        "НП": 20
+      },
+      "portraitIndex": 131,
+      "portraitFile": "/images/portretplayers/portret131.jpg",
+      "initialTeam": "НЕВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0088",
+      "name": "Диритани Максим",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 40,
+        "ПЗ": 37,
+        "НП": 24
+      },
+      "portraitIndex": 132,
+      "portraitFile": "/images/portretplayers/portret132.jpg",
+      "initialTeam": "НЕВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0089",
+      "name": "Карманов Кирилл",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 32,
+        "ПЗ": 35,
+        "НП": 25
+      },
+      "portraitIndex": 135,
+      "portraitFile": "/images/portretplayers/portret135.jpg",
+      "initialTeam": "НЕВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0090",
+      "name": "Юрьев Юрий",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 6,
+        "ЗЩ": 24,
+        "ПЗ": 31,
+        "НП": 29
+      },
+      "portraitIndex": 56,
+      "portraitFile": "/images/portretplayers/portret56.jpg",
+      "initialTeam": "НЕВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0091",
+      "name": "Дашко Емельян",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 12,
+        "ЗЩ": 22,
+        "ПЗ": 33,
+        "НП": 43
+      },
+      "portraitIndex": 57,
+      "portraitFile": "/images/portretplayers/portret57.jpg",
+      "initialTeam": "НЕВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0092",
+      "name": "Ананьев Андрей",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 3,
+        "ЗЩ": 29,
+        "ПЗ": 32,
+        "НП": 37
+      },
+      "portraitIndex": 59,
+      "portraitFile": "/images/portretplayers/portret59.jpg",
+      "initialTeam": "НЕВОР",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0093",
+      "name": "Грызин Антон",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 46,
+        "ЗЩ": 35,
+        "ПЗ": 14,
+        "НП": 14
+      },
+      "portraitIndex": 60,
+      "portraitFile": "/images/portretplayers/portret60.jpg",
+      "initialTeam": "СПАС",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0094",
+      "name": "Ланарин Борис",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 44,
+        "ЗЩ": 24,
+        "ПЗ": 23,
+        "НП": 13
+      },
+      "portraitIndex": 61,
+      "portraitFile": "/images/portretplayers/portret61.jpg",
+      "initialTeam": "СПАС",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0095",
+      "name": "Ступка Виктор",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 21,
+        "ЗЩ": 44,
+        "ПЗ": 22,
+        "НП": 21
+      },
+      "portraitIndex": 137,
+      "portraitFile": "/images/portretplayers/portret137.jpg",
+      "initialTeam": "СПАС",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0096",
+      "name": "Гарантов Евгений",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 19,
+        "ЗЩ": 40,
+        "ПЗ": 32,
+        "НП": 26
+      },
+      "portraitIndex": 140,
+      "portraitFile": "/images/portretplayers/portret140.jpg",
+      "initialTeam": "СПАС",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0097",
+      "name": "Стойлов Михаил",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 15,
+        "ЗЩ": 33,
+        "ПЗ": 39,
+        "НП": 30
+      },
+      "portraitIndex": 141,
+      "portraitFile": "/images/portretplayers/portret141.jpg",
+      "initialTeam": "СПАС",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0098",
+      "name": "Ким Тхоу",
+      "position": "ПЗ",
+      "nationality": "Южная Корея",
+      "skills": {
+        "ВР": 5,
+        "ЗЩ": 23,
+        "ПЗ": 37,
+        "НП": 33
+      },
+      "portraitIndex": 139,
+      "portraitFile": "/images/portretplayers/portret139.jpg",
+      "initialTeam": "СПАС",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0099",
+      "name": "Газанов Юрий",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 6,
+        "ЗЩ": 24,
+        "ПЗ": 38,
+        "НП": 29
+      },
+      "portraitIndex": 141,
+      "portraitFile": "/images/portretplayers/portret141.jpg",
+      "initialTeam": "СПАС",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0100",
+      "name": "Балдин Александр",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 12,
+        "ЗЩ": 32,
+        "ПЗ": 35,
+        "НП": 47
+      },
+      "portraitIndex": 142,
+      "portraitFile": "/images/portretplayers/portret142.jpg",
+      "initialTeam": "СПАС",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0101",
+      "name": "Верхотуров Артур",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 22,
+        "ЗЩ": 21,
+        "ПЗ": 32,
+        "НП": 43
+      },
+      "portraitIndex": 138,
+      "portraitFile": "/images/portretplayers/portret138.jpg",
+      "initialTeam": "СПАС",
+      "group": "active"
+    },
+    {
+      "playerId": "player-0102",
+      "name": "Кочнев Егор",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 43,
+        "ЗЩ": 35,
+        "ПЗ": 20,
+        "НП": 12
+      },
+      "portraitIndex": 67,
+      "portraitFile": "/images/portretplayers/portret67.jpg",
+      "initialTeam": "BESTFR",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0103",
+      "name": "Виталин Дмитрий",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 32,
+        "ЗЩ": 23,
+        "ПЗ": 20,
+        "НП": 7
+      },
+      "portraitIndex": 68,
+      "portraitFile": "/images/portretplayers/portret68.jpg",
+      "initialTeam": "BESTFR",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0104",
+      "name": "Барческа Антон",
+      "position": "ЗЩ",
+      "nationality": "Беларусь",
+      "skills": {
+        "ВР": 23,
+        "ЗЩ": 40,
+        "ПЗ": 35,
+        "НП": 23
+      },
+      "portraitIndex": 69,
+      "portraitFile": "/images/portretplayers/portret69.jpg",
+      "initialTeam": "BESTFR",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0105",
+      "name": "Васильев Геннадий",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 12,
+        "ЗЩ": 44,
+        "ПЗ": 24,
+        "НП": 24
+      },
+      "portraitIndex": 70,
+      "portraitFile": "/images/portretplayers/portret70.jpg",
+      "initialTeam": "BESTFR",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0106",
+      "name": "Крика Семён",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 4,
+        "ЗЩ": 35,
+        "ПЗ": 29,
+        "НП": 27
+      },
+      "portraitIndex": 71,
+      "portraitFile": "/images/portretplayers/portret71.jpg",
+      "initialTeam": "BESTFR",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0107",
+      "name": "Тушкин Глеб",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 6,
+        "ЗЩ": 25,
+        "ПЗ": 49,
+        "НП": 32
+      },
+      "portraitIndex": 72,
+      "portraitFile": "/images/portretplayers/portret72.jpg",
+      "initialTeam": "BESTFR",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0108",
+      "name": "Маранаев Дилшод",
+      "position": "ПЗ",
+      "nationality": "Узбекистан",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 44,
+        "ПЗ": 50,
+        "НП": 45
+      },
+      "portraitIndex": 75,
+      "portraitFile": "/images/portretplayers/portret75.jpg",
+      "initialTeam": "BESTFR",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0109",
+      "name": "Витразарин Александр",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 7,
+        "ЗЩ": 22,
+        "ПЗ": 35,
+        "НП": 20
+      },
+      "portraitIndex": 73,
+      "portraitFile": "/images/portretplayers/portret73.jpg",
+      "initialTeam": "BESTFR",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0110",
+      "name": "Быков Данил",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 9,
+        "ЗЩ": 23,
+        "ПЗ": 44,
+        "НП": 46
+      },
+      "portraitIndex": 78,
+      "portraitFile": "/images/portretplayers/portret78.jpg",
+      "initialTeam": "BESTFR",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0111",
+      "name": "Городоев Андрей",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 25,
+        "ПЗ": 30,
+        "НП": 44
+      },
+      "portraitIndex": 74,
+      "portraitFile": "/images/portretplayers/portret74.jpg",
+      "initialTeam": "BESTFR",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0112",
+      "name": "Даниилов Александр",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 40,
+        "ЗЩ": 30,
+        "ПЗ": 23,
+        "НП": 7
+      },
+      "portraitIndex": 76,
+      "portraitFile": "/images/portretplayers/portret76.jpg",
+      "initialTeam": "КИБОРГИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0113",
+      "name": "Соболь Глеб",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 35,
+        "ЗЩ": 29,
+        "ПЗ": 15,
+        "НП": 2
+      },
+      "portraitIndex": 77,
+      "portraitFile": "/images/portretplayers/portret77.jpg",
+      "initialTeam": "КИБОРГИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0114",
+      "name": "Панин Андрей",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 19,
+        "ЗЩ": 45,
+        "ПЗ": 29,
+        "НП": 15
+      },
+      "portraitIndex": 79,
+      "portraitFile": "/images/portretplayers/portret79.jpg",
+      "initialTeam": "КИБОРГИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0115",
+      "name": "Жукараев Денис",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 17,
+        "ЗЩ": 39,
+        "ПЗ": 32,
+        "НП": 26
+      },
+      "portraitIndex": 80,
+      "portraitFile": "/images/portretplayers/portret80.jpg",
+      "initialTeam": "КИБОРГИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0116",
+      "name": "Заглебный Афанасий",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 7,
+        "ЗЩ": 32,
+        "ПЗ": 30,
+        "НП": 23
+      },
+      "portraitIndex": 81,
+      "portraitFile": "/images/portretplayers/portret81.jpg",
+      "initialTeam": "КИБОРГИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0117",
+      "name": "Киргиз Василий",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 35,
+        "ПЗ": 46,
+        "НП": 35
+      },
+      "portraitIndex": 82,
+      "portraitFile": "/images/portretplayers/portret82.jpg",
+      "initialTeam": "КИБОРГИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0118",
+      "name": "Дуров Шамиль",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 5,
+        "ЗЩ": 23,
+        "ПЗ": 42,
+        "НП": 30
+      },
+      "portraitIndex": 83,
+      "portraitFile": "/images/portretplayers/portret83.jpg",
+      "initialTeam": "КИБОРГИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0119",
+      "name": "Жбанов Андрей",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 3,
+        "ЗЩ": 18,
+        "ПЗ": 46,
+        "НП": 25
+      },
+      "portraitIndex": 84,
+      "portraitFile": "/images/portretplayers/portret84.jpg",
+      "initialTeam": "КИБОРГИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0120",
+      "name": "Абдульнуров Нурбек",
+      "position": "НП",
+      "nationality": "Узбекистан",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 30,
+        "ПЗ": 39,
+        "НП": 47
+      },
+      "portraitIndex": 108,
+      "portraitFile": "/images/portretplayers/portret108.jpg",
+      "initialTeam": "КИБОРГИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0121",
+      "name": "Крытов Савелий",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 3,
+        "ЗЩ": 22,
+        "ПЗ": 34,
+        "НП": 42
+      },
+      "portraitIndex": 85,
+      "portraitFile": "/images/portretplayers/portret85.jpg",
+      "initialTeam": "КИБОРГИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0122",
+      "name": "Шахнозов Виктор",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 44,
+        "ЗЩ": 25,
+        "ПЗ": 12,
+        "НП": 12
+      },
+      "portraitIndex": 86,
+      "portraitFile": "/images/portretplayers/portret86.jpg",
+      "initialTeam": "РИЯЛ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0123",
+      "name": "Кулагин Виталий",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 30,
+        "ЗЩ": 27,
+        "ПЗ": 22,
+        "НП": 12
+      },
+      "portraitIndex": 87,
+      "portraitFile": "/images/portretplayers/portret87.jpg",
+      "initialTeam": "РИЯЛ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0124",
+      "name": "Мазур Алексей",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 47,
+        "ПЗ": 32,
+        "НП": 10
+      },
+      "portraitIndex": 88,
+      "portraitFile": "/images/portretplayers/portret88.jpg",
+      "initialTeam": "РИЯЛ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0125",
+      "name": "Крыга Станислав",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 42,
+        "ПЗ": 38,
+        "НП": 21
+      },
+      "portraitIndex": 89,
+      "portraitFile": "/images/portretplayers/portret89.jpg",
+      "initialTeam": "РИЯЛ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0126",
+      "name": "Бабкин Борис",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 36,
+        "ПЗ": 29,
+        "НП": 15
+      },
+      "portraitIndex": 90,
+      "portraitFile": "/images/portretplayers/portret90.jpg",
+      "initialTeam": "РИЯЛ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0127",
+      "name": "Куранов Станислав",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 5,
+        "ЗЩ": 29,
+        "ПЗ": 47,
+        "НП": 40
+      },
+      "portraitIndex": 91,
+      "portraitFile": "/images/portretplayers/portret91.jpg",
+      "initialTeam": "РИЯЛ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0128",
+      "name": "Шарпаев Владимир",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 9,
+        "ЗЩ": 35,
+        "ПЗ": 43,
+        "НП": 35
+      },
+      "portraitIndex": 43,
+      "portraitFile": "/images/portretplayers/portret43.jpg",
+      "initialTeam": "РИЯЛ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0129",
+      "name": "Крайников Виктор",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 6,
+        "ЗЩ": 22,
+        "ПЗ": 39,
+        "НП": 12
+      },
+      "portraitIndex": 92,
+      "portraitFile": "/images/portretplayers/portret92.jpg",
+      "initialTeam": "РИЯЛ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0130",
+      "name": "Бурачиков Михаил",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 44,
+        "ПЗ": 22,
+        "НП": 50
+      },
+      "portraitIndex": 93,
+      "portraitFile": "/images/portretplayers/portret93.jpg",
+      "initialTeam": "РИЯЛ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0131",
+      "name": "Барашкин Евгений",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 13,
+        "ЗЩ": 20,
+        "ПЗ": 37,
+        "НП": 40
+      },
+      "portraitIndex": 94,
+      "portraitFile": "/images/portretplayers/portret94.jpg",
+      "initialTeam": "РИЯЛ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0132",
+      "name": "Арбаев Нурлан",
+      "position": "ВР",
+      "nationality": "Казахстан",
+      "skills": {
+        "ВР": 37,
+        "ЗЩ": 22,
+        "ПЗ": 20,
+        "НП": 15
+      },
+      "portraitIndex": 122,
+      "portraitFile": "/images/portretplayers/portret122.jpg",
+      "initialTeam": "ДРАКОНЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0133",
+      "name": "Курагин Николай",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 30,
+        "ЗЩ": 20,
+        "ПЗ": 19,
+        "НП": 15
+      },
+      "portraitIndex": 120,
+      "portraitFile": "/images/portretplayers/portret120.jpg",
+      "initialTeam": "ДРАКОНЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0134",
+      "name": "Заноза Кирилл",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 7,
+        "ЗЩ": 43,
+        "ПЗ": 35,
+        "НП": 22
+      },
+      "portraitIndex": 95,
+      "portraitFile": "/images/portretplayers/portret95.jpg",
+      "initialTeam": "ДРАКОНЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0135",
+      "name": "Лупин Захар",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 13,
+        "ЗЩ": 36,
+        "ПЗ": 30,
+        "НП": 11
+      },
+      "portraitIndex": 96,
+      "portraitFile": "/images/portretplayers/portret96.jpg",
+      "initialTeam": "ДРАКОНЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0136",
+      "name": "Штун Мохан",
+      "position": "ЗЩ",
+      "nationality": "Индия",
+      "skills": {
+        "ВР": 20,
+        "ЗЩ": 36,
+        "ПЗ": 29,
+        "НП": 19
+      },
+      "portraitIndex": 75,
+      "portraitFile": "/images/portretplayers/portret75.jpg",
+      "initialTeam": "ДРАКОНЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0137",
+      "name": "Курпач Даниил",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 35,
+        "ПЗ": 44,
+        "НП": 35
+      },
+      "portraitIndex": 97,
+      "portraitFile": "/images/portretplayers/portret97.jpg",
+      "initialTeam": "ДРАКОНЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0138",
+      "name": "Звонарь Михаил",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 3,
+        "ЗЩ": 25,
+        "ПЗ": 41,
+        "НП": 40
+      },
+      "portraitIndex": 98,
+      "portraitFile": "/images/portretplayers/portret98.jpg",
+      "initialTeam": "ДРАКОНЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0139",
+      "name": "Шпанаев Георгий",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 9,
+        "ЗЩ": 19,
+        "ПЗ": 35,
+        "НП": 26
+      },
+      "portraitIndex": 99,
+      "portraitFile": "/images/portretplayers/portret99.jpg",
+      "initialTeam": "ДРАКОНЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0140",
+      "name": "Азизбеков Абдула",
+      "position": "НП",
+      "nationality": "Узбекистан",
+      "skills": {
+        "ВР": 7,
+        "ЗЩ": 40,
+        "ПЗ": 35,
+        "НП": 46
+      },
+      "portraitIndex": 54,
+      "portraitFile": "/images/portretplayers/portret54.jpg",
+      "initialTeam": "ДРАКОНЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0141",
+      "name": "Стасов Григорий",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 40,
+        "ЗЩ": 26,
+        "ПЗ": 20,
+        "НП": 5
+      },
+      "portraitIndex": 1,
+      "portraitFile": "/images/portretplayers/portret1.jpg",
+      "initialTeam": "ДВОРОВЫЕ ДЖЕНТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0142",
+      "name": "Рыков Андрей",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 35,
+        "ЗЩ": 30,
+        "ПЗ": 20,
+        "НП": 20
+      },
+      "portraitIndex": 2,
+      "portraitFile": "/images/portretplayers/portret2.jpg",
+      "initialTeam": "ДВОРОВЫЕ ДЖЕНТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0143",
+      "name": "Штарм Гуан",
+      "position": "ЗЩ",
+      "nationality": "Вьетнам",
+      "skills": {
+        "ВР": 12,
+        "ЗЩ": 45,
+        "ПЗ": 40,
+        "НП": 22
+      },
+      "portraitIndex": 23,
+      "portraitFile": "/images/portretplayers/portret23.jpg",
+      "initialTeam": "ДВОРОВЫЕ ДЖЕНТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0144",
+      "name": "Галыгин Владимир",
+      "position": "ЗЩ",
+      "nationality": "Беларусь",
+      "skills": {
+        "ВР": 15,
+        "ЗЩ": 44,
+        "ПЗ": 38,
+        "НП": 24
+      },
+      "portraitIndex": 102,
+      "portraitFile": "/images/portretplayers/portret102.jpg",
+      "initialTeam": "ДВОРОВЫЕ ДЖЕНТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0145",
+      "name": "Штыков Александр",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 35,
+        "ПЗ": 43,
+        "НП": 25
+      },
+      "portraitIndex": 107,
+      "portraitFile": "/images/portretplayers/portret107.jpg",
+      "initialTeam": "ДВОРОВЫЕ ДЖЕНТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0146",
+      "name": "Каратаев Вячеслав",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 21,
+        "ЗЩ": 38,
+        "ПЗ": 40,
+        "НП": 22
+      },
+      "portraitIndex": 6,
+      "portraitFile": "/images/portretplayers/portret6.jpg",
+      "initialTeam": "ДВОРОВЫЕ ДЖЕНТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0147",
+      "name": "Исманов Азиз",
+      "position": "НП",
+      "nationality": "Кыргызстан",
+      "skills": {
+        "ВР": 5,
+        "ЗЩ": 21,
+        "ПЗ": 35,
+        "НП": 42
+      },
+      "portraitIndex": 31,
+      "portraitFile": "/images/portretplayers/portret31.jpg",
+      "initialTeam": "ДВОРОВЫЕ ДЖЕНТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0148",
+      "name": "Тураев Валерий",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 5,
+        "ЗЩ": 29,
+        "ПЗ": 24,
+        "НП": 40
+      },
+      "portraitIndex": 129,
+      "portraitFile": "/images/portretplayers/portret129.jpg",
+      "initialTeam": "ДВОРОВЫЕ ДЖЕНТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0149",
+      "name": "Ким Дмитрий",
+      "position": "ВР",
+      "nationality": "Южная Корея",
+      "skills": {
+        "ВР": 48,
+        "ЗЩ": 34,
+        "ПЗ": 23,
+        "НП": 5
+      },
+      "portraitIndex": 39,
+      "portraitFile": "/images/portretplayers/portret39.jpg",
+      "initialTeam": "МАФУТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0150",
+      "name": "Куколдин Евгений",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 32,
+        "ЗЩ": 23,
+        "ПЗ": 20,
+        "НП": 4
+      },
+      "portraitIndex": 15,
+      "portraitFile": "/images/portretplayers/portret15.jpg",
+      "initialTeam": "МАФУТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0151",
+      "name": "Долматов Зураб",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 22,
+        "ЗЩ": 43,
+        "ПЗ": 39,
+        "НП": 21
+      },
+      "portraitIndex": 134,
+      "portraitFile": "/images/portretplayers/portret134.jpg",
+      "initialTeam": "МАФУТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0152",
+      "name": "Буранов Степан",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 20,
+        "ЗЩ": 43,
+        "ПЗ": 35,
+        "НП": 20
+      },
+      "portraitIndex": 71,
+      "portraitFile": "/images/portretplayers/portret71.jpg",
+      "initialTeam": "МАФУТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0153",
+      "name": "Ушаков Василий",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 19,
+        "ЗЩ": 39,
+        "ПЗ": 26,
+        "НП": 24
+      },
+      "portraitIndex": 87,
+      "portraitFile": "/images/portretplayers/portret87.jpg",
+      "initialTeam": "МАФУТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0154",
+      "name": "Шаманов Руслан",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 37,
+        "ПЗ": 46,
+        "НП": 32
+      },
+      "portraitIndex": 17,
+      "portraitFile": "/images/portretplayers/portret17.jpg",
+      "initialTeam": "МАФУТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0155",
+      "name": "Корган Петр",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 4,
+        "ЗЩ": 30,
+        "ПЗ": 44,
+        "НП": 29
+      },
+      "portraitIndex": 74,
+      "portraitFile": "/images/portretplayers/portret74.jpg",
+      "initialTeam": "МАФУТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0156",
+      "name": "Раминов Николай",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 32,
+        "ПЗ": 40,
+        "НП": 30
+      },
+      "portraitIndex": 93,
+      "portraitFile": "/images/portretplayers/portret93.jpg",
+      "initialTeam": "МАФУТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0157",
+      "name": "Ан Кирилл",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 20,
+        "ПЗ": 42,
+        "НП": 46
+      },
+      "portraitIndex": 116,
+      "portraitFile": "/images/portretplayers/portret116.jpg",
+      "initialTeam": "МАФУТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0158",
+      "name": "Далатов Владимир",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 12,
+        "ПЗ": 32,
+        "НП": 43
+      },
+      "portraitIndex": 128,
+      "portraitFile": "/images/portretplayers/portret128.jpg",
+      "initialTeam": "МАФУТЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0159",
+      "name": "Уранов Евгений",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 42,
+        "ЗЩ": 23,
+        "ПЗ": 12,
+        "НП": 10
+      },
+      "portraitIndex": 51,
+      "portraitFile": "/images/portretplayers/portret51.jpg",
+      "initialTeam": "ДУНАЙ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0160",
+      "name": "Разматов Шамиль",
+      "position": "ВР",
+      "nationality": "Узбекистан",
+      "skills": {
+        "ВР": 39,
+        "ЗЩ": 30,
+        "ПЗ": 12,
+        "НП": 10
+      },
+      "portraitIndex": 52,
+      "portraitFile": "/images/portretplayers/portret52.jpg",
+      "initialTeam": "ДУНАЙ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0161",
+      "name": "Водкин Леонид",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 12,
+        "ЗЩ": 35,
+        "ПЗ": 30,
+        "НП": 16
+      },
+      "portraitIndex": 53,
+      "portraitFile": "/images/portretplayers/portret53.jpg",
+      "initialTeam": "ДУНАЙ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0162",
+      "name": "Голубев Дмитрий",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 20,
+        "ЗЩ": 33,
+        "ПЗ": 23,
+        "НП": 17
+      },
+      "portraitIndex": 111,
+      "portraitFile": "/images/portretplayers/portret111.jpg",
+      "initialTeam": "ДУНАЙ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0163",
+      "name": "Сватков Андрей",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 30,
+        "ПЗ": 23,
+        "НП": 16
+      },
+      "portraitIndex": 58,
+      "portraitFile": "/images/portretplayers/portret58.jpg",
+      "initialTeam": "ДУНАЙ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0164",
+      "name": "Ланьков Александр",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 15,
+        "ЗЩ": 30,
+        "ПЗ": 40,
+        "НП": 31
+      },
+      "portraitIndex": 64,
+      "portraitFile": "/images/portretplayers/portret64.jpg",
+      "initialTeam": "ДУНАЙ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0165",
+      "name": "Эвалин Дмитрий",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 30,
+        "ПЗ": 39,
+        "НП": 23
+      },
+      "portraitIndex": 92,
+      "portraitFile": "/images/portretplayers/portret92.jpg",
+      "initialTeam": "ДУНАЙ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0166",
+      "name": "Баженов Владислав",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 32,
+        "ПЗ": 36,
+        "НП": 30
+      },
+      "portraitIndex": 68,
+      "portraitFile": "/images/portretplayers/portret68.jpg",
+      "initialTeam": "ДУНАЙ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0167",
+      "name": "Курха Фатиль",
+      "position": "НП",
+      "nationality": "Индия",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 22,
+        "ПЗ": 34,
+        "НП": 42
+      },
+      "portraitIndex": 66,
+      "portraitFile": "/images/portretplayers/portret66.jpg",
+      "initialTeam": "ДУНАЙ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0168",
+      "name": "Жезлов Алексей",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 20,
+        "ПЗ": 25,
+        "НП": 35
+      },
+      "portraitIndex": 110,
+      "portraitFile": "/images/portretplayers/portret110.jpg",
+      "initialTeam": "ДУНАЙ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0169",
+      "name": "Сафонов Денис",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 44,
+        "ЗЩ": 32,
+        "ПЗ": 23,
+        "НП": 3
+      },
+      "portraitIndex": 83,
+      "portraitFile": "/images/portretplayers/portret83.jpg",
+      "initialTeam": "РУСЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0170",
+      "name": "Нурманбеков Азиз",
+      "position": "ЗЩ",
+      "nationality": "Кыргызстан",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 33,
+        "ПЗ": 25,
+        "НП": 22
+      },
+      "portraitIndex": 39,
+      "portraitFile": "/images/portretplayers/portret39.jpg",
+      "initialTeam": "РУСЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0171",
+      "name": "Цаплин Геннадий",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 23,
+        "ЗЩ": 30,
+        "ПЗ": 20,
+        "НП": 17
+      },
+      "portraitIndex": 113,
+      "portraitFile": "/images/portretplayers/portret113.jpg",
+      "initialTeam": "РУСЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0172",
+      "name": "Старый Родислав",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 34,
+        "ПЗ": 43,
+        "НП": 23
+      },
+      "portraitIndex": 132,
+      "portraitFile": "/images/portretplayers/portret132.jpg",
+      "initialTeam": "РУСЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0173",
+      "name": "Зеленов Владислав",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 3,
+        "ЗЩ": 23,
+        "ПЗ": 40,
+        "НП": 32
+      },
+      "portraitIndex": 62,
+      "portraitFile": "/images/portretplayers/portret62.jpg",
+      "initialTeam": "РУСЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0174",
+      "name": "Хен Киан",
+      "position": "ПЗ",
+      "nationality": "Вьетнам",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 32,
+        "ПЗ": 33,
+        "НП": 23
+      },
+      "portraitIndex": 125,
+      "portraitFile": "/images/portretplayers/portret125.jpg",
+      "initialTeam": "РУСЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0175",
+      "name": "Воронин Алексей",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 25,
+        "ПЗ": 30,
+        "НП": 39
+      },
+      "portraitIndex": 121,
+      "portraitFile": "/images/portretplayers/portret121.jpg",
+      "initialTeam": "РУСЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0176",
+      "name": "Шпак Егор",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 16,
+        "ЗЩ": 22,
+        "ПЗ": 22,
+        "НП": 36
+      },
+      "portraitIndex": 80,
+      "portraitFile": "/images/portretplayers/portret80.jpg",
+      "initialTeam": "РУСЫ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0177",
+      "name": "Болотин Семён",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 40,
+        "ЗЩ": 33,
+        "ПЗ": 15,
+        "НП": 10
+      },
+      "portraitIndex": 27,
+      "portraitFile": "/images/portretplayers/portret27.jpg",
+      "initialTeam": "ДОСТАВЩИКИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0178",
+      "name": "Кирковон Станислав",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 22,
+        "ЗЩ": 20,
+        "ПЗ": 20,
+        "НП": 11
+      },
+      "portraitIndex": 32,
+      "portraitFile": "/images/portretplayers/portret32.jpg",
+      "initialTeam": "ДОСТАВЩИКИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0179",
+      "name": "Леонов Алексей",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 12,
+        "ЗЩ": 40,
+        "ПЗ": 32,
+        "НП": 22
+      },
+      "portraitIndex": 106,
+      "portraitFile": "/images/portretplayers/portret106.jpg",
+      "initialTeam": "ДОСТАВЩИКИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0180",
+      "name": "Федоров Николай",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 25,
+        "ПЗ": 24,
+        "НП": 20
+      },
+      "portraitIndex": 93,
+      "portraitFile": "/images/portretplayers/portret93.jpg",
+      "initialTeam": "ДОСТАВЩИКИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0181",
+      "name": "Скважин Егор",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 7,
+        "ЗЩ": 30,
+        "ПЗ": 39,
+        "НП": 32
+      },
+      "portraitIndex": 32,
+      "portraitFile": "/images/portretplayers/portret32.jpg",
+      "initialTeam": "ДОСТАВЩИКИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0182",
+      "name": "Родин Виктор",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 15,
+        "ЗЩ": 33,
+        "ПЗ": 39,
+        "НП": 25
+      },
+      "portraitIndex": 35,
+      "portraitFile": "/images/portretplayers/portret35.jpg",
+      "initialTeam": "ДОСТАВЩИКИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0183",
+      "name": "Размонов Алибек",
+      "position": "ПЗ",
+      "nationality": "Узбекистан",
+      "skills": {
+        "ВР": 6,
+        "ЗЩ": 24,
+        "ПЗ": 37,
+        "НП": 34
+      },
+      "portraitIndex": 98,
+      "portraitFile": "/images/portretplayers/portret98.jpg",
+      "initialTeam": "ДОСТАВЩИКИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0184",
+      "name": "Шамильбеков Рахим",
+      "position": "НП",
+      "nationality": "Узбекистан",
+      "skills": {
+        "ВР": 5,
+        "ЗЩ": 15,
+        "ПЗ": 30,
+        "НП": 37
+      },
+      "portraitIndex": 67,
+      "portraitFile": "/images/portretplayers/portret67.jpg",
+      "initialTeam": "ДОСТАВЩИКИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0185",
+      "name": "Виторин Тимур",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 10,
+        "ЗЩ": 22,
+        "ПЗ": 30,
+        "НП": 35
+      },
+      "portraitIndex": 48,
+      "portraitFile": "/images/portretplayers/portret48.jpg",
+      "initialTeam": "ДОСТАВЩИКИ",
+      "group": "reserve"
+    },
+    {
+      "playerId": "player-0186",
+      "name": "Сальцев Матвей",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 6,
+        "ЗЩ": 25,
+        "ПЗ": 49,
+        "НП": 32
+      },
+      "portraitIndex": 102,
+      "portraitFile": "/images/portretplayers/portret102.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0187",
+      "name": "Златко Борислав",
+      "position": "ЗЩ",
+      "nationality": "Беларусь",
+      "skills": {
+        "ВР": 9,
+        "ЗЩ": 40,
+        "ПЗ": 34,
+        "НП": 20
+      },
+      "portraitIndex": 92,
+      "portraitFile": "/images/portretplayers/portret92.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0188",
+      "name": "Соловьев Андрей",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 32,
+        "ЗЩ": 23,
+        "ПЗ": 20,
+        "НП": 7
+      },
+      "portraitIndex": 2,
+      "portraitFile": "/images/portretplayers/portret2.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0189",
+      "name": "Саратов Артур",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 19,
+        "ЗЩ": 45,
+        "ПЗ": 29,
+        "НП": 15
+      },
+      "portraitIndex": 105,
+      "portraitFile": "/images/portretplayers/portret105.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0190",
+      "name": "Пеньков Виктор",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 39,
+        "ЗЩ": 29,
+        "ПЗ": 12,
+        "НП": 2
+      },
+      "portraitIndex": 64,
+      "portraitFile": "/images/portretplayers/portret64.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0191",
+      "name": "Громов Юрий",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 15,
+        "ЗЩ": 30,
+        "ПЗ": 34,
+        "НП": 29
+      },
+      "portraitIndex": 146,
+      "portraitFile": "/images/portretplayers/portret146.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0192",
+      "name": "Вернякин Александр",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 15,
+        "ЗЩ": 22,
+        "ПЗ": 37,
+        "НП": 45
+      },
+      "portraitIndex": 144,
+      "portraitFile": "/images/portretplayers/portret144.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0193",
+      "name": "Курпатов Олег",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 5,
+        "ЗЩ": 29,
+        "ПЗ": 47,
+        "НП": 40
+      },
+      "portraitIndex": 19,
+      "portraitFile": "/images/portretplayers/portret19.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0194",
+      "name": "Варламин Игорь",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 30,
+        "ЗЩ": 20,
+        "ПЗ": 19,
+        "НП": 15
+      },
+      "portraitIndex": 21,
+      "portraitFile": "/images/portretplayers/portret21.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0195",
+      "name": "Глебов Родион",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 7,
+        "ЗЩ": 43,
+        "ПЗ": 35,
+        "НП": 22
+      },
+      "portraitIndex": 22,
+      "portraitFile": "/images/portretplayers/portret22.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0196",
+      "name": "Хабаров Максим",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 15,
+        "ЗЩ": 36,
+        "ПЗ": 22,
+        "НП": 12
+      },
+      "portraitIndex": 27,
+      "portraitFile": "/images/portretplayers/portret27.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0197",
+      "name": "Пак Мин",
+      "position": "ВР",
+      "nationality": "Южная Корея",
+      "skills": {
+        "ВР": 48,
+        "ЗЩ": 34,
+        "ПЗ": 23,
+        "НП": 5
+      },
+      "portraitIndex": 125,
+      "portraitFile": "/images/portretplayers/portret125.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0198",
+      "name": "Сватов Богдан",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 11,
+        "ЗЩ": 30,
+        "ПЗ": 23,
+        "НП": 16
+      },
+      "portraitIndex": 38,
+      "portraitFile": "/images/portretplayers/portret38.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0199",
+      "name": "Шикулин Прохор",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 15,
+        "ЗЩ": 30,
+        "ПЗ": 40,
+        "НП": 31
+      },
+      "portraitIndex": 39,
+      "portraitFile": "/images/portretplayers/portret39.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0200",
+      "name": "Заманухин Александр",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 3,
+        "ЗЩ": 23,
+        "ПЗ": 40,
+        "НП": 32
+      },
+      "portraitIndex": 46,
+      "portraitFile": "/images/portretplayers/portret46.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0201",
+      "name": "Наркоманов Захар",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 22,
+        "ЗЩ": 20,
+        "ПЗ": 20,
+        "НП": 11
+      },
+      "portraitIndex": 50,
+      "portraitFile": "/images/portretplayers/portret50.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0202",
+      "name": "Старухин Андрей",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 12,
+        "ЗЩ": 40,
+        "ПЗ": 32,
+        "НП": 22
+      },
+      "portraitIndex": 127,
+      "portraitFile": "/images/portretplayers/portret127.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0203",
+      "name": "Коронаев Светланий",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 15,
+        "ЗЩ": 36,
+        "ПЗ": 22,
+        "НП": 12
+      },
+      "portraitIndex": 21,
+      "portraitFile": "/images/portretplayers/portret21.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0204",
+      "name": "Букае Тимур",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 32,
+        "ПЗ": 43,
+        "НП": 34
+      },
+      "portraitIndex": 4,
+      "portraitFile": "/images/portretplayers/portret4.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0205",
+      "name": "Губкин Матвей",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 30,
+        "ЗЩ": 44,
+        "ПЗ": 30,
+        "НП": 12
+      },
+      "portraitIndex": 62,
+      "portraitFile": "/images/portretplayers/portret62.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0206",
+      "name": "Споров Виталий",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 19,
+        "ЗЩ": 32,
+        "ПЗ": 24,
+        "НП": 21
+      },
+      "portraitIndex": 133,
+      "portraitFile": "/images/portretplayers/portret133.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0207",
+      "name": "Духов Степан",
+      "position": "ПЗ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 7,
+        "ЗЩ": 30,
+        "ПЗ": 33,
+        "НП": 32
+      },
+      "portraitIndex": 134,
+      "portraitFile": "/images/portretplayers/portret134.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0208",
+      "name": "Хуев Валентин",
+      "position": "НП",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 2,
+        "ЗЩ": 30,
+        "ПЗ": 32,
+        "НП": 41
+      },
+      "portraitIndex": 49,
+      "portraitFile": "/images/portretplayers/portret49.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0209",
+      "name": "Щукин Глеб",
+      "position": "ВР",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 33,
+        "ЗЩ": 23,
+        "ПЗ": 13,
+        "НП": 7
+      },
+      "portraitIndex": 11,
+      "portraitFile": "/images/portretplayers/portret11.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    },
+    {
+      "playerId": "player-0210",
+      "name": "Южанин Борис",
+      "position": "ЗЩ",
+      "nationality": "Россия",
+      "skills": {
+        "ВР": 15,
+        "ЗЩ": 34,
+        "ПЗ": 22,
+        "НП": 20
+      },
+      "portraitIndex": 84,
+      "portraitFile": "/images/portretplayers/portret84.jpg",
+      "initialTeam": "Свободный двор",
+      "group": "freeYard"
+    }
+  ],
+  "freeYardPlayers": [
+    "player-0186",
+    "player-0187",
+    "player-0188",
+    "player-0189",
+    "player-0190",
+    "player-0191",
+    "player-0192",
+    "player-0193",
+    "player-0194",
+    "player-0195",
+    "player-0196",
+    "player-0197",
+    "player-0198",
+    "player-0199",
+    "player-0200",
+    "player-0201",
+    "player-0202",
+    "player-0203",
+    "player-0204",
+    "player-0205",
+    "player-0206",
+    "player-0207",
+    "player-0208",
+    "player-0209",
+    "player-0210"
+  ]
+}
