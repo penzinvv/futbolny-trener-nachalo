@@ -63,13 +63,22 @@ function localDayStart(now=Date.now()){const d=new Date(now);d.setHours(0,0,0,0)
  }
  function freeYardMonthKey(){const day=Math.max(1,Number(state.gameDay)||1),season=Math.max(1,Number(state.seasonNumber)||1);return season+":"+ (Math.floor((day-1)/28)+1)}
 function randomFreeYardPlayer(){
- // In 2.8.1, introduce the 21 reserved original players one at a time through the existing Free Yard cadence.
+ // New careers use the named Free Yard players from the player database first.
+ const pool=Array.isArray(state.freeYardPlayerPool)?state.freeYardPlayerPool:[];
+ if(pool.length){
+  const index=Math.floor(Math.random()*pool.length),[player]=pool.splice(index,1);
+  if(player){
+   state.freeYardPlayerPool=pool;
+   return {...player,id:"free-"+String(player.playerId||player.careerId||player.name||Date.now()),careerId:player.careerId||player.playerId,playerId:player.playerId,skills:{...(player.skills||{})},age:Number(player.age)||14+Math.floor(Math.random()*7),potential:Number(player.potential)||35+Math.floor(Math.random()*56),portraitIndex:Number(player.portraitIndex)||1+Math.floor(Math.random()*150),freeYard:true,invited:false};
+  }
+ }
+ // Compatibility for careers created before the player database was introduced.
  const reserve=Array.isArray(state.leagueReservePlayers)?state.leagueReservePlayers:[];
  if(state.careerRulesVersion==="2.8.1"&&reserve.length){
   const index=Math.floor(Math.random()*reserve.length),[player]=reserve.splice(index,1);
   if(player){
    state.leagueReservePlayers=reserve;
-   return {...player,id:"free-reserve-"+String(player.careerId||player.name||Date.now()),skills:{...(player.skills||{})},age:Number(player.age)||14+Math.floor(Math.random()*7),potential:Number(player.potential)||35+Math.floor(Math.random()*56),portraitIndex:Number(player.portraitIndex)||1+Math.floor(Math.random()*77),freeYard:true,invited:false};
+   return {...player,id:"free-reserve-"+String(player.careerId||player.name||Date.now()),skills:{...(player.skills||{})},age:Number(player.age)||14+Math.floor(Math.random()*7),potential:Number(player.potential)||35+Math.floor(Math.random()*56),portraitIndex:Number(player.portraitIndex)||1+Math.floor(Math.random()*150),freeYard:true,invited:false};
   }
  }
  const all=[];(leagueData?.teams||[]).forEach(team=>(team.players||[]).forEach(player=>{const parts=String(player.name||"").trim().split(/\s+/);if(parts.length>1)all.push({first:parts.slice(1).join(" "),last:parts[0]})}));
@@ -77,7 +86,7 @@ function randomFreeYardPlayer(){
  const first=firsts[Math.floor(Math.random()*firsts.length)]||"Алексей",last=lasts[Math.floor(Math.random()*lasts.length)]||"Смирнов";
  const position=["ВР","ЗЩ","ПЗ","НП"][Math.floor(Math.random()*4)],skills={ВР:15+Math.floor(Math.random()*56),ЗЩ:15+Math.floor(Math.random()*56),ПЗ:15+Math.floor(Math.random()*56),НП:15+Math.floor(Math.random()*56)};
  skills[position]=Math.min(75,skills[position]+8);
- return {id:"free-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),name:last+" "+first,position,nationality:"Россия",age:14+Math.floor(Math.random()*7),skills,potential:35+Math.floor(Math.random()*56),portraitIndex:1+Math.floor(Math.random()*77),freeYard:true,invited:false};
+ return {id:"free-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),playerId:"generated-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),name:last+" "+first,position,nationality:"Россия",age:14+Math.floor(Math.random()*7),skills,potential:35+Math.floor(Math.random()*56),portraitIndex:1+Math.floor(Math.random()*150),freeYard:true,invited:false};
 }
 function startFreeYardViewing(player,relationKey){
  const existing=document.getElementById("freeYardViewingOverlay");if(existing)existing.remove();
@@ -142,7 +151,7 @@ function freeYardPage(){
   const relationKey="free-yard::"+player.id,relation=Math.max(0,Math.min(100,Number(state.relationships[relationKey]||0)));
   const panel=document.createElement("section");panel.className="feature-panel free-yard-player";
   const row=document.createElement("div");row.className="feature-player-row";
-  const img=document.createElement("img");img.className="free-yard-portrait";img.src="/images/portretplayers/portret"+((((Number(player.portraitIndex)||1)-1)%77)+1)+".jpg";img.alt=player.name;img.loading="lazy";
+  const img=document.createElement("img");img.className="free-yard-portrait";img.src="/images/portretplayers/portret"+((((Number(player.portraitIndex)||1)-1)%150)+1)+".jpg";img.alt=player.name;img.loading="lazy";
   const info=document.createElement("div");info.className="free-yard-player-info";info.append(safeText("h3",player.name),T(player.position+" · "+player.age+" лет · Отношения "+F(relation)));
   if(relation>=60){const stats=Object.entries(player.skills||{}).map(([k,v])=>k+": "+v).join(" · ");info.append(T("Характеристики: "+stats),T("Скрытый потенциал: "+player.potential))}
   else info.append(T("Характеристики и скрытый потенциал откроются при отношениях 60%."));
