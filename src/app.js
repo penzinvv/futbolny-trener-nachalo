@@ -2581,10 +2581,17 @@ function advanceCoachDay(){
  if(!canAdvanceCoachDay()){alert(state.pendingSpecialMatch?"Сначала сыграй назначенный матч.":"Сегодня официальный матч тура. На главной странице появилась кнопка «НАЧАТЬ МАТЧ».");return}
  if(Number(state.gameDay)>=182){
   const completedSeason=Number(state.seasonNumber)||1;
-  const leagueTransitionSummary=completeSeasonLeagueTransitions(completedSeason);
-  if(state.pendingSpecialMatch?.type==="playoff"){saveState();render();openPage("match");return}
+  const transitionBefore=state.leagueTransitions?.[String(completedSeason)];
+  const lowerBefore=getStandingsForLeague("Нижняя лига",completedSeason);
+  const userInPlayoff=!transitionBefore?.playoff?.winnerId&&[lowerBefore[1]?.team?.id,lowerBefore[2]?.team?.id].includes(getUserTeam()?.id);
+  if(userInPlayoff){
+   queuePlayableSpecialMatch("playoff",{season:completedSeason,day:182,stage:"promotion-playoff",matchIndex:0,key:"promotion-playoff:"+completedSeason,title:"Стыковой матч за выход в верхнюю лигу",transitionSeason:completedSeason},lowerBefore[1].team,lowerBefore[2].team);
+   state.leagueTransitions=state.leagueTransitions||{};state.leagueTransitions[String(completedSeason)]={...(transitionBefore||{}),pending:true,season:completedSeason};
+   saveState();render();openPage("match");return
+  }
   awardSeasonRatingBonuses(completedSeason);
   finalizeSeasonCareerAwards(completedSeason);
+  const leagueTransitionSummary=completeSeasonLeagueTransitions(completedSeason);
   state.careerHistory=state.careerHistory||{officialMatches:[],seasons:{}};
   state.careerHistory.seasons=state.careerHistory.seasons||{};
   state.careerHistory.seasons[String(completedSeason)]={...(state.careerHistory.seasons[String(completedSeason)]||{}),finalRating:Number(state.seasonRating)||0};
