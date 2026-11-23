@@ -2012,8 +2012,9 @@ function recordPlayerCareerMatch(match){
    const history=Array.isArray(state.playerCareerHistory[id])?state.playerCareerHistory[id]:(state.playerCareerHistory[id]=[]);
    if(history.some(item=>item.matchKey===matchKey))return;
    const events=(match.events||[]).filter(event=>event.type==="goal");
-   const goals=events.filter(event=>(event.scoringSide||event.side)===side&&event.scorer===player.name).length;
-   const assists=events.filter(event=>(event.scoringSide||event.side)===side&&event.assist===player.name).length;
+   const careerStat=(match.playerStats||[]).find(item=>item.teamId===teamId&&(item.playerId===id||item.playerName===player.name));
+   const goals=events.length?events.filter(event=>(event.scoringSide||event.side)===side&&event.scorer===player.name).length:Number(careerStat?.goals)||0;
+   const assists=events.length?events.filter(event=>(event.scoringSide||event.side)===side&&event.assist===player.name).length:Number(careerStat?.assists)||0;
    const rating=(match.playerRatings||[]).find(item=>item.playerId===id||(item.playerName===player.name&&item.side===side))?.rating;
    history.push({matchKey,season,day,round:Number(match.round)||null,matchType,stage:match.stage||null,teamId,teamName,opponentId:side==="home"?match.awayId:match.homeId,opponentName:side==="home"?match.awayName:match.homeName,homeId:match.homeId,awayId:match.awayId,homeScore:scoreFor,awayScore:scoreAgainst,goals,assists,rating:Number.isFinite(Number(rating))?Number(rating):null,result:scoreFor>scoreAgainst?"W":scoreFor<scoreAgainst?"L":"D",simulated:Boolean(match.simulated),at:Date.now()});
    if(history.length>1000)history.splice(0,history.length-1000);
@@ -2238,7 +2239,7 @@ function buildPlayedCupPlayerStats(result){
 }
 function simulateCupFriendlyRound(season,stage,excluded){
  state.cupFriendlyResults=Array.isArray(state.cupFriendlyResults)?state.cupFriendlyResults:[];
- for(let i=0;i<excluded.length;i+=2){const home=excluded[i],away=excluded[i+1];if(!home||!away)continue;const key=season+":"+stage+":"+home.id+":"+away.id;if(state.cupFriendlyResults.some(x=>x.key===key))continue;if(queuePlayableSpecialMatch("cup-friendly",{season,day:Number(state.gameDay)||1,stage,key,title:"Товарищеский матч перед кубковым этапом"},home,away))continue;const rand=seededCupRandom("friendly:"+key);state.cupFriendlyResults.push({key,season,stage,day:Number(state.gameDay)||1,homeId:home.id,awayId:away.id,homeName:matchTeamLabel(home),awayName:matchTeamLabel(away),homeScore:Math.floor(rand()*4),awayScore:Math.floor(rand()*4),friendly:true,matchType:"cup-friendly"})}
+ for(let i=0;i<excluded.length;i+=2){const home=excluded[i],away=excluded[i+1];if(!home||!away)continue;const key=season+":"+stage+":"+home.id+":"+away.id;if(state.cupFriendlyResults.some(x=>x.key===key))continue;if(queuePlayableSpecialMatch("cup-friendly",{season,day:Number(state.gameDay)||1,stage,key,title:"Товарищеский матч перед кубковым этапом"},home,away))continue;const rand=seededCupRandom("friendly:"+key),homeScore=Math.floor(rand()*4),awayScore=Math.floor(rand()*4),result={key,season,stage,day:Number(state.gameDay)||1,homeId:home.id,awayId:away.id,homeName:matchTeamLabel(home),awayName:matchTeamLabel(away),homeScore,awayScore,friendly:true,matchType:"cup-friendly",simulated:true,homeLineup:buildOfficialLineup(home,"2–2–1"),awayLineup:buildOfficialLineup(away,"2–2–1"),events:[]};state.cupFriendlyResults.push(result);recordPlayerCareerMatch(result);if(scoutRulesEnabled()){const ratings=team=>buildOfficialLineup(team,"2–2–1").map(entry=>({playerName:entry.player.name,played:true,rating:6}));applySimulatedNpcSkillGrowth(home,homeScore,awayScore,ratings(home));applySimulatedNpcSkillGrowth(away,awayScore,homeScore,ratings(away));}}
 }
 function announceCupDraw(season){
  state.cupDraws=state.cupDraws&&typeof state.cupDraws==="object"?state.cupDraws:{};
@@ -2266,7 +2267,7 @@ function runCupRound(stage,matchIndex=0){
  }
  if(!pair?.[0]||!pair?.[1]){console.warn("Не удалось сформировать матч кубка",stage,matchIndex);return}
  if(queuePlayableSpecialMatch("cup",{season,day:Number(state.gameDay)||1,stage,matchIndex,key:stage+":"+matchIndex,title:"Кубок «ДОСТАТОК» — "+(stage==="quarterfinals"?"четвертьфинал":stage==="semifinals"?"полуфинал":"финал")},pair[0],pair[1]))return;
- const match=simulateCupFixture(season,stage,pair[0],pair[1],matchIndex);match.bracketIndex=matchIndex;
+ const match=simulateCupFixture(season,stage,pair[0],pair[1],matchIndex);match.bracketIndex=matchIndex;match.matchType="cup";match.simulated=true;match.playerRatings=(match.playerStats||[]).map(p=>({playerId:p.playerId,playerName:p.playerName,side:p.teamId===match.homeId?"home":"away",played:true,goals:p.goals,assists:p.assists,rating:Math.min(10,6+(p.goals||0)+(p.assists||0))}));match.homeLineup=buildOfficialLineup(pair[0],"2–2–1");match.awayLineup=buildOfficialLineup(pair[1],"2–2–1");recordPlayerCareerMatch(match);if(scoutRulesEnabled()){applySimulatedNpcSkillGrowth(pair[0],match.homeScore,match.awayScore,match.playerRatings.filter(p=>p.side==="home"));applySimulatedNpcSkillGrowth(pair[1],match.awayScore,match.homeScore,match.playerRatings.filter(p=>p.side==="away"));}
  cup.matches.push(match);
  const stageName=stage==="quarterfinals"?"Четвертьфинал":stage==="semifinals"?"Полуфинал":"Финал";
  const ownId=getUserTeam()?.id,ownMatch=match.homeId===ownId||match.awayId===ownId;
