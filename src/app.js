@@ -2578,7 +2578,7 @@ function simulateNpcTransferExchange() {
 
 function advanceCoachDay(){
  if(!leagueData){alert("Календарь ещё загружается.");return}
- if(!canAdvanceCoachDay()){alert("Сегодня официальный матч тура. На главной странице появилась кнопка «НАЧАТЬ МАТЧ».");return}
+ if(!canAdvanceCoachDay()){alert(state.pendingSpecialMatch?"Сначала сыграй назначенный матч.":"Сегодня официальный матч тура. На главной странице появилась кнопка «НАЧАТЬ МАТЧ».");return}
  if(Number(state.gameDay)>=182){
   const completedSeason=Number(state.seasonNumber)||1;
   const leagueTransitionSummary=completeSeasonLeagueTransitions(completedSeason);
@@ -2874,7 +2874,7 @@ function applyOfficialMatchResult(session,home,away){
  session.finished=true;session.finishedAtDay=Number(state.gameDay)||1;
  const type=session.matchType||"league",special=session.specialMatch||state.pendingSpecialMatch||{};
  const fixture={home,away};
- const result={season:Number(session.season||state.seasonNumber)||1,round:Number(session.round)||0,day:Number(session.day||state.gameDay)||1,matchType:type,stage:special.stage||null,homeId:home.id,awayId:away.id,homeScore:session.score.home,awayScore:session.score.away,events:session.events,homeLineup:session.lineups.home,awayLineup:session.lineups.away,substitutions:session.substitutions,finished:true};
+ const result={season:Number(session.season||state.seasonNumber)||1,round:Number(session.round)||0,day:Number(session.day||state.gameDay)||1,matchType:type,stage:special.stage||null,homeId:home.id,awayId:away.id,homeName:matchTeamLabel(home),awayName:matchTeamLabel(away),homeScore:session.score.home,awayScore:session.score.away,events:session.events,homeLineup:session.lineups.home,awayLineup:session.lineups.away,substitutions:session.substitutions,finished:true};
  result.stats=deriveMatchStats(session);
  result.spectatorNotes=buildPostMatchSpectatorNotes(session,home,away);
  const relationshipReport=calculateOfficialMatchRelations(session,home,away,result);
