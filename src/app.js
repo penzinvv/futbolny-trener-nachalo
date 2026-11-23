@@ -2573,8 +2573,8 @@ function simulateEndSeasonFriendlyDay(day){
   const key=keyPrefix+home.id+":"+away.id;if(state.seasonFriendlyResults.some(x=>x.key===key))return;
   const rand=seededCupRandom("season-friendly:"+key),score=team=>Math.max(0,Math.min(6,Math.floor(rand()*3)+Math.floor(cupTeamPower(team)/35)));
   if(queuePlayableSpecialMatch("friendly",{season,day,stage:"season-friendly",matchIndex:0,key,title:"Товарищеский матч",},home,away))return;
-  const homeScore=score(home),awayScore=score(away),result={key,season,day,homeId:home.id,awayId:away.id,homeName:matchTeamLabel(home),awayName:matchTeamLabel(away),homeScore,awayScore,friendly:true,matchType:"friendly"};
-  state.seasonFriendlyResults.push(result);
+  const homeScore=score(home),awayScore=score(away),result={key,season,day,homeId:home.id,awayId:away.id,homeName:matchTeamLabel(home),awayName:matchTeamLabel(away),homeScore,awayScore,friendly:true,matchType:"friendly",simulated:true,homeLineup:buildOfficialLineup(home,"2–2–1"),awayLineup:buildOfficialLineup(away,"2–2–1"),events:[]};
+  state.seasonFriendlyResults.push(result);recordPlayerCareerMatch(result);if(scoutRulesEnabled()){const ratings=team=>buildOfficialLineup(team,"2–2–1").map(entry=>({playerName:entry.player.name,played:true,rating:6}));applySimulatedNpcSkillGrowth(home,homeScore,awayScore,ratings(home));applySimulatedNpcSkillGrowth(away,awayScore,homeScore,ratings(away));}
   const ownId=getUserTeam()?.id;
   if(home.id===ownId||away.id===ownId)publishCoachEventOnce("season-friendly:"+key,"news","Товарищеский матч",result.homeName+" "+homeScore+":"+awayScore+" "+result.awayName+". Результат не влияет на таблицу лиги.",{priority:"normal"});
  });
