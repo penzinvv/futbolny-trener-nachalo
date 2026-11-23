@@ -1440,15 +1440,33 @@ function renderCabinet() {
   const wrap=document.createElement("div");wrap.className="cabinet-view";
   const tabs=document.createElement("div");tabs.className="cabinet-tabs";tabs.setAttribute("role","tablist");
   const body=document.createElement("div");body.className="cabinet-tab-content";
-  const options=[["overview","Обзор"],["team","Футболисты"],["stats","Статистика команды"],["table","Турнирная таблица"],["matches","Матчи"],["career","Карьера тренера"]];
+  const options=[["overview","Обзор"],["career","Карьера тренера"]];
   const panel=(title,subtitle)=>{const el=document.createElement("section");el.className="cabinet-panel";el.append(safeText("h2",title),safeText("p",subtitle,"muted"));return el;};
   const renderTab=(key)=>{
     body.replaceChildren();const team=getUserTeam();const roster=team?.players||[];let p;
     if(key==="overview"){
-      p=panel("Кабинет тренера","Главная информация о вашей команде и карьере.");
-      const grid=document.createElement("div");grid.className="cabinet-metrics";
-      [["Команда",state.teamName||"—"],["Лига",team?.league||state.selectedLeague||"Нижняя лига"],["Футболисты",String(roster.length||state.players.length||10)+" / 10"],["Сезон","Сезон "+(state.seasonNumber||1)],["Опыт тренера",(state.xp||0)+" XP"],["Уважение",String(state.respect||0)]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));grid.append(card);});
-      p.append(grid,safeText("p","Здесь собраны состав, отношения с игроками, результаты команды и история вашей тренерской карьеры.","muted"));
+      p=panel("Команда и состав","Состав, развитие футболистов и результаты собраны на одной странице.");
+      const metrics=document.createElement("div");metrics.className="cabinet-metrics";
+      const avgRelation=roster.length?Math.round(roster.reduce((sum,player)=>sum+getPlayerRelation(team,player),0)/roster.length):0;
+      const avgMain=roster.length?Math.round(roster.reduce((sum,player)=>sum+Number(player.skills?.[player.position]||0),0)/roster.length):0;
+      const trainingRecords=Object.values(state.trainingHistory||{}).flat().filter(entry=>entry&&entry.type==="individual");
+      const matches=Object.values(state.leagueResults||{}).filter(match=>Number(match.season||state.seasonNumber)===Number(state.seasonNumber||1)&&(match.homeId===team?.id||match.awayId===team?.id));
+      const totals=matches.reduce((acc,match)=>{const home=match.homeId===team?.id,forUs=home?Number(match.homeScore||0):Number(match.awayScore||0),againstUs=home?Number(match.awayScore||0):Number(match.homeScore||0);acc.played++;acc.wins+=forUs>againstUs?1:0;acc.draws+=forUs===againstUs?1:0;acc.losses+=forUs<againstUs?1:0;acc.gf+=forUs;acc.ga+=againstUs;return acc;},{played:0,wins:0,draws:0,losses:0,gf:0,ga:0});
+      [["Команда",state.teamName||"—"],["Лига",team?.league||state.selectedLeague||"Нижняя лига"],["Состав",roster.length+" / 10"],["Средняя характеристика",roster.length?String(avgMain):"—"],["Средние отношения",roster.length?avgRelation+"%":"—"],["Индивидуальные тренировки",String(trainingRecords.length)],["Матчи в сезоне",String(totals.played)],["В · Н · П",totals.wins+" · "+totals.draws+" · "+totals.losses],["Забито · пропущено",totals.gf+" · "+totals.ga],["Опыт тренера",(state.xp||0)+" XP"],["Уважение",String(state.respect||0)]].forEach(([label,value])=>{const card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small",label),safeText("b",value));metrics.append(card);});
+      p.append(metrics);
+      const squad=document.createElement("section");squad.className="team-stat-section coach-overview-squad";squad.append(safeText("h3","Футболисты команды"),safeText("p","Выберите игрока, чтобы открыть его профиль.","muted"));
+      const grid=document.createElement("div");grid.className="cabinet-player-grid";
+      roster.forEach((player,i)=>{const card=document.createElement("button");card.type="button";card.className="cabinet-player-card";card.addEventListener("click",()=>openPlayerProfile(team,player,i));const img=document.createElement("img");img.src=getPortrait(player.portraitIndex||teamsPlayerIndex(team,player));img.alt=player.name;img.loading="lazy";img.onerror=()=>img.remove();const info=document.createElement("span");info.className="cabinet-player-info";info.append(safeText("b",player.name),safeText("small",player.position+" · "+player.nationality));const mainSkill=player.skills?.[player.position];if(mainSkill!==undefined)info.append(safeText("span",player.position+": "+mainSkill,"cabinet-player-main-skill"));card.append(img,info,makeRelationBadge(team,player),makePlayerSkillSummary(team,player));grid.append(card);});
+      squad.append(grid);p.append(squad);
+      const positions=["ВР","ЗЩ","ПЗ","НП"],bars=document.createElement("section");bars.className="team-stat-section coach-overview-stats";bars.append(safeText("h3","Сила и распределение состава"));
+      const positionGrid=document.createElement("div");positionGrid.className="cabinet-metrics coach-position-metrics";
+      positions.forEach(pos=>{const count=roster.filter(player=>player.position===pos).length,card=document.createElement("div");card.className="cabinet-metric";card.append(safeText("small","Игроки · "+pos),safeText("b",String(count)));const track=document.createElement("div");track.className="team-stat-track";const fill=document.createElement("div");fill.className="team-stat-fill";fill.style.width=(roster.length?count/roster.length*100:0)+"%";track.append(fill);card.append(track);positionGrid.append(card);});
+      bars.append(positionGrid);
+      const visiblePlayers=roster.map(player=>({player,relation:getPlayerRelation(team,player),value:Number(player.skills?.[player.position])})).filter(item=>getUnlockedSkills(item.player,item.relation).includes(item.player.position)&&Number.isFinite(item.value)).sort((a,b)=>b.value-a.value);
+      if(visiblePlayers.length){const list=document.createElement("div");list.className="coach-skill-list";visiblePlayers.slice(0,5).forEach(({player,value})=>{const row=document.createElement("div");row.className="team-stat-player";const name=safeText("span",player.name+" · "+player.position);const track=document.createElement("div");track.className="team-stat-track";const fill=document.createElement("div");fill.className="team-stat-fill";fill.style.width=Math.max(0,Math.min(100,value))+"%";const number=safeText("b",String(value));track.append(fill);row.append(name,track,number);list.append(row);});bars.append(list);}
+      else bars.append(safeText("p","Профильные характеристики откроются по мере роста отношений с футболистами.","muted"));
+      p.append(bars);
+      p.append(safeText("p","Статистика учитывает завершённые официальные матчи текущего сезона. Турнирная таблица и календарь доступны в основных разделах игры.","muted"));
     } else if(key==="team"||key==="relations"){
       p=panel(key==="team"?"Футболисты команды":"Отношения с футболистами",key==="team"?"Весь состав команды. Выберите карточку, чтобы открыть профиль футболиста.":"Отношения с каждым футболистом и прогресс до следующего порога.");
       if(key==="team"){
