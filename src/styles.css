@@ -2002,3 +2002,18 @@ body[data-page-bg] .onboarding {
 .coach-overview-squad{margin-top:18px}.coach-overview-squad>p{margin:4px 0 10px}.coach-overview-squad .cabinet-player-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:10px}.coach-overview-squad .cabinet-player-card{padding:10px;min-height:82px}.coach-overview-stats{margin-top:16px}.coach-position-metrics{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.coach-position-metrics .cabinet-metric{padding:10px}.coach-position-metrics .team-stat-track{margin-top:8px}.coach-skill-list{margin-top:12px}.coach-skill-list .team-stat-player{margin:7px 0}
 @media(max-width:900px){.coach-overview-squad .cabinet-player-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.coach-overview-squad .cabinet-player-grid{grid-template-columns:1fr}.coach-position-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Google Play testing information page */
+.google-play-test-page{display:grid;gap:14px;padding:clamp(16px,3vw,28px)}
+.google-play-test-page>h2{margin:0}
+.google-play-test-notice{padding:clamp(14px,2.5vw,22px);border:1px solid #286b4b;border-radius:16px;background:linear-gradient(135deg,#103c2cdd,#0b281fdd)}
+.google-play-test-notice h3{margin:0 0 8px;color:#55f0ad}
+.google-play-test-steps{display:grid;gap:16px;padding-left:24px}
+.google-play-test-steps li{padding-left:5px}
+.google-play-test-steps li p{margin:5px 0 8px;color:#bdd7c8}
+.google-play-test-link{display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:4px;padding:10px 14px;border:1px solid #42d99a;border-radius:10px;background:#0d5538;color:#eafff4;font-weight:800;text-decoration:none}
+.google-play-test-link:hover{background:#137448}
+.google-play-test-duration{margin:18px 0 0;padding:12px;border-radius:10px;background:#143f2e;color:#e4f7eb;font-weight:700}
+.google-play-test-thanks{font-size:1.05rem;font-weight:800;color:#55f0ad}
+.google-play-test-nav{border-color:#286b4b!important;color:#55f0ad!important}
+.google-play-test-nav:hover{background:#0d5538!important;border-color:#42d99a!important}
