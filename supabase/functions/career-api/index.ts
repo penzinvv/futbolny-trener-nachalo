@@ -25,6 +25,34 @@ Deno.serve(async (req: Request) => {
   const { data: authData, error: authError } = await admin.auth.getUser(token);
   if (authError || !authData.user) return respond({ ok: false, error: "Invalid or expired session" }, 401);
   const userId = authData.user.id;
+  const userEmail = String(authData.user.email || "").trim().toLowerCase();
+  const isDeveloperAccount = userEmail === "penzinvv@gmail.com";
+
+  // Names are reserved across career profiles and public ratings by normalized name.
+  // The developer account may use DOSPlay even though that name is also used by the
+  // canonical DOSPlay career account.
+  const checkCoachNameAvailability = async (name: string, allowCurrentOwner = true) => {
+    const normalizedName = name.trim().toLocaleLowerCase();
+    if (!normalizedName) return false;
+    if (isDeveloperAccount && normalizedName === "dosplay") return true;
+
+    const [{ data: profiles, error: profilesError }, { data: ratings, error: ratingsError }] = await Promise.all([
+      admin.from("coach_profiles").select("owner_user_id,display_name"),
+      admin.from("online_coach_ratings").select("owner_user_id,coach_name")
+    ]);
+    if (profilesError) throw profilesError;
+    if (ratingsError) throw ratingsError;
+
+    const conflictsWithProfile = (profiles || []).some((row: any) =>
+      String(row.display_name || "").trim().toLocaleLowerCase() === normalizedName &&
+      !(allowCurrentOwner && row.owner_user_id === userId)
+    );
+    const conflictsWithRating = (ratings || []).some((row: any) =>
+      String(row.coach_name || "").trim().toLocaleLowerCase() === normalizedName &&
+      !(allowCurrentOwner && row.owner_user_id === userId)
+    );
+    return !conflictsWithProfile && !conflictsWithRating;
+  };
 
   try {
     if (req.method === "GET") {
@@ -162,6 +190,10 @@ Deno.serve(async (req: Request) => {
         season: Math.max(1, Math.min(10000, Math.floor(Number(item.season) || seasonNumber))),
         round: Math.max(0, Math.min(10000, Math.floor(Number(item.round) || 0)))
       }));
+      const nameAvailable = await checkCoachNameAvailability(coachName);
+      if (!nameAvailable) {
+        return respond({ ok: false, error: "Это имя тренера уже закреплено за другим аккаунтом. Выбери другое имя." }, 409);
+      }
       const { data: existing, error: existingError } = await admin.from("online_coach_ratings")
         .select("xp,general_rating,xp_submitted_at,general_rating_submitted_at")
         .eq("owner_user_id", userId).maybeSingle();
@@ -282,6 +314,18 @@ Deno.serve(async (req: Request) => {
 
     const { data: existingCoach, error: existingCoachError } = await admin.from("coach_profiles").select("*").eq("owner_user_id", userId).maybeSingle();
     if (existingCoachError) throw existingCoachError;
+
+    // Existing owners may keep their own current name. A new or changed name must
+    // be unclaimed by every other account, except DOSPlay on the developer email.
+    const isKeepingOwnName = Boolean(existingCoach) &&
+      String(existingCoach.display_name || "").trim().toLocaleLowerCase() === coachName.toLocaleLowerCase();
+    if (!isKeepingOwnName) {
+      const nameAvailable = await checkCoachNameAvailability(coachName);
+      if (!nameAvailable) {
+        return respond({ ok: false, error: "Это имя тренера уже закреплено за другим аккаунтом. Выбери другое имя." }, 409);
+      }
+    }
+
     let coach = existingCoach;
     if (!coach) {
       const { data, error } = await admin.from("coach_profiles").insert({ owner_user_id: userId, display_name: coachName }).select("*").single();
