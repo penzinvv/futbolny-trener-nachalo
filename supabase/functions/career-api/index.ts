@@ -167,15 +167,19 @@ Deno.serve(async (req: Request) => {
       const teamLogoIndex = Number(payload.teamLogoIndex);
       const xp = payload.xp === undefined ? null : Number(payload.xp);
       const generalRating = payload.generalRating === undefined ? null : Number(payload.generalRating);
-      const seasonRating = payload.seasonRating === undefined ? null : Number(payload.seasonRating);
-      const respect = payload.respect === undefined ? null : Number(payload.respect);
+      const seasonRatingRaw = payload.seasonRating === undefined ? null : Number(payload.seasonRating);
+      const respectRaw = payload.respect === undefined ? null : Number(payload.respect);
       const validScore = (value: number | null) => value === null || (Number.isSafeInteger(value) && value >= 0 && value <= 1000000000);
       const validRespect = (value: number | null) => value === null || (Number.isFinite(value) && value >= 0 && value <= 1000000000 && Math.round(value * 100) === value * 100);
+      // Seasonal rating and respect are legacy fields, no longer shown in the online leaderboard.
+      // Ignore malformed legacy values instead of rejecting XP and permanent rating submissions.
+      const seasonRating = validScore(seasonRatingRaw) ? seasonRatingRaw : null;
+      const respect = validRespect(respectRaw) ? respectRaw : null;
       if (!ratingType || !coachName || !teamName ||
           !Number.isSafeInteger(seasonNumber) || seasonNumber < 1 || seasonNumber > 10000 ||
           !Number.isInteger(avatarIndex) || avatarIndex < 1 || avatarIndex > 6 ||
           !Number.isInteger(teamLogoIndex) || teamLogoIndex < 1 || teamLogoIndex > 6 ||
-          !validScore(xp) || !validScore(generalRating) || !validScore(seasonRating) || !validRespect(respect) ||
+          !validScore(xp) || !validScore(generalRating) ||
           (ratingType === "xp" && xp === null) || (ratingType === "general" && generalRating === null) ||
           (ratingType === "both" && (xp === null || generalRating === null))) {
         return respond({ ok: false, error: "Некорректные данные рейтинга. Обнови игру и попробуй снова." }, 400);
