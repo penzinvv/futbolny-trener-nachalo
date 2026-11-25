@@ -28,9 +28,8 @@ Deno.serve(async (req: Request) => {
   const userEmail = String(authData.user.email || "").trim().toLowerCase();
   const isDeveloperAccount = userEmail === "penzinvv@gmail.com";
 
-  // Names are reserved across career profiles and public ratings by normalized name.
-  // The developer account may use DOSPlay even though that name is also used by the
-  // canonical DOSPlay career account.
+  // Reserve names across career profiles and public ratings, ignoring case and outer spaces.
+  // The developer account has one explicit exception: it may also use "DOSPlay".
   const checkCoachNameAvailability = async (name: string, allowCurrentOwner = true) => {
     const normalizedName = name.trim().toLocaleLowerCase();
     if (!normalizedName) return false;
@@ -140,12 +139,23 @@ Deno.serve(async (req: Request) => {
 
     if (payload?.action === "get-online-ratings") {
       const [xpResult, generalResult] = await Promise.all([
-        admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,avatar_path,team_logo_path,coach_title,coach_title_rarity,team_title,team_title_rarity,awards,xp,general_rating,updated_at").order("xp", { ascending: false }).order("xp_submitted_at", { ascending: true, nullsFirst: false }).limit(50),
-        admin.from("online_coach_ratings").select("coach_name,team_name,season_number,avatar_index,team_logo_index,avatar_path,team_logo_path,coach_title,coach_title_rarity,team_title,team_title_rarity,awards,xp,general_rating,updated_at").order("general_rating", { ascending: false }).order("general_rating_submitted_at", { ascending: true, nullsFirst: false }).limit(50)
+        admin.from("online_coach_ratings")
+          .select("coach_name,team_name,season_number,avatar_index,team_logo_index,avatar_path,team_logo_path,avatar_rarity,team_logo_rarity,coach_title,coach_title_rarity,team_title,team_title_rarity,awards,xp,general_rating,season_rating,respect,updated_at")
+          .order("xp", { ascending: false })
+          .order("xp_submitted_at", { ascending: true, nullsFirst: false })
+          .limit(50),
+        admin.from("online_coach_ratings")
+          .select("coach_name,team_name,season_number,avatar_index,team_logo_index,avatar_path,team_logo_path,avatar_rarity,team_logo_rarity,coach_title,coach_title_rarity,team_title,team_title_rarity,awards,xp,general_rating,season_rating,respect,updated_at")
+          .order("general_rating", { ascending: false })
+          .order("general_rating_submitted_at", { ascending: true, nullsFirst: false })
+          .limit(50)
       ]);
       if (xpResult.error) throw xpResult.error;
       if (generalResult.error) throw generalResult.error;
-      return respond({ ok: true, xpRatings: xpResult.data || [], generalRatings: generalResult.data || [] });
+      const xpRatings = xpResult.data || [];
+      const generalRatings = generalResult.data || [];
+      // Keep the legacy response keys so the currently deployed website continues to work.
+      return respond({ ok: true, ratings: xpRatings, xpRatings, generalRatings });
     }
 
     if (payload?.action === "submit-online-rating") {
@@ -157,12 +167,15 @@ Deno.serve(async (req: Request) => {
       const teamLogoIndex = Number(payload.teamLogoIndex);
       const xp = payload.xp === undefined ? null : Number(payload.xp);
       const generalRating = payload.generalRating === undefined ? null : Number(payload.generalRating);
+      const seasonRating = payload.seasonRating === undefined ? null : Number(payload.seasonRating);
+      const respect = payload.respect === undefined ? null : Number(payload.respect);
       const validScore = (value: number | null) => value === null || (Number.isSafeInteger(value) && value >= 0 && value <= 1000000000);
+      const validRespect = (value: number | null) => value === null || (Number.isFinite(value) && value >= 0 && value <= 1000000000 && Math.round(value * 100) === value * 100);
       if (!ratingType || !coachName || !teamName ||
           !Number.isSafeInteger(seasonNumber) || seasonNumber < 1 || seasonNumber > 10000 ||
           !Number.isInteger(avatarIndex) || avatarIndex < 1 || avatarIndex > 6 ||
           !Number.isInteger(teamLogoIndex) || teamLogoIndex < 1 || teamLogoIndex > 6 ||
-          !validScore(xp) || !validScore(generalRating) ||
+          !validScore(xp) || !validScore(generalRating) || !validScore(seasonRating) || !validRespect(respect) ||
           (ratingType === "xp" && xp === null) || (ratingType === "general" && generalRating === null) ||
           (ratingType === "both" && (xp === null || generalRating === null))) {
         return respond({ ok: false, error: "Некорректные данные рейтинга. Обнови игру и попробуй снова." }, 400);
@@ -180,6 +193,13 @@ Deno.serve(async (req: Request) => {
       const teamTitleRarity = ["common", "uncommon", "rare", "epic", "legendary"].includes(payload.teamTitleRarity) ? payload.teamTitleRarity : null;
       const avatarPath = safeAssetPath(payload.avatarPath, "avatar");
       const teamLogoPath = safeAssetPath(payload.teamLogoPath, "logo");
+      const allowedRarities = ["common", "uncommon", "rare", "epic", "legendary"];
+      const pathRarity = (path: string | null) => {
+        const match = String(path || "").match(/\/assets\/shop\/(?:avatars|logos)\/(common|uncommon|rare|epic|legendary)\//);
+        return match ? match[1] : "uncommon";
+      };
+      const avatarRarity = allowedRarities.includes(payload.avatarRarity) ? payload.avatarRarity : pathRarity(avatarPath);
+      const teamLogoRarity = allowedRarities.includes(payload.teamLogoRarity) ? payload.teamLogoRarity : pathRarity(teamLogoPath);
       const incomingAwards = Array.isArray(payload.awards) ? payload.awards.slice(0, 80) : [];
       const awards = incomingAwards.filter((item: any) =>
         item && typeof item.icon === "string" && /^[a-z0-9_-]{1,80}$/i.test(item.icon)
@@ -195,7 +215,7 @@ Deno.serve(async (req: Request) => {
         return respond({ ok: false, error: "Это имя тренера уже закреплено за другим аккаунтом. Выбери другое имя." }, 409);
       }
       const { data: existing, error: existingError } = await admin.from("online_coach_ratings")
-        .select("xp,general_rating,xp_submitted_at,general_rating_submitted_at")
+        .select("xp,general_rating,season_rating,respect,xp_submitted_at,general_rating_submitted_at")
         .eq("owner_user_id", userId).maybeSingle();
       if (existingError) throw existingError;
       const now = new Date().toISOString();
@@ -208,6 +228,8 @@ Deno.serve(async (req: Request) => {
         team_logo_index: teamLogoIndex,
         avatar_path: avatarPath,
         team_logo_path: teamLogoPath,
+        avatar_rarity: avatarRarity,
+        team_logo_rarity: teamLogoRarity,
         coach_title: coachTitle,
         coach_title_rarity: coachTitleRarity,
         team_title: teamTitle,
@@ -215,6 +237,8 @@ Deno.serve(async (req: Request) => {
         awards,
         xp: ratingType === "xp" || ratingType === "both" ? xp : Number(existing?.xp || 0),
         general_rating: ratingType === "general" || ratingType === "both" ? generalRating : Number(existing?.general_rating || 0),
+        season_rating: seasonRating === null ? Number(existing?.season_rating || 0) : seasonRating,
+        respect: respect === null ? Number(existing?.respect || 0) : respect,
         xp_submitted_at: ratingType === "xp" || ratingType === "both" ? now : (existing?.xp_submitted_at || null),
         general_rating_submitted_at: ratingType === "general" || ratingType === "both" ? now : (existing?.general_rating_submitted_at || null),
         updated_at: now
@@ -315,8 +339,8 @@ Deno.serve(async (req: Request) => {
     const { data: existingCoach, error: existingCoachError } = await admin.from("coach_profiles").select("*").eq("owner_user_id", userId).maybeSingle();
     if (existingCoachError) throw existingCoachError;
 
-    // Existing owners may keep their own current name. A new or changed name must
-    // be unclaimed by every other account, except DOSPlay on the developer email.
+    // Current owners may keep their own name. A new/changed name must be unclaimed,
+    // except that penzinvv@gmail.com may use DOSPlay as the developer exception.
     const isKeepingOwnName = Boolean(existingCoach) &&
       String(existingCoach.display_name || "").trim().toLocaleLowerCase() === coachName.toLocaleLowerCase();
     if (!isKeepingOwnName) {
