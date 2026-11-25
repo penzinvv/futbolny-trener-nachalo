@@ -26,14 +26,15 @@ Deno.serve(async (req: Request) => {
   if (authError || !authData.user) return respond({ ok: false, error: "Invalid or expired session" }, 401);
   const userId = authData.user.id;
   const userEmail = String(authData.user.email || "").trim().toLowerCase();
-  const isDeveloperAccount = userEmail === "penzinvv@gmail.com";
+  // DOSPlay is reserved for the developer account and the account that owns the merged DOSPlay career.
+  const canUseDOSPlay = ["penzinvv@gmail.com", "valeriydos@yandex.ru"].includes(userEmail);
 
   // Reserve names across career profiles and public ratings, ignoring case and outer spaces.
   // The developer account has one explicit exception: it may also use "DOSPlay".
   const checkCoachNameAvailability = async (name: string, allowCurrentOwner = true) => {
     const normalizedName = name.trim().toLocaleLowerCase();
     if (!normalizedName) return false;
-    if (isDeveloperAccount && normalizedName === "dosplay") return true;
+    if (canUseDOSPlay && normalizedName === "dosplay") return true;
 
     const [{ data: profiles, error: profilesError }, { data: ratings, error: ratingsError }] = await Promise.all([
       admin.from("coach_profiles").select("owner_user_id,display_name"),
