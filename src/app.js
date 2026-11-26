@@ -948,6 +948,54 @@ function ensurePortraitAssignments() {
   });
   if (changed) saveState();
 }
+
+const PLAYER_PORTRAIT_MIGRATION_VERSION = "2026-11-26-v1";
+function migrateSavedPlayerPortraits() {
+  const database = leagueData?.playerDatabase;
+  if (!Array.isArray(database?.players) || state.playerPortraitMigrationVersion === PLAYER_PORTRAIT_MIGRATION_VERSION) return false;
+
+  const byId = new Map();
+  const byNamePosition = new Map();
+  database.players.forEach(source => {
+    if (source?.playerId) byId.set(String(source.playerId), source);
+    const name = String(source?.name || "").trim().replace(/\\s+/g, " ").toLocaleLowerCase("ru-RU");
+    const position = String(source?.position || "").trim().toLocaleUpperCase("ru-RU");
+    if (!name || !position) return;
+    const key = name + "|" + position;
+    const matches = byNamePosition.get(key) || [];
+    matches.push(source);
+    byNamePosition.set(key, matches);
+  });
+
+  state.portraitAssignments = state.portraitAssignments && typeof state.portraitAssignments === "object" ? state.portraitAssignments : {};
+  const players = collectPortraitPlayers();
+  let updated = 0;
+  players.forEach(player => {
+    let source = byId.get(String(player?.playerId || "")) || byId.get(String(player?.careerId || ""));
+    if (!source) {
+      const name = String(player?.name || "").trim().replace(/\\s+/g, " ").toLocaleLowerCase("ru-RU");
+      const position = String(player?.position || "").trim().toLocaleUpperCase("ru-RU");
+      const matches = byNamePosition.get(name + "|" + position) || [];
+      if (matches.length === 1) source = matches[0];
+    }
+    const portraitIndex = Number(source?.portraitIndex);
+    if (!source || !Number.isInteger(portraitIndex) || portraitIndex < 1 || portraitIndex > 150) return;
+
+    const key = portraitPlayerKey(player);
+    if (Number(player.portraitIndex) !== portraitIndex) {
+      player.portraitIndex = portraitIndex;
+      updated++;
+    }
+    if (key && Number(state.portraitAssignments[key]) !== portraitIndex) state.portraitAssignments[key] = portraitIndex;
+  });
+
+  // Rebuild only the future-assignment queue from the updated portraits; league data and stats stay untouched.
+  state.portraitAssignmentQueue = buildPortraitQueue(players);
+  state.playerPortraitMigrationVersion = PLAYER_PORTRAIT_MIGRATION_VERSION;
+  saveState();
+  console.info("[portrait-migration] completed", { version: PLAYER_PORTRAIT_MIGRATION_VERSION, matchedPlayers: players.length, changedPortraits: updated });
+  return true;
+}
 function createInitialLeagueForNewCareer() {
   if (!leagueData || state.initialRosterDistributionApplied) return false;
   const teams = leagueData.teams || [];
@@ -1733,6 +1781,7 @@ function makeCareerId() {
 }
 function ensureCareerIdentity() {
   if (!state.coachName || !state.teamName) return;
+  migrateSavedPlayerPortraits();
   ensurePortraitAssignments();
   let changed=false;
   if (!state.careerCoachId) { state.careerCoachId=makeCareerId(); changed=true; }
