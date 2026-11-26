@@ -954,6 +954,17 @@ function migrateSavedPlayerPortraits() {
   const database = leagueData?.playerDatabase;
   if (!Array.isArray(database?.players) || state.playerPortraitMigrationVersion === PLAYER_PORTRAIT_MIGRATION_VERSION) return false;
 
+  // Keep a one-time raw save backup before touching any portrait references.
+  const backupKey = STORAGE_KEY + "-before-player-portrait-migration-v1";
+  try {
+    if (!localStorage.getItem(backupKey)) {
+      localStorage.setItem(backupKey, localStorage.getItem(STORAGE_KEY) || JSON.stringify(state));
+    }
+  } catch (error) {
+    console.error("[portrait-migration] backup failed; migration skipped", error);
+    return false;
+  }
+
   const byId = new Map();
   const byNamePosition = new Map();
   database.players.forEach(source => {
