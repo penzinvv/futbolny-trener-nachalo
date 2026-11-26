@@ -968,8 +968,17 @@ function migrateSavedPlayerPortraits() {
   });
 
   state.portraitAssignments = state.portraitAssignments && typeof state.portraitAssignments === "object" ? state.portraitAssignments : {};
-  const players = collectPortraitPlayers();
+  const players = [];
+  const addPlayerReference = player => { if (player && typeof player === "object") players.push(player); };
+  (leagueData?.teams || []).forEach(team => (team.players || []).forEach(addPlayerReference));
+  (state.userRoster || []).forEach(addPlayerReference);
+  Object.values(state.externalRosters || {}).forEach(roster => (Array.isArray(roster) ? roster : []).forEach(addPlayerReference));
+  (state.leagueReservePlayers || []).forEach(addPlayerReference);
+  (state.leagueReserveTeams || []).forEach(team => (team.players || []).forEach(addPlayerReference));
+  (state.freeYardPlayerPool || []).forEach(addPlayerReference);
+  (state.freeYardPlayers || []).forEach(addPlayerReference);
   let updated = 0;
+  let matched = 0;
   players.forEach(player => {
     let source = byId.get(String(player?.playerId || "")) || byId.get(String(player?.careerId || ""));
     if (!source) {
@@ -981,6 +990,7 @@ function migrateSavedPlayerPortraits() {
     const portraitIndex = Number(source?.portraitIndex);
     if (!source || !Number.isInteger(portraitIndex) || portraitIndex < 1 || portraitIndex > 150) return;
 
+    matched++;
     const key = portraitPlayerKey(player);
     if (Number(player.portraitIndex) !== portraitIndex) {
       player.portraitIndex = portraitIndex;
@@ -990,10 +1000,10 @@ function migrateSavedPlayerPortraits() {
   });
 
   // Rebuild only the future-assignment queue from the updated portraits; league data and stats stay untouched.
-  state.portraitAssignmentQueue = buildPortraitQueue(players);
+  state.portraitAssignmentQueue = buildPortraitQueue(collectPortraitPlayers());
   state.playerPortraitMigrationVersion = PLAYER_PORTRAIT_MIGRATION_VERSION;
   saveState();
-  console.info("[portrait-migration] completed", { version: PLAYER_PORTRAIT_MIGRATION_VERSION, matchedPlayers: players.length, changedPortraits: updated });
+  console.info("[portrait-migration] completed", { version: PLAYER_PORTRAIT_MIGRATION_VERSION, matchedPlayers: matched, changedPortraits: updated });
   return true;
 }
 function createInitialLeagueForNewCareer() {
